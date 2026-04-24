@@ -1,0 +1,67 @@
+{
+  "group": "config",
+  "description": "Configuration management commands",
+  "commands": [
+    {
+      "script": "hf.config.sh",
+      "subcommand": "(no args)",
+      "description": "Show help, environment list, and current configuration",
+      "args": [],
+      "config_requires": [],
+      "tool_deps": ["jq"],
+      "exit_code": 0,
+      "output_format": "text",
+      "output": "Usage: hf.config.sh [show|set|clear|doctor|bootstrap|env] [args...]\n\nCommands:\n  show [env-name]         Show current configuration\n  set <key> <value>       Set a configuration value\n  clear <key>             Clear a configuration value\n  clear all               Clear all configuration\n  doctor                  Check which scripts are ready to use\n  bootstrap [env-name]    Interactive environment setup\n  env list                List environments\n  env show [name]         Show config with environment overrides\n  env activate <name>     Activate an environment\n\nEnvironments\n  ○ local                          9 properties\n  ○ gke-amarin                     9 properties\n  ○ gke-amarin_2                   2 properties\n  ● kind                           2 properties (active)\n  ○ compose                        9 properties\n\nHyperFleet Configuration\n  Config dir: /Users/amarin/.config/hf\n  Environment: kind\n  Active: kind\n\nhyperfleet\n  api-url                             http://localhost:8000\n  api-version                         v1\n  token                               <not set>\n  context                             kind-kind  [kind]\n  namespace                           amarin-ns1  [kind]\n  gcp-project                         hcm-hyperfleet\n  cluster-id                          019dbf43-65c5-7562-9077-e0a2331a1070\n  cluster-name                        test-1e317d46\n  nodepool-id                         019dbf43-7199-7ea6-b786-d617fc793c28\n\nmaestro\n  maestro-consumer                    cluster1\n  maestro-http-endpoint               http://localhost:8100\n  maestro-grpc-endpoint               localhost:8090\n  maestro-namespace                   maestro\n\nportforward\n  pf-api-port                         8000\n  pf-pg-port                          5432\n  pf-maestro-http-port                8100\n  pf-maestro-http-remote-port         8000\n  pf-maestro-grpc-port                8090\n\ndatabase\n  db-host                             localhost\n  db-port                             5432\n  db-name                             hyperfleet\n  db-user                             hyperfleet\n  db-password                         <set>\n\nrabbitmq\n  rabbitmq-host                       localhost\n  rabbitmq-mgmt-port                  15672\n  rabbitmq-user                       guest\n  rabbitmq-password                   <set>\n  rabbitmq-vhost                      /\n\nregistry\n  registry                            amarin",
+      "notes": "With no args, shows help + environment list + full config. Same as 'show' but with help header."
+    },
+    {
+      "script": "hf.config.sh",
+      "subcommand": "show",
+      "description": "Show current configuration values grouped by section",
+      "args": ["show"],
+      "exit_code": 0,
+      "output_format": "text/table",
+      "output_sections": ["hyperfleet", "maestro", "portforward", "database", "rabbitmq", "registry"],
+      "notes": "Properties come from HF_CONFIG_REGISTRY in hf.lib.sh. Values read from ~/.config/hf/<key> files. Passwords shown as '<set>' or '<not set>'."
+    },
+    {
+      "script": "hf.config.sh",
+      "subcommand": "env list",
+      "description": "List available environment profiles with property counts",
+      "args": ["env", "list"],
+      "exit_code": 0,
+      "output_format": "text",
+      "output": "Environments\n  ○ local                          9 properties\n  ○ gke-amarin                     9 properties\n  ○ gke-amarin_2                   2 properties\n  ● kind                           2 properties (active)\n  ○ compose                        9 properties",
+      "notes": "Active env marked with ● (green), inactive with ○. Environments stored as <env-name>.<property> files in ~/.config/hf/"
+    },
+    {
+      "script": "hf.config.sh",
+      "subcommand": "env show <name>",
+      "description": "Show config with environment-specific overrides highlighted",
+      "args": ["env", "show", "kind"],
+      "exit_code": 0,
+      "output_format": "text",
+      "notes": "Same as 'show' but highlights properties that come from the environment with [env-name] suffix in cyan"
+    },
+    {
+      "script": "hf.config.sh",
+      "subcommand": "doctor",
+      "description": "Check which scripts have all required config set",
+      "args": ["doctor"],
+      "exit_code": 0,
+      "output_format": "text",
+      "output": "Config Doctor\n  ● hf.cluster.adapter.post.status.sh\n  ● hf.cluster.conditions.sh\n  ... (44/44 scripts ready)",
+      "notes": "Scans all scripts for hf_require_config lines using sed, cross-references with current config values. Green ● = ready, red ● = missing config."
+    },
+    {
+      "script": "hf.cluster.id.sh",
+      "description": "Display the current cluster ID from config",
+      "args": [],
+      "config_requires": ["cluster-id"],
+      "exit_code": 0,
+      "output_format": "text",
+      "output": "019dbf43-65c5-7562-9077-e0a2331a1070",
+      "notes": "Simply reads ~/.config/hf/cluster-id file. Exits with error if not set."
+    }
+  ]
+}

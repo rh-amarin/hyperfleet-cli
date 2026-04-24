@@ -1,0 +1,271 @@
+{
+  "group": "cluster",
+  "description": "Cluster CRUD lifecycle commands",
+  "commands": [
+    {
+      "script": "hf.cluster.create.sh",
+      "description": "Create a new HyperFleet cluster with labels and spec",
+      "args_spec": "<name> [region] [version]",
+      "defaults": {"name": "my-cluster", "region": "us-east-1", "version": "4.15.0"},
+      "config_requires": ["api-url", "api-version"],
+      "tool_deps": ["jq"],
+      "api_method": "POST",
+      "api_endpoint": "/api/hyperfleet/v1/clusters",
+      "executions": [
+        {
+          "scenario": "create_new_cluster",
+          "args": ["test-cluster-alpha", "us-east1", "1.28"],
+          "exit_code": 0,
+          "behavior": [
+            "Checks if cluster with same name already exists (calls search)",
+            "Creates cluster with POST /clusters",
+            "Auto-searches for the created cluster to set current cluster-id",
+            "Sets cluster-id in config file"
+          ],
+          "request_payload": {
+            "name": "test-cluster-alpha",
+            "labels": {"counter": "1", "environment": "development", "shard": "1", "team": "core"},
+            "spec": {"counter": "1", "region": "us-east1", "version": "1.28"}
+          },
+          "response": {
+            "id": "019dc049-43a8-7a42-b44a-8d7f89e9e10f",
+            "kind": "Cluster",
+            "generation": 1,
+            "name": "test-cluster-alpha",
+            "labels": {"counter": "1", "environment": "development", "shard": "1", "team": "core"},
+            "spec": {"counter": "1", "region": "us-east1", "version": "1.28"},
+            "status": {
+              "conditions": [
+                {"type": "Ready", "status": "False", "reason": "MissingRequiredAdapters", "message": "Required adapters not reporting Available=True: [cl-deployment, cl-invalid-resource, cl-job, cl-maestro, cl-namespace, cl-precondition-error]. Currently reporting: []"},
+                {"type": "Available", "status": "False", "reason": "AdaptersNotAtSameGeneration", "message": "Required adapters do not report a consistent Available state"}
+              ]
+            }
+          }
+        },
+        {
+          "scenario": "create_duplicate_cluster",
+          "args": ["test-cluster-alpha"],
+          "exit_code": 0,
+          "behavior": ["Checks if cluster exists", "Warns and skips creation"],
+          "output": "[WARN] Cluster 'test-cluster-alpha' already exists, skipping creation"
+        },
+        {
+          "scenario": "create_with_defaults",
+          "args": [],
+          "exit_code": 0,
+          "behavior": ["Uses defaults: name=my-cluster, region=us-east-1, version=4.15.0"],
+          "notes": "No args does NOT show usage - it creates with all defaults"
+        }
+      ]
+    },
+    {
+      "script": "hf.cluster.search.sh",
+      "description": "Search for cluster by name, sets as current cluster-id",
+      "args_spec": "<name>",
+      "config_requires": ["api-url", "api-version"],
+      "tool_deps": ["jq"],
+      "api_method": "GET",
+      "api_endpoint": "/api/hyperfleet/v1/clusters (filtered by name)",
+      "executions": [
+        {
+          "scenario": "search_existing",
+          "args": ["test-cluster-alpha"],
+          "exit_code": 0,
+          "behavior": ["Searches API filtering by name", "Filters out deleted_at != null", "Sets cluster-id to found cluster", "Warns on multiple matches"],
+          "output_format": "json_array",
+          "side_effects": ["Writes cluster ID to ~/.config/hf/cluster-id"]
+        },
+        {
+          "scenario": "search_nonexistent",
+          "args": ["nonexistent-cluster"],
+          "exit_code": 0,
+          "output": "[WARN] No clusters found matching 'nonexistent-cluster'",
+          "response": "[]"
+        }
+      ]
+    },
+    {
+      "script": "hf.cluster.get.sh",
+      "description": "Get full cluster details by ID",
+      "args_spec": "[cluster_id]",
+      "config_requires": ["api-url", "api-version", "cluster-id"],
+      "tool_deps": ["jq"],
+      "api_method": "GET",
+      "api_endpoint": "/api/hyperfleet/v1/clusters/{cluster_id}",
+      "executions": [
+        {
+          "scenario": "get_current_cluster",
+          "args": [],
+          "exit_code": 0,
+          "output_format": "json",
+          "response_shape": {
+            "id": "string (UUID)",
+            "kind": "Cluster",
+            "name": "string",
+            "generation": "integer",
+            "labels": "object",
+            "spec": "object",
+            "status.conditions": "array of {type, status, reason, message, observed_generation, ...}",
+            "created_by": "string",
+            "created_time": "ISO8601",
+            "updated_by": "string",
+            "updated_time": "ISO8601",
+            "href": "string (API path)"
+          }
+        },
+        {
+          "scenario": "get_nonexistent",
+          "args": ["00000000-0000-0000-0000-000000000000"],
+          "exit_code": 0,
+          "response": {
+            "code": "HYPERFLEET-NTF-001",
+            "detail": "Cluster with id='00000000-0000-0000-0000-000000000000' not found",
+            "status": 404,
+            "title": "Resource Not Found",
+            "type": "https://api.hyperfleet.io/errors/not-found"
+          },
+          "notes": "Exit code is 0 even for 404 - script doesn't check HTTP status"
+        }
+      ]
+    },
+    {
+      "script": "hf.cluster.patch.sh",
+      "description": "Increment counter field in spec or labels section, triggering generation bump",
+      "args_spec": "spec|labels [cluster_id]",
+      "config_requires": ["api-url", "api-version", "cluster-id"],
+      "tool_deps": ["jq"],
+      "api_method": "PATCH",
+      "api_endpoint": "/api/hyperfleet/v1/clusters/{cluster_id}",
+      "executions": [
+        {
+          "scenario": "patch_spec",
+          "args": ["spec"],
+          "exit_code": 0,
+          "behavior": ["Fetches current cluster", "Reads spec.counter", "Increments by 1", "PATCHes back with new spec"],
+          "output_example": "[INFO] Incrementing spec.counter: 1 → 2",
+          "notes": "Each patch increments generation. Spec changes trigger adapter reconciliation."
+        },
+        {
+          "scenario": "patch_labels",
+          "args": ["labels"],
+          "exit_code": 0,
+          "behavior": ["Same as spec but for labels.counter"],
+          "output_example": "[INFO] Incrementing labels.counter: 1 → 2"
+        },
+        {
+          "scenario": "missing_args",
+          "args": [],
+          "exit_code": 1,
+          "output": "Usage: hf.cluster.patch.sh spec|labels [cluster_id]\n\nArguments:\n  spec|labels   Which section to increment the counter field in (required)\n  cluster_id    Cluster ID (default: current cluster)"
+        }
+      ]
+    },
+    {
+      "script": "hf.cluster.delete.sh",
+      "description": "Delete a cluster by ID",
+      "args_spec": "[cluster_id]",
+      "config_requires": ["api-url", "api-version", "cluster-id"],
+      "tool_deps": ["jq"],
+      "api_method": "DELETE",
+      "api_endpoint": "/api/hyperfleet/v1/clusters/{cluster_id}",
+      "executions": [
+        {
+          "scenario": "delete_cluster",
+          "args": ["019dc049-43a8-7a42-b44a-8d7f89e9e10f"],
+          "exit_code": 0,
+          "response_notes": "Returns full cluster object with deleted_by, deleted_time, and incremented generation",
+          "response_shape": {
+            "deleted_by": "system@hyperfleet.local",
+            "deleted_time": "ISO8601",
+            "generation": "incremented by 1 from pre-delete value"
+          }
+        }
+      ]
+    },
+    {
+      "script": "hf.cluster.conditions.sh",
+      "description": "Get cluster conditions (generation + status conditions)",
+      "args_spec": "[-w]",
+      "config_requires": ["api-url", "api-version", "cluster-id"],
+      "tool_deps": ["jq", "viddy (for -w)"],
+      "api_method": "GET",
+      "api_endpoint": "/api/hyperfleet/v1/clusters/{cluster_id}",
+      "executions": [
+        {
+          "scenario": "get_conditions",
+          "args": [],
+          "exit_code": 0,
+          "output_format": "json",
+          "response": {
+            "generation": 1,
+            "status": {
+              "conditions": [
+                {"type": "Ready", "status": "False", "reason": "MissingRequiredAdapters", "observed_generation": 1},
+                {"type": "Available", "status": "False", "reason": "AdaptersNotAtSameGeneration", "observed_generation": 1}
+              ]
+            }
+          },
+          "notes": "Extracts only generation and status.conditions from full cluster object"
+        }
+      ]
+    },
+    {
+      "script": "hf.cluster.conditions.table.sh",
+      "description": "Display conditions in formatted table with color-coded status",
+      "args_spec": "[cluster_id]",
+      "config_requires": ["api-url", "api-version", "cluster-id"],
+      "tool_deps": ["jq"],
+      "executions": [
+        {
+          "scenario": "before_adapter_status",
+          "args": [],
+          "exit_code": 0,
+          "output_format": "text/table",
+          "output": "TYPE       STATUS  LAST TRANSITION  REASON                       MESSAGE\n---        ---     ---              ---                          ---\nReady      False   -                MissingRequiredAdapters      Required adapters not reporting ...\nAvailable  False   -                AdaptersNotAtSameGeneration  Required adapters do not report ..."
+        },
+        {
+          "scenario": "after_adapter_status",
+          "args": [],
+          "exit_code": 0,
+          "output": "TYPE                    STATUS  LAST TRANSITION  REASON                       MESSAGE\n---                     ---     ---              ---                          ---\nReady                   False   -                MissingRequiredAdapters      ...\nAvailable               False   -                AdaptersNotAtSameGeneration  ...\nClNamespaceSuccessful   True    -                ManualStatusPost             ...\nClDeploymentSuccessful  True    -                ManualStatusPost             ...\nClJobSuccessful         False   -                ManualStatusPost             ...",
+          "notes": "True=green, False=red, Unknown=yellow in terminal"
+        }
+      ]
+    },
+    {
+      "script": "hf.cluster.statuses.sh",
+      "description": "Get adapter statuses for a cluster",
+      "args_spec": "[-w]",
+      "config_requires": ["api-url", "api-version", "cluster-id"],
+      "tool_deps": ["jq", "viddy (for -w)"],
+      "api_method": "GET",
+      "api_endpoint": "/api/hyperfleet/v1/clusters/{cluster_id}/adapter-statuses",
+      "executions": [
+        {
+          "scenario": "no_statuses",
+          "args": [],
+          "exit_code": 0,
+          "response": {"items": [], "kind": "AdapterStatusList", "page": 1, "size": 0, "total": 0}
+        },
+        {
+          "scenario": "with_statuses",
+          "args": [],
+          "exit_code": 0,
+          "response_shape": {
+            "items": [{
+              "adapter": "string",
+              "conditions": [{"type": "Available|Applied|Health", "status": "True|False|Unknown", "reason": "string", "message": "string"}],
+              "observed_generation": "integer",
+              "last_report_time": "ISO8601",
+              "data": "object"
+            }],
+            "kind": "AdapterStatusList",
+            "page": "integer",
+            "size": "integer",
+            "total": "integer"
+          }
+        }
+      ]
+    }
+  ]
+}

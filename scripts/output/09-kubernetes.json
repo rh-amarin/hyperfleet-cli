@@ -1,0 +1,90 @@
+{
+  "group": "kubernetes",
+  "description": "Kubernetes utility commands for port-forwarding, debugging, and log tailing",
+  "commands": [
+    {
+      "script": "hf.kube.port.forward.sh",
+      "description": "Start/stop/check port forwards to HyperFleet services in Kubernetes",
+      "args_spec": "start|stop|status",
+      "config_requires": ["context", "namespace", "pf-api-port", "pf-pg-port", "pf-maestro-http-port", "pf-maestro-http-remote-port", "pf-maestro-grpc-port", "maestro-namespace"],
+      "tool_deps": ["kubectl", "lsof or ss"],
+      "port_forwards": [
+        {"name": "hyperfleet-api", "local_port": 8000, "service": "hyperfleet-api service in namespace"},
+        {"name": "postgresql", "local_port": 5432, "service": "postgres service in namespace"},
+        {"name": "maestro-http", "local_port": 8100, "remote_port": 8000, "service": "maestro service in maestro-namespace"},
+        {"name": "maestro-grpc", "local_port": 8090, "service": "maestro service in maestro-namespace"}
+      ],
+      "executions": [
+        {
+          "scenario": "status",
+          "args": ["status"],
+          "exit_code": 0,
+          "output": "Port Forward Status\n  ● hyperfleet-api - localhost:8000 (PID: 1456)\n  ● postgresql - localhost:5432 (PID: 1455)\n  ● maestro-http - localhost:8100 (PID: 1476)\n  ● maestro-grpc - localhost:8090 (PID: 1475)",
+          "notes": "Green ● = running with PID, red ● = not running"
+        }
+      ]
+    },
+    {
+      "script": "hf.kube.context.sh",
+      "description": "Interactive selection of kubectl context and namespace",
+      "args_spec": "(none)",
+      "config_requires": [],
+      "tool_deps": ["kubectl"],
+      "behavior": ["Lists available contexts", "Prompts user to select", "Lists namespaces in selected context", "Prompts user to select", "Saves to ~/.config/hf/context and ~/.config/hf/namespace"],
+      "notes": "Interactive - requires user input, not recorded"
+    },
+    {
+      "script": "hf.kube.curl.sh",
+      "description": "Execute curl from an ephemeral pod inside the cluster",
+      "args_spec": "[options] <url>",
+      "config_requires": [],
+      "tool_deps": ["kubectl"],
+      "behavior": [
+        "Creates or reuses a curl pod in the cluster",
+        "Supports -H headers, -d data, -F file upload, -v verbose",
+        "Useful for testing in-cluster service connectivity"
+      ],
+      "notes": "Interactive - not recorded"
+    },
+    {
+      "script": "hf.kube.debug.pod.sh",
+      "description": "Create debug pod from deployment template",
+      "args_spec": "<partial-deployment-name> [namespace]",
+      "config_requires": [],
+      "tool_deps": ["kubectl", "jq"],
+      "behavior": [
+        "Finds deployment matching partial name",
+        "Creates a pod with same spec but restartPolicy=Never",
+        "Execs into the pod for debugging"
+      ],
+      "notes": "Interactive - not recorded"
+    },
+    {
+      "script": "hf.logs.sh",
+      "description": "Tail logs from pods matching a name pattern",
+      "args_spec": "<pod-name-pattern> [kubectl-logs-options...]",
+      "config_requires": [],
+      "tool_deps": ["kubectl", "stern (optional)"],
+      "behavior": [
+        "If stern available and multiple pods match, uses stern for multi-pod tailing",
+        "Otherwise prompts user to select a pod",
+        "Passes through kubectl logs options (-f, --since, --tail, etc.)"
+      ],
+      "notes": "Interactive/streaming - not recorded"
+    },
+    {
+      "script": "hf.logs.adapter.sh",
+      "description": "Tail adapter logs filtered by current cluster ID",
+      "args_spec": "<adapter-name-pattern> [--since=<duration>] [--tail=<lines>] [-f]",
+      "config_requires": ["cluster-id"],
+      "tool_deps": ["kubectl"],
+      "defaults": {"since": "1h"},
+      "behavior": [
+        "Finds pods matching adapter name pattern",
+        "Filters log output to include time and message fields",
+        "Filters by cluster-id to show only relevant entries"
+      ],
+      "notes": "Streaming - not recorded"
+    }
+  ]
+}

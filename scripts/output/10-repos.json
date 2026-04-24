@@ -1,0 +1,37 @@
+{
+  "group": "repos",
+  "description": "Repository status overview",
+  "commands": [
+    {
+      "script": "hf.repos.sh",
+      "description": "Show status table for HyperFleet GitHub repositories",
+      "config_requires": [],
+      "tool_deps": ["gh", "curl", "jq"],
+      "executions": [
+        {
+          "scenario": "show_repos",
+          "args": [],
+          "exit_code": 0,
+          "output_format": "text/table",
+          "columns": ["REPOSITORY", "COMMIT", "PR URL", "PR BRANCH", "QUAY TAG", "QUAY ALIASES"],
+          "output": "REPOSITORY                                                   COMMIT   PR URL                                                                PR BRANCH                             QUAY TAG                  QUAY ALIASES\n---                                                          ---      ---                                                                   ---                                   ---                       ---\nhttps://github.com/openshift-hyperfleet/hyperfleet-api-spec  fe59c7a  -                                                                     -                                     -                         -\nhttps://github.com/openshift-hyperfleet/hyperfleet-api       12333a0  https://github.com/openshift-hyperfleet/hyperfleet-api/pull/113       HYPERFLEET-971                        dev-d7afbfd (2026-04-24)  -\nhttps://github.com/openshift-hyperfleet/hyperfleet-sentinel  9517112  https://github.com/openshift-hyperfleet/hyperfleet-sentinel/pull/103  HYPERFLEET-908                        dev-eb2a6d6 (2026-04-21)  -\nhttps://github.com/openshift-hyperfleet/hyperfleet-adapter   d61faa5  -                                                                     -                                     dev-95b2701 (2026-04-23)  -\nhttps://github.com/openshift-hyperfleet/hyperfleet-infra     c8bfa3c  https://github.com/openshift-hyperfleet/hyperfleet-infra/pull/35      platform-oci                          -                         -\nhttps://github.com/openshift-hyperfleet/hyperfleet-e2e       900ad21  -                                                                     -                                     -                         -\nhttps://github.com/openshift-hyperfleet/architecture         3869e40  https://github.com/openshift-hyperfleet/architecture/pull/128         HYPERFLEET-872-konflux-pipeline-docs  -                         -",
+          "behavior": [
+            "Fetches latest commit from each repo via gh",
+            "Checks for open PRs",
+            "Fetches Quay image tags via curl",
+            "Runs fetches in parallel for performance"
+          ],
+          "repos_tracked": [
+            "openshift-hyperfleet/hyperfleet-api-spec",
+            "openshift-hyperfleet/hyperfleet-api",
+            "openshift-hyperfleet/hyperfleet-sentinel",
+            "openshift-hyperfleet/hyperfleet-adapter",
+            "openshift-hyperfleet/hyperfleet-infra",
+            "openshift-hyperfleet/hyperfleet-e2e",
+            "openshift-hyperfleet/architecture"
+          ]
+        }
+      ]
+    }
+  ]
+}

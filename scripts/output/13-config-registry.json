@@ -1,0 +1,55 @@
+{
+  "group": "config-registry",
+  "description": "Complete config property registry from hf.lib.sh - the single source of truth for all configuration",
+  "storage": {
+    "config_dir": "~/.config/hf",
+    "per_property": "One file per property in config_dir (e.g., ~/.config/hf/api-url)",
+    "env_override": "Environment variables (HF_API_URL, HF_TOKEN, etc.) take precedence over files",
+    "env_profiles": "Named environments stored as <env-name>.<property> files in config_dir"
+  },
+  "registry_format": "section|key|default|flags",
+  "flags": {
+    "s": "secret - displayed as '<set>' or '<not set>' rather than showing value"
+  },
+  "properties": [
+    {"section": "hyperfleet", "key": "api-url", "default": "http://localhost:8000", "env_var": "HF_API_URL"},
+    {"section": "hyperfleet", "key": "api-version", "default": "v1", "env_var": "HF_API_VERSION"},
+    {"section": "hyperfleet", "key": "token", "default": "", "flags": "s", "env_var": "HF_TOKEN"},
+    {"section": "hyperfleet", "key": "context", "default": null, "env_var": "HF_CONTEXT"},
+    {"section": "hyperfleet", "key": "namespace", "default": null, "env_var": "HF_NAMESPACE"},
+    {"section": "hyperfleet", "key": "gcp-project", "default": "hcm-hyperfleet"},
+    {"section": "hyperfleet", "key": "cluster-id", "default": null},
+    {"section": "hyperfleet", "key": "cluster-name", "default": null},
+    {"section": "hyperfleet", "key": "nodepool-id", "default": null},
+    {"section": "maestro", "key": "maestro-consumer", "default": "cluster1"},
+    {"section": "maestro", "key": "maestro-http-endpoint", "default": "http://localhost:8100"},
+    {"section": "maestro", "key": "maestro-grpc-endpoint", "default": "localhost:8090"},
+    {"section": "maestro", "key": "maestro-namespace", "default": "maestro"},
+    {"section": "portforward", "key": "pf-api-port", "default": "8000"},
+    {"section": "portforward", "key": "pf-pg-port", "default": "5432"},
+    {"section": "portforward", "key": "pf-maestro-http-port", "default": "8100"},
+    {"section": "portforward", "key": "pf-maestro-http-remote-port", "default": "8000"},
+    {"section": "portforward", "key": "pf-maestro-grpc-port", "default": "8090"},
+    {"section": "database", "key": "db-host", "default": "localhost"},
+    {"section": "database", "key": "db-port", "default": "5432"},
+    {"section": "database", "key": "db-name", "default": "hyperfleet"},
+    {"section": "database", "key": "db-user", "default": "hyperfleet"},
+    {"section": "database", "key": "db-password", "default": "foobar-bizz-buzz", "flags": "s"},
+    {"section": "rabbitmq", "key": "rabbitmq-host", "default": "localhost"},
+    {"section": "rabbitmq", "key": "rabbitmq-mgmt-port", "default": "15672"},
+    {"section": "rabbitmq", "key": "rabbitmq-user", "default": "guest"},
+    {"section": "rabbitmq", "key": "rabbitmq-password", "default": "guest", "flags": "s"},
+    {"section": "rabbitmq", "key": "rabbitmq-vhost", "default": "/"},
+    {"section": "registry", "key": "registry", "default": "$USER"}
+  ],
+  "config_operations": {
+    "show": "Display all config grouped by section",
+    "set": "Set a single config key to a value",
+    "clear": "Remove a config key (or 'clear all')",
+    "doctor": "Scan all scripts for hf_require_config and check readiness",
+    "bootstrap": "Interactive wizard to set up all config",
+    "env_list": "List named environments with property counts",
+    "env_show": "Show config with environment overrides highlighted",
+    "env_activate": "Copy environment-specific files over base config"
+  }
+}

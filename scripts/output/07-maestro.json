@@ -1,0 +1,110 @@
+{
+  "group": "maestro",
+  "description": "Maestro resource management commands",
+  "commands": [
+    {
+      "script": "hf.maestro.list.sh",
+      "description": "List maestro resources via maestro-cli",
+      "config_requires": ["maestro-consumer", "maestro-http-endpoint"],
+      "tool_deps": ["maestro-cli"],
+      "executions": [
+        {
+          "scenario": "list_resources",
+          "args": [],
+          "exit_code": 0,
+          "output_format": "json_array",
+          "response": [
+            {
+              "id": "f37ea664-818c-5644-ad9e-41269bfd26c5",
+              "name": "mw-019dbc3b-a965-7351-b93e-8ec51dcf54f8",
+              "consumerName": "cluster1",
+              "version": 2,
+              "manifestCount": 2,
+              "manifests": [
+                {"kind": "Namespace", "name": "019dbc3b-a965-7351-b93e-8ec51dcf54f8"},
+                {"kind": "ConfigMap", "name": "cluster-config", "namespace": "019dbc3b-a965-7351-b93e-8ec51dcf54f8"}
+              ],
+              "conditions": [
+                {"type": "Applied", "status": "True", "reason": "AppliedManifestWorkComplete"},
+                {"type": "Available", "status": "True", "reason": "ResourcesAvailable"}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "script": "hf.maestro.bundles.sh",
+      "description": "List maestro resource bundles via HTTP API",
+      "config_requires": ["maestro-http-endpoint"],
+      "tool_deps": ["jq"],
+      "api_endpoint": "/api/maestro/v1/resource-bundles",
+      "executions": [
+        {
+          "scenario": "list_bundles",
+          "args": [],
+          "exit_code": 0,
+          "output_format": "json",
+          "response_shape": {
+            "items": [{
+              "id": "UUID",
+              "kind": "ResourceBundle",
+              "consumer_name": "string",
+              "manifests": "array of k8s manifests",
+              "manifest_configs": "array of feedback/update configs",
+              "metadata": "object with labels and annotations",
+              "status": {
+                "conditions": "array",
+                "resourceStatus": "array of per-manifest status"
+              }
+            }],
+            "kind": "ResourceBundleList"
+          },
+          "notes": "Contains full k8s manifest content, metadata labels/annotations, and per-resource feedback status"
+        }
+      ]
+    },
+    {
+      "script": "hf.maestro.consumers.sh",
+      "description": "List maestro consumers via HTTP API",
+      "config_requires": ["maestro-http-endpoint"],
+      "tool_deps": ["jq"],
+      "api_endpoint": "/api/maestro/v1/consumers",
+      "executions": [
+        {
+          "scenario": "list_consumers",
+          "args": [],
+          "exit_code": 0,
+          "response": {
+            "items": [{"id": "ec33113d-c705-4c36-a0c8-d857a189692a", "kind": "Consumer", "name": "cluster1"}],
+            "kind": "ConsumerList",
+            "total": 1
+          }
+        }
+      ]
+    },
+    {
+      "script": "hf.maestro.get.sh",
+      "description": "Get maestro resource by name or interactive selection",
+      "args_spec": "[name]",
+      "config_requires": ["maestro-consumer", "maestro-http-endpoint", "maestro-grpc-endpoint"],
+      "tool_deps": ["maestro-cli", "jq"],
+      "notes": "Interactive menu if no name provided"
+    },
+    {
+      "script": "hf.maestro.delete.sh",
+      "description": "Delete maestro resource by name or interactive selection",
+      "args_spec": "[name]",
+      "config_requires": ["maestro-consumer", "maestro-http-endpoint", "maestro-grpc-endpoint"],
+      "tool_deps": ["maestro-cli", "jq"],
+      "notes": "Interactive menu if no name provided"
+    },
+    {
+      "script": "hf.maestro.tui.sh",
+      "description": "Launch maestro-cli terminal UI",
+      "config_requires": ["maestro-http-endpoint"],
+      "tool_deps": ["maestro-cli"],
+      "notes": "Interactive TUI - cannot be recorded"
+    }
+  ]
+}

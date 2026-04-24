@@ -1,0 +1,66 @@
+{
+  "group": "tables-and-lists",
+  "description": "Aggregated table/list views showing multiple resources",
+  "commands": [
+    {
+      "script": "hf.cluster.list.sh",
+      "description": "List all clusters (raw JSON)",
+      "config_requires": ["api-url", "api-version"],
+      "tool_deps": ["jq"],
+      "api_endpoint": "/api/hyperfleet/v1/clusters",
+      "executions": [
+        {
+          "scenario": "empty",
+          "response": {"items": [], "kind": "ClusterList", "page": 1, "size": 0, "total": 0}
+        },
+        {
+          "scenario": "populated",
+          "response_shape": {"items": "array of full Cluster objects", "kind": "ClusterList", "page": 1, "size": 2, "total": 2}
+        }
+      ]
+    },
+    {
+      "script": "hf.cluster.table.sh",
+      "description": "List clusters in table format with dynamic condition columns",
+      "config_requires": ["api-url", "api-version"],
+      "tool_deps": ["jq"],
+      "executions": [
+        {
+          "scenario": "empty",
+          "output": "ID   NAME  GEN\n---  ---   ---"
+        },
+        {
+          "scenario": "populated",
+          "output": "ID                                    NAME                GEN  Available  ClDeploymentSuccessful  ClJobSuccessful  ClNamespaceSuccessful  Ready\n---                                   ---                 ---  ---        ---                     ---              ---                    ---\n019dc049-5096-7f33-af06-8efe296e9e25  test-cluster-beta   1    ●(red)     -                       -                -                      ●(red)\n019dc049-43a8-7a42-b44a-8d7f89e9e10f  test-cluster-alpha  3    ●(red)     ●(green)                ●(red)           ●(green)               ●(red)",
+          "notes": "Columns are dynamic based on which conditions exist. Status shown as colored dots: green=True, red=False, yellow=Unknown, -=not present"
+        }
+      ]
+    },
+    {
+      "script": "hf.nodepool.table.sh",
+      "description": "List nodepools in current cluster in table format",
+      "config_requires": ["api-url", "api-version", "cluster-id"],
+      "tool_deps": ["jq"],
+      "executions": [
+        {
+          "scenario": "populated",
+          "output": "ID                                    NAME       REPLICAS  TYPE           GEN  Available  NpConfigmapSuccessful  Ready\n---                                   ---        ---       ---            ---  ---        ---                    ---\n019dc049-e79e-72a9-94f8-0056a11193cd  workers-2  1         n2-standard-4  1    ●(red)     -                      ●(red)\n019dc049-e76c-7be1-b201-0db50e2c8ecb  workers-1  1         n2-standard-4  2    ●(green)   ●(green)               ●(green)",
+          "notes": "Includes REPLICAS and TYPE columns not in cluster table. Dynamic condition columns."
+        }
+      ]
+    },
+    {
+      "script": "hf.table.sh",
+      "description": "Combined table of all clusters and their nodepools",
+      "config_requires": ["api-url", "api-version"],
+      "tool_deps": ["jq"],
+      "executions": [
+        {
+          "scenario": "populated",
+          "output": "ID                                      NAME                GEN  READY  ADAPTERS\n019dc049-5096-7f33-af06-8efe296e9e25    test-cluster-beta   1    ●(red)   0\n019dc049-43a8-7a42-b44a-8d7f89e9e10f    test-cluster-alpha  3    ●(red)   4\n  019dc049-e79e-72a9-94f8-0056a11193cd    workers-2         1    ●(red)   0\n  019dc049-e76c-7be1-b201-0db50e2c8ecb    workers-1         2    ●(green) 1",
+          "notes": "Nodepools indented under their parent cluster. Shows adapter count. Has a known awk error on macOS (asorti not available in BSD awk)."
+        }
+      ]
+    }
+  ]
+}

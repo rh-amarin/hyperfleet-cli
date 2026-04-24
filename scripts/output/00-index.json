@@ -1,0 +1,63 @@
+{
+  "description": "HyperFleet CLI command recordings for reimplementation as a CLI tool",
+  "recorded_at": "2026-04-24T16:18:00Z",
+  "environment": {
+    "api_url": "http://localhost:8000",
+    "api_version": "v1",
+    "context": "kind-kind",
+    "namespace": "hyperfleet",
+    "db_host": "localhost",
+    "db_port": 5432,
+    "db_name": "hyperfleet",
+    "maestro_http": "http://localhost:8100",
+    "maestro_grpc": "localhost:8090",
+    "gcp_project": "hcm-hyperfleet"
+  },
+  "files": [
+    "01-config.json",
+    "02-cluster-lifecycle.json",
+    "03-nodepool-lifecycle.json",
+    "04-adapter-status.json",
+    "05-tables-and-lists.json",
+    "06-database.json",
+    "07-maestro.json",
+    "08-pubsub.json",
+    "09-kubernetes.json",
+    "10-repos.json",
+    "11-errors-and-usage.json",
+    "12-interactive-commands.json",
+    "13-config-registry.json"
+  ],
+  "script_inventory": {
+    "total_scripts": 50,
+    "categories": {
+      "config": ["hf.config.sh", "hf.db.config.sh", "hf.kube.context.sh"],
+      "cluster": ["hf.cluster.create.sh", "hf.cluster.get.sh", "hf.cluster.list.sh", "hf.cluster.search.sh", "hf.cluster.id.sh", "hf.cluster.patch.sh", "hf.cluster.delete.sh", "hf.cluster.statuses.sh", "hf.cluster.conditions.sh", "hf.cluster.conditions.table.sh", "hf.cluster.table.sh", "hf.cluster.adapter.post.status.sh"],
+      "nodepool": ["hf.nodepool.create.sh", "hf.nodepool.get.sh", "hf.nodepool.list.sh", "hf.nodepool.search.sh", "hf.nodepool.patch.sh", "hf.nodepool.delete.sh", "hf.nodepool.statuses.sh", "hf.nodepool.conditions.sh", "hf.nodepool.conditions.table.sh", "hf.nodepool.table.sh", "hf.nodepool.adapter.post.status.sh"],
+      "database": ["hf.db.query.sh", "hf.db.delete.sh", "hf.db.delete.all.sh", "hf.db.statuses.sh", "hf.db.statuses.delete.sh"],
+      "maestro": ["hf.maestro.list.sh", "hf.maestro.get.sh", "hf.maestro.delete.sh", "hf.maestro.bundles.sh", "hf.maestro.consumers.sh", "hf.maestro.tui.sh"],
+      "pubsub": ["hf.pubsub.list.sh", "hf.pubsub.publish.cluster.change.sh", "hf.pubsub.publish.nodepool.change.sh"],
+      "rabbitmq": ["hf.rabbitmq.publish.cluster.change.sh"],
+      "kubernetes": ["hf.kube.port.forward.sh", "hf.kube.curl.sh", "hf.kube.debug.pod.sh", "hf.logs.sh", "hf.logs.adapter.sh"],
+      "utility": ["hf.table.sh", "hf.repos.sh", "hf.workflow.sh", "hf.workflow.api-only.sh"]
+    }
+  },
+  "dependency_graph": {
+    "initialization": ["hf.config.sh", "hf.kube.context.sh", "hf.kube.port.forward.sh", "hf.db.config.sh"],
+    "cluster_lifecycle": {
+      "1_create": "hf.cluster.create.sh <name> [region] [version]",
+      "2_read": ["hf.cluster.get.sh", "hf.cluster.search.sh", "hf.cluster.list.sh", "hf.cluster.table.sh", "hf.cluster.conditions.sh", "hf.cluster.conditions.table.sh", "hf.cluster.statuses.sh"],
+      "3_update": "hf.cluster.patch.sh spec|labels",
+      "4_adapter_status": "hf.cluster.adapter.post.status.sh <adapter> <True|False|Unknown> [generation]",
+      "5_delete": "hf.cluster.delete.sh [cluster_id]"
+    },
+    "nodepool_lifecycle": {
+      "prerequisite": "cluster must exist (cluster-id set)",
+      "1_create": "hf.nodepool.create.sh <name> [count] [instance-type]",
+      "2_read": ["hf.nodepool.get.sh", "hf.nodepool.search.sh", "hf.nodepool.list.sh", "hf.nodepool.table.sh", "hf.nodepool.conditions.sh", "hf.nodepool.conditions.table.sh", "hf.nodepool.statuses.sh"],
+      "3_update": "hf.nodepool.patch.sh spec|labels",
+      "4_adapter_status": "hf.nodepool.adapter.post.status.sh <adapter> <True|False|Unknown> [generation] [nodepool_id]",
+      "5_delete": "hf.nodepool.delete.sh [nodepool_id]"
+    }
+  }
+}

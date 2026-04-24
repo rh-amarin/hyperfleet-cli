@@ -1,0 +1,90 @@
+{
+  "group": "errors-and-usage",
+  "description": "Error cases, usage messages, and edge cases for CLI reimplementation",
+  "cases": [
+    {
+      "scenario": "cluster_search_not_found",
+      "script": "hf.cluster.search.sh",
+      "args": ["nonexistent-cluster"],
+      "exit_code": 0,
+      "stderr_messages": ["[WARN] No clusters found matching 'nonexistent-cluster'"],
+      "response": "[]",
+      "notes": "Returns exit 0 even when not found. Empty JSON array."
+    },
+    {
+      "scenario": "cluster_get_invalid_id",
+      "script": "hf.cluster.get.sh",
+      "args": ["00000000-0000-0000-0000-000000000000"],
+      "exit_code": 0,
+      "response": {
+        "code": "HYPERFLEET-NTF-001",
+        "detail": "Cluster with id='00000000-0000-0000-0000-000000000000' not found",
+        "status": 404,
+        "title": "Resource Not Found",
+        "type": "https://api.hyperfleet.io/errors/not-found",
+        "trace_id": "UUID",
+        "instance": "/api/hyperfleet/v1/clusters/00000000-0000-0000-0000-000000000000"
+      },
+      "notes": "API returns RFC 7807 problem details. Script exits 0 - does not check HTTP status."
+    },
+    {
+      "scenario": "cluster_create_duplicate",
+      "script": "hf.cluster.create.sh",
+      "args": ["test-cluster-alpha"],
+      "exit_code": 0,
+      "output": "[WARN] Cluster 'test-cluster-alpha' already exists, skipping creation",
+      "notes": "Checks existence first, warns and skips. Does NOT error."
+    },
+    {
+      "scenario": "cluster_patch_missing_args",
+      "script": "hf.cluster.patch.sh",
+      "args": [],
+      "exit_code": 1,
+      "output": "Usage: hf.cluster.patch.sh spec|labels [cluster_id]\n\nArguments:\n  spec|labels   Which section to increment the counter field in (required)\n  cluster_id    Cluster ID (default: current cluster)"
+    },
+    {
+      "scenario": "adapter_post_status_missing_args",
+      "script": "hf.cluster.adapter.post.status.sh",
+      "args": [],
+      "exit_code": 1,
+      "output": "Usage: hf.cluster.adapter.post.status.sh <adapter_name> <available> [generation]\n\nArguments:\n  adapter_name  Name of the adapter (e.g., validator, dns, provisioner)\n  available     Status: True, False, or Unknown\n  generation    Observed generation (default: 1)\n\nExample: hf.adapter.status.sh validator True 1"
+    },
+    {
+      "scenario": "cluster_create_no_args_uses_defaults",
+      "script": "hf.cluster.create.sh",
+      "args": [],
+      "exit_code": 0,
+      "behavior": "Creates cluster with defaults: name=my-cluster, region=us-east-1, version=4.15.0",
+      "notes": "This is a design choice - create with no args silently uses defaults rather than showing usage"
+    },
+    {
+      "scenario": "nodepool_create_no_args_uses_defaults",
+      "script": "hf.nodepool.create.sh",
+      "args": [],
+      "exit_code": 0,
+      "behavior": "Creates 1 nodepool named my-nodepool-1 with type m4",
+      "notes": "Same pattern as cluster create - defaults rather than usage"
+    },
+    {
+      "scenario": "hf_table_awk_error",
+      "script": "hf.table.sh",
+      "args": [],
+      "exit_code": 0,
+      "stderr": "awk: calling undefined function asorti",
+      "notes": "Known issue: uses GNU awk's asorti() which is not available in macOS BSD awk. Still produces output."
+    }
+  ],
+  "api_error_format": {
+    "description": "HyperFleet API uses RFC 7807 Problem Details for errors",
+    "shape": {
+      "code": "HYPERFLEET-XXX-NNN",
+      "detail": "Human-readable error description",
+      "instance": "Request path",
+      "status": "HTTP status code (integer)",
+      "timestamp": "ISO8601",
+      "title": "Short error title",
+      "trace_id": "UUID",
+      "type": "URL to error documentation"
+    }
+  }
+}

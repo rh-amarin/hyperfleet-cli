@@ -1,0 +1,91 @@
+{
+  "group": "pubsub-and-rabbitmq",
+  "description": "Event publishing via GCP Pub/Sub and RabbitMQ",
+  "commands": [
+    {
+      "script": "hf.pubsub.list.sh",
+      "description": "List GCP Pub/Sub topics and their subscriptions",
+      "args_spec": "[filter_term]",
+      "config_requires": ["gcp-project"],
+      "tool_deps": ["gcloud", "jq"],
+      "executions": [
+        {
+          "scenario": "unfiltered",
+          "args": [],
+          "exit_code": 0,
+          "output_format": "text",
+          "output_structure": "topic_name\\n    subscription_name\\n    subscription_name\\nnext_topic...",
+          "notes": "Topics shown at left margin, subscriptions indented with 4 spaces. Some topics have no subscriptions listed."
+        },
+        {
+          "scenario": "filtered",
+          "args": ["amarin"],
+          "exit_code": 0,
+          "output_excerpt": "amarin-ns1-clusters\n    amarin-ns1-clusters-cl-job\n    amarin-ns1-clusters-cl-precondition-error\n    ...\namarin-ns1-nodepools\n    amarin-ns1-nodepools-np-configmap",
+          "notes": "Filters topics AND subscriptions by term. Shows [INFO] message about filtering."
+        }
+      ]
+    },
+    {
+      "script": "hf.pubsub.publish.cluster.change.sh",
+      "description": "Publish cluster change event to a Pub/Sub topic",
+      "args_spec": "<topic>",
+      "config_requires": ["gcp-project", "cluster-id"],
+      "tool_deps": ["gcloud", "jq"],
+      "event_format": {
+        "type": "CloudEvent 1.0",
+        "ce_type": "com.redhat.hyperfleet.cluster.reconcile.v1",
+        "payload_shape": {
+          "specversion": "1.0",
+          "type": "com.redhat.hyperfleet.cluster.reconcile.v1",
+          "source": "/hyperfleet/api",
+          "id": "cluster_id",
+          "data": {"cluster_id": "UUID"}
+        }
+      },
+      "notes": "Not executed in recording to avoid side effects on shared GCP project"
+    },
+    {
+      "script": "hf.pubsub.publish.nodepool.change.sh",
+      "description": "Publish nodepool change event to a Pub/Sub topic",
+      "args_spec": "<topic>",
+      "config_requires": ["gcp-project", "cluster-id", "nodepool-id"],
+      "tool_deps": ["gcloud", "jq"],
+      "event_format": {
+        "type": "CloudEvent 1.0",
+        "ce_type": "com.redhat.hyperfleet.nodepool.reconcile.v1",
+        "payload_shape": {
+          "specversion": "1.0",
+          "type": "com.redhat.hyperfleet.nodepool.reconcile.v1",
+          "source": "/hyperfleet/api",
+          "id": "nodepool_id",
+          "data": {"cluster_id": "UUID", "nodepool_id": "UUID"}
+        }
+      },
+      "notes": "Not executed in recording to avoid side effects"
+    },
+    {
+      "script": "hf.rabbitmq.publish.cluster.change.sh",
+      "description": "Publish cluster change event to RabbitMQ exchange",
+      "args_spec": "<exchange> [routing-key]",
+      "config_requires": ["cluster-id", "rabbitmq-host", "rabbitmq-mgmt-port", "rabbitmq-user", "rabbitmq-password", "rabbitmq-vhost"],
+      "tool_deps": ["jq", "curl"],
+      "api_used": "RabbitMQ HTTP Management API",
+      "api_endpoint": "http://{host}:{mgmt-port}/api/exchanges/{vhost}/{exchange}/publish",
+      "event_format": {
+        "type": "CloudEvent 1.0 (via RabbitMQ message properties)",
+        "message_properties": {
+          "content_type": "application/json",
+          "headers": {
+            "ce_specversion": "1.0",
+            "ce_type": "com.redhat.hyperfleet.cluster.reconcile.v1",
+            "ce_source": "/hyperfleet/api",
+            "ce_id": "cluster_id"
+          }
+        },
+        "payload": {"cluster_id": "UUID"}
+      },
+      "notes": "URL-encodes vhost (/ becomes %2F). Not executed in recording."
+    }
+  ]
+}

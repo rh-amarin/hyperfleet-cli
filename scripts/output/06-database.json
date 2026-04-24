@@ -1,0 +1,95 @@
+{
+  "group": "database",
+  "description": "Direct PostgreSQL database operations",
+  "connection": {
+    "uses_config": ["db-host", "db-port", "db-name", "db-user", "db-password"],
+    "env_vars_set": ["PGHOST", "PGPORT", "PGDATABASE", "PGUSER", "PGPASSWORD"],
+    "tool_deps": ["psql"]
+  },
+  "schema": {
+    "tables": ["migrations", "clusters", "node_pools", "adapter_statuses"],
+    "adapter_statuses_columns": ["id", "created_time", "updated_time", "resource_type", "resource_id", "adapter", "observed_generation", "last_report_time", "conditions", "data", "metadata"]
+  },
+  "commands": [
+    {
+      "script": "hf.db.query.sh",
+      "description": "Execute arbitrary SQL queries against HyperFleet database",
+      "args_spec": "<query> | -f <file.sql>",
+      "config_requires": ["db-host", "db-port", "db-name", "db-user"],
+      "tool_deps": ["psql"],
+      "executions": [
+        {
+          "scenario": "select_clusters",
+          "args": ["SELECT id, name, generation FROM clusters LIMIT 5"],
+          "exit_code": 0,
+          "output": "                  id                  |        name        | generation \n--------------------------------------+--------------------+------------\n 019dc049-5096-7f33-af06-8efe296e9e25 | test-cluster-beta  |          1\n 019dc049-43a8-7a42-b44a-8d7f89e9e10f | test-cluster-alpha |          3\n(2 rows)"
+        },
+        {
+          "scenario": "select_nodepools",
+          "args": ["SELECT id, name, generation FROM node_pools"],
+          "exit_code": 0,
+          "output": "                  id                  |   name    | generation \n--------------------------------------+-----------+------------\n 019dc049-e79e-72a9-94f8-0056a11193cd | workers-2 |          1\n 019dc049-e76c-7be1-b201-0db50e2c8ecb | workers-1 |          2\n(2 rows)"
+        },
+        {
+          "scenario": "select_tables",
+          "args": ["SELECT table_name FROM information_schema.tables WHERE table_schema='public'"],
+          "exit_code": 0,
+          "output": "    table_name    \n------------------\n migrations\n adapter_statuses\n clusters\n node_pools\n(4 rows)"
+        },
+        {
+          "scenario": "select_adapter_statuses",
+          "args": ["SELECT * FROM adapter_statuses LIMIT 2"],
+          "exit_code": 0,
+          "notes": "Shows full adapter_statuses row including JSON conditions column"
+        }
+      ]
+    },
+    {
+      "script": "hf.db.delete.sh",
+      "description": "Delete rows from a specific table, with confirmation preview",
+      "args_spec": "<table> [id]",
+      "config_requires": ["db-host", "db-port", "db-name", "db-user"],
+      "tool_deps": ["psql"],
+      "behavior": [
+        "Shows count of records to be deleted",
+        "Requires 'yes' confirmation",
+        "Can delete by specific ID or all rows in table"
+      ],
+      "notes": "Interactive - requires user confirmation, not recorded"
+    },
+    {
+      "script": "hf.db.delete.all.sh",
+      "description": "Delete ALL records from adapter_statuses, node_pools, and clusters tables",
+      "config_requires": ["db-host", "db-port", "db-name", "db-user"],
+      "tool_deps": ["psql"],
+      "behavior": [
+        "Shows record counts per table",
+        "Requires typing 'yes' to confirm",
+        "Deletes in order: adapter_statuses → node_pools → clusters (respecting FK constraints)"
+      ],
+      "notes": "Interactive - requires user confirmation, not recorded"
+    },
+    {
+      "script": "hf.db.statuses.sh",
+      "description": "Query adapter_statuses from PostgreSQL running in Kubernetes",
+      "config_requires": ["context", "namespace", "cluster-id"],
+      "tool_deps": ["kubectl", "psql"],
+      "behavior": ["Finds postgres pod in k8s cluster", "Runs SQL query against it via kubectl exec"],
+      "notes": "Different from hf.db.query.sh - this connects through kubectl to in-cluster postgres"
+    },
+    {
+      "script": "hf.db.statuses.delete.sh",
+      "description": "Delete adapter statuses from in-cluster PostgreSQL",
+      "config_requires": ["context", "namespace", "cluster-id"],
+      "tool_deps": ["kubectl", "psql"],
+      "behavior": ["Connects through kubectl", "Deletes adapter_statuses scoped to current cluster-id"]
+    },
+    {
+      "script": "hf.db.config.sh",
+      "description": "Interactive configuration of PostgreSQL connection parameters",
+      "config_requires": ["db-host", "db-port"],
+      "behavior": ["Prompts for host, port, name, user, password", "Saves each to ~/.config/hf/ files"],
+      "notes": "Interactive - prompts for input, not recorded"
+    }
+  ]
+}

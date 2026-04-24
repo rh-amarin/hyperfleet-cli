@@ -1,0 +1,101 @@
+{
+  "group": "interactive-commands",
+  "description": "Commands that require interactive input or produce streaming output - documented but not recorded",
+  "commands": [
+    {
+      "script": "hf.kube.context.sh",
+      "type": "interactive-menu",
+      "description": "Select kubectl context and namespace via interactive prompts",
+      "cli_equivalent": "fzf-style context/namespace picker -> saves to config files"
+    },
+    {
+      "script": "hf.db.config.sh",
+      "type": "interactive-prompts",
+      "description": "Configure database connection via interactive prompts",
+      "prompts_for": ["db-host", "db-port", "db-name", "db-user", "db-password"]
+    },
+    {
+      "script": "hf.maestro.tui.sh",
+      "type": "terminal-ui",
+      "description": "Launch maestro-cli TUI for resource management",
+      "cli_equivalent": "maestro-cli tui --api-server={endpoint}"
+    },
+    {
+      "script": "hf.maestro.get.sh",
+      "type": "interactive-menu",
+      "description": "Get maestro resource - shows interactive menu if no name argument provided",
+      "cli_equivalent": "maestro-cli list -> select -> maestro-cli get"
+    },
+    {
+      "script": "hf.maestro.delete.sh",
+      "type": "interactive-menu",
+      "description": "Delete maestro resource - shows interactive menu if no name argument provided"
+    },
+    {
+      "script": "hf.db.delete.sh",
+      "type": "confirmation-prompt",
+      "description": "Delete rows from table - shows preview and requires 'yes' confirmation"
+    },
+    {
+      "script": "hf.db.delete.all.sh",
+      "type": "confirmation-prompt",
+      "description": "Delete all records from all tables - shows counts and requires 'yes' confirmation"
+    },
+    {
+      "script": "hf.logs.sh",
+      "type": "streaming",
+      "description": "Tail pod logs - streaming output"
+    },
+    {
+      "script": "hf.logs.adapter.sh",
+      "type": "streaming",
+      "description": "Tail adapter logs filtered by cluster ID - streaming output"
+    },
+    {
+      "script": "hf.kube.debug.pod.sh",
+      "type": "interactive-exec",
+      "description": "Create debug pod and exec into it - interactive shell"
+    },
+    {
+      "script": "hf.kube.curl.sh",
+      "type": "utility",
+      "description": "Run curl from in-cluster pod - may be interactive for responses"
+    },
+    {
+      "script": "hf.cluster.conditions.sh -w",
+      "type": "watch-mode",
+      "description": "Watch cluster conditions with viddy (live updates)",
+      "cli_equivalent": "viddy -d './hf.cluster.conditions.sh'"
+    },
+    {
+      "script": "hf.cluster.statuses.sh -w",
+      "type": "watch-mode",
+      "description": "Watch cluster statuses with viddy (live updates)"
+    },
+    {
+      "script": "hf.nodepool.conditions.sh -w",
+      "type": "watch-mode",
+      "description": "Watch nodepool conditions with viddy (live updates)"
+    },
+    {
+      "script": "hf.nodepool.statuses.sh -w",
+      "type": "watch-mode",
+      "description": "Watch nodepool statuses with viddy (live updates)"
+    },
+    {
+      "script": "hf.config.sh bootstrap",
+      "type": "interactive-prompts",
+      "description": "Interactive environment setup wizard"
+    },
+    {
+      "script": "hf.workflow.sh",
+      "type": "long-running",
+      "description": "Full adapter workflow - creates cluster, waits for adapters, patches, waits, creates nodepool, deletes. Runs until completion."
+    },
+    {
+      "script": "hf.workflow.api-only.sh",
+      "type": "template",
+      "description": "Simulated workflow showing API-only steps with manual adapter status posts"
+    }
+  ]
+}

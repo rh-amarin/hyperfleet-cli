@@ -1,0 +1,93 @@
+{
+  "group": "adapter-status",
+  "description": "Adapter status posting - simulates adapters reporting back to the API",
+  "commands": [
+    {
+      "script": "hf.cluster.adapter.post.status.sh",
+      "description": "Post adapter status for the current cluster",
+      "args_spec": "<adapter_name> <True|False|Unknown> [generation]",
+      "defaults": {"generation": 1},
+      "config_requires": ["api-url", "api-version", "cluster-id"],
+      "tool_deps": ["jq"],
+      "api_method": "POST",
+      "api_endpoint": "/api/hyperfleet/v1/clusters/{cluster_id}/adapter-statuses",
+      "executions": [
+        {
+          "scenario": "post_true",
+          "args": ["cl-deployment", "True", "3"],
+          "exit_code": 0,
+          "request_payload": {
+            "adapter": "cl-deployment",
+            "conditions": [
+              {"type": "Available", "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.adapter.status.sh", "last_transition_time": "2026-04-24T16:19:06Z"},
+              {"type": "Applied", "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.adapter.status.sh", "last_transition_time": "2026-04-24T16:19:06Z"},
+              {"type": "Health", "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.adapter.status.sh", "last_transition_time": "2026-04-24T16:19:06Z"}
+            ],
+            "observed_generation": 3,
+            "data": {},
+            "created_time": "2026-04-24T16:19:06Z",
+            "last_report_time": "2026-04-24T16:19:06Z"
+          },
+          "notes": "Posts 3 condition types (Available, Applied, Health) all with same status value"
+        },
+        {
+          "scenario": "post_false",
+          "args": ["cl-job", "False", "3"],
+          "exit_code": 0,
+          "notes": "Same payload shape but all condition statuses are 'False'"
+        },
+        {
+          "scenario": "post_unknown",
+          "args": ["cl-maestro", "Unknown", "3"],
+          "exit_code": 0,
+          "notes": "Same payload shape but all condition statuses are 'Unknown'"
+        },
+        {
+          "scenario": "missing_args",
+          "args": [],
+          "exit_code": 1,
+          "output": "Usage: hf.cluster.adapter.post.status.sh <adapter_name> <available> [generation]\n\nArguments:\n  adapter_name  Name of the adapter (e.g., validator, dns, provisioner)\n  available     Status: True, False, or Unknown\n  generation    Observed generation (default: 1)\n\nExample: hf.adapter.status.sh validator True 1"
+        }
+      ]
+    },
+    {
+      "script": "hf.nodepool.adapter.post.status.sh",
+      "description": "Post adapter status for a nodepool",
+      "args_spec": "<adapter_name> <True|False|Unknown> [generation] [nodepool_id]",
+      "defaults": {"generation": 1},
+      "config_requires": ["api-url", "api-version", "cluster-id", "nodepool-id"],
+      "tool_deps": ["jq"],
+      "api_method": "POST",
+      "api_endpoint": "/api/hyperfleet/v1/clusters/{cluster_id}/nodepools/{nodepool_id}/adapter-statuses",
+      "executions": [
+        {
+          "scenario": "post_true",
+          "args": ["np-configmap", "True", "2"],
+          "exit_code": 0,
+          "request_payload": {
+            "adapter": "np-configmap",
+            "conditions": [
+              {"type": "Available", "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.nodepool.adapter.post.status.sh"},
+              {"type": "Applied", "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.nodepool.adapter.post.status.sh"},
+              {"type": "Health", "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.nodepool.adapter.post.status.sh"}
+            ],
+            "observed_generation": 2
+          },
+          "notes": "When all required adapters report True at current generation, the nodepool Ready condition flips to True"
+        }
+      ]
+    }
+  ],
+  "adapter_status_model": {
+    "description": "How adapter statuses work in HyperFleet",
+    "condition_types": ["Available", "Applied", "Health"],
+    "status_values": ["True", "False", "Unknown"],
+    "convergence_logic": {
+      "Ready_becomes_True": "When ALL required adapters report Available=True at the current generation",
+      "Available_becomes_True": "When all required adapters report Available=True for the tracked generation",
+      "per_adapter_condition": "Each adapter gets a <AdapterName>Successful condition derived from its Available status"
+    },
+    "required_cluster_adapters": ["cl-deployment", "cl-invalid-resource", "cl-job", "cl-maestro", "cl-namespace", "cl-precondition-error"],
+    "required_nodepool_adapters": ["np-configmap"]
+  }
+}
