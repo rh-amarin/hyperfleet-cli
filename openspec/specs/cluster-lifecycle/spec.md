@@ -1,0 +1,196 @@
+# Cluster Lifecycle Specification
+
+## Purpose
+
+Provide CLI commands for full CRUD lifecycle management of HyperFleet clusters, including creation, retrieval, listing, searching, patching, and deletion. All cluster operations interact with the HyperFleet API at `/api/hyperfleet/v1/clusters`.
+
+## Requirements
+
+### Requirement: Create Cluster
+
+The CLI SHALL create a new HyperFleet cluster with configurable name, region, and version.
+
+#### Scenario: Create cluster with explicit arguments
+
+- GIVEN the API is reachable and api-url, api-version are configured
+- WHEN the user runs `hf cluster create <name> [region] [version]`
+- THEN the CLI MUST send a POST request to `/api/hyperfleet/v1/clusters`
+- AND the request payload MUST include:
+  - `name`: the provided cluster name
+  - `labels`: `{"counter": "1", "environment": "development", "shard": "1", "team": "core"}`
+  - `spec`: `{"counter": "1", "region": "<region>", "version": "<version>"}`
+- AND the CLI MUST output the JSON response containing the created cluster object
+- AND the response MUST include `id`, `kind: "Cluster"`, `generation: 1`, `status.conditions`
+- AND the CLI MUST auto-search for the created cluster and set `cluster-id` in config
+
+#### Scenario: Create cluster with default arguments
+
+- GIVEN no arguments are provided
+- WHEN the user runs `hf cluster create`
+- THEN the CLI MUST use defaults: name=`my-cluster`, region=`us-east-1`, version=`4.15.0`
+- AND the CLI MUST NOT show a usage message — it MUST proceed with creation using defaults
+
+#### Scenario: Create duplicate cluster
+
+- GIVEN a cluster with the same name already exists
+- WHEN the user runs `hf cluster create <existing-name>`
+- THEN the CLI MUST check for existing clusters with that name first
+- AND display a warning: `[WARN] Cluster '<name>' already exists, skipping creation`
+- AND exit with code 0 without creating a duplicate
+
+#### Scenario: Initial cluster status conditions
+
+- GIVEN a cluster was just created
+- WHEN the API responds with the created cluster
+- THEN the cluster MUST have initial conditions:
+  - `Ready: False` with reason `MissingRequiredAdapters`
+  - `Available: False` with reason `AdaptersNotAtSameGeneration`
+
+### Requirement: Search Cluster
+
+The CLI SHALL search for clusters by name and set the found cluster as the current context.
+
+#### Scenario: Search for existing cluster
+
+- GIVEN clusters exist in the API
+- WHEN the user runs `hf cluster search <name>`
+- THEN the CLI MUST query the API filtering by name
+- AND filter out clusters where `deleted_at` is not null
+- AND output the matching clusters as a JSON array
+- AND set `cluster-id` in config to the found cluster's ID
+
+#### Scenario: Search for non-existent cluster
+
+- GIVEN no cluster matches the search name
+- WHEN the user runs `hf cluster search <name>`
+- THEN the CLI MUST display `[WARN] No clusters found matching '<name>'`
+- AND output an empty JSON array `[]`
+- AND exit with code 0
+
+#### Scenario: Multiple matches
+
+- GIVEN multiple clusters match the search name
+- WHEN the user runs `hf cluster search <name>`
+- THEN the CLI MUST display a warning about multiple matches
+- AND set cluster-id to one of the found clusters
+
+### Requirement: Get Cluster
+
+The CLI SHALL retrieve and display full details of a specific cluster.
+
+#### Scenario: Get current cluster
+
+- GIVEN a cluster-id is set in config
+- WHEN the user runs `hf cluster get`
+- THEN the CLI MUST send a GET request to `/api/hyperfleet/v1/clusters/{cluster_id}`
+- AND output the full cluster JSON including: id, kind, name, generation, labels, spec, status.conditions, created_by, created_time, updated_by, updated_time, href
+
+#### Scenario: Get cluster by explicit ID
+
+- GIVEN a valid cluster ID is provided
+- WHEN the user runs `hf cluster get <cluster_id>`
+- THEN the CLI MUST use the provided ID instead of the configured cluster-id
+
+#### Scenario: Get non-existent cluster
+
+- GIVEN an invalid or non-existent cluster ID is used
+- WHEN the user runs `hf cluster get <invalid_id>`
+- THEN the CLI MUST output the API error response (RFC 7807 format)
+- AND the error MUST contain code `HYPERFLEET-NTF-001`, status 404, title `Resource Not Found`
+- AND the CLI MUST exit with code 0
+
+### Requirement: Patch Cluster
+
+The CLI SHALL increment a counter field in the cluster's spec or labels section, triggering a generation bump.
+
+#### Scenario: Patch spec counter
+
+- GIVEN a cluster-id is set in config
+- WHEN the user runs `hf cluster patch spec`
+- THEN the CLI MUST fetch the current cluster
+- AND read the current `spec.counter` value
+- AND send a PATCH to `/api/hyperfleet/v1/clusters/{cluster_id}` with the incremented counter
+- AND display `[INFO] Incrementing spec.counter: <old> -> <new>`
+- AND the cluster's generation MUST increment
+
+#### Scenario: Patch labels counter
+
+- GIVEN a cluster-id is set in config
+- WHEN the user runs `hf cluster patch labels`
+- THEN the CLI MUST follow the same pattern as spec but for `labels.counter`
+
+#### Scenario: Patch with no arguments
+
+- GIVEN the user provides no arguments
+- WHEN the user runs `hf cluster patch`
+- THEN the CLI MUST display usage: `Usage: hf.cluster.patch.sh spec|labels [cluster_id]`
+- AND exit with code 1
+
+### Requirement: Delete Cluster
+
+The CLI SHALL delete a cluster by ID.
+
+#### Scenario: Delete cluster
+
+- GIVEN a cluster exists
+- WHEN the user runs `hf cluster delete [cluster_id]`
+- THEN the CLI MUST send a DELETE request to `/api/hyperfleet/v1/clusters/{cluster_id}`
+- AND the response MUST include the full cluster object with `deleted_by`, `deleted_time`, and incremented `generation`
+
+#### Scenario: Delete current cluster
+
+- GIVEN a cluster-id is set in config and no explicit ID is provided
+- WHEN the user runs `hf cluster delete`
+- THEN the CLI MUST use the configured cluster-id
+
+### Requirement: Get Cluster Conditions
+
+The CLI SHALL display the generation and status conditions of a cluster.
+
+#### Scenario: Get conditions
+
+- GIVEN a cluster-id is set in config
+- WHEN the user runs `hf cluster conditions`
+- THEN the CLI MUST fetch the cluster from `/api/hyperfleet/v1/clusters/{cluster_id}`
+- AND extract only `generation` and `status.conditions`
+- AND output them as JSON
+
+#### Scenario: Watch conditions
+
+- GIVEN a cluster-id is set in config
+- WHEN the user runs `hf cluster conditions -w`
+- THEN the CLI MUST display conditions with live updates using a watch mechanism (e.g., viddy)
+
+### Requirement: Get Cluster Conditions Table
+
+The CLI SHALL display cluster conditions in a formatted table.
+
+#### Scenario: Display conditions table
+
+- GIVEN a cluster-id is set in config
+- WHEN the user runs `hf cluster conditions table`
+- THEN the CLI MUST output a table with columns: TYPE, STATUS, LAST TRANSITION, REASON, MESSAGE
+- AND status values MUST be color-coded: True=green, False=red, Unknown=yellow
+
+### Requirement: Get Cluster Adapter Statuses
+
+The CLI SHALL display adapter statuses for a cluster.
+
+#### Scenario: Get statuses with no adapter reports
+
+- GIVEN a newly created cluster with no adapter status reports
+- WHEN the user runs `hf cluster statuses`
+- THEN the CLI MUST output `{"items": [], "kind": "AdapterStatusList", "page": 1, "size": 0, "total": 0}`
+
+#### Scenario: Get statuses with adapter reports
+
+- GIVEN adapters have reported statuses for the cluster
+- WHEN the user runs `hf cluster statuses`
+- THEN the CLI MUST send GET to `/api/hyperfleet/v1/clusters/{cluster_id}/adapter-statuses`
+- AND output the `AdapterStatusList` with items containing: adapter name, conditions (Available, Applied, Health), observed_generation, last_report_time
+
+#### Scenario: Watch statuses
+
+- GIVEN a cluster-id is set
+- WHEN the user runs `hf cluster statuses -w`
+- THEN the CLI MUST display statuses with live updates using a watch mechanism
