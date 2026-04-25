@@ -1,0 +1,7 @@
+[hyperfleet]
+  api-url                                 http://example.com  [config]
+  api-version                             v1                  [default]
+  token                                   <not set>           [default]
+  gcp-project                             hcm-hyperfleet      [default]
+
+[kubernetes]

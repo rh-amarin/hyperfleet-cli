@@ -1,0 +1,45 @@
+[hyperfleet]
+  api-url                                 http://localhost:8000  [default]
+  api-version                             v1                     [default]
+  token                                   <not set>              [default]
+  gcp-project                             hcm-hyperfleet         [default]
+
+[kubernetes]
+  context                                   [default]
+  namespace                                 [default]
+
+[maestro]
+  consumer                                cluster1               [default]
+  http-endpoint                           http://localhost:8100  [default]
+  grpc-endpoint                           localhost:8090         [default]
+  namespace                               maestro                [default]
+
+[port-forward]
+  api-port                                8000  [default]
+  pg-port                                 5432  [default]
+  maestro-http-port                       8100  [default]
+  maestro-http-remote-port                8000  [default]
+  maestro-grpc-port                       8090  [default]
+
+[database]
+  host                                    localhost  [default]
+  port                                    5432       [default]
+  name                                               [default]
+  user                                               [default]
+  password                                <not set>  [default]
+
+[rabbitmq]
+  host                                    localhost  [default]
+  mgmt-port                               15672      [default]
+  user                                    guest      [default]
+  password                                <not set>  [default]
+  vhost                                   /          [default]
+
+[registry]
+  name                                      [default]
+
+state:
+  active-environment  -
+  cluster-id          -
+  cluster-name        -
+  nodepool-id         -

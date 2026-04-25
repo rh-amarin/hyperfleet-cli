@@ -1,0 +1,10 @@
+=== activate kind ===
+activated environment: kind
+environments:
+  * kind                  4 key(s)
+    prod                  7 key(s)
+state.yaml:
+active-environment: kind
+cluster-id: ""
+cluster-name: ""
+nodepool-id: ""

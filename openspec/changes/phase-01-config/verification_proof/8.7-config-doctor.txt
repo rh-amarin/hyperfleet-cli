@@ -1,0 +1,15 @@
+○  cluster / nodepool / adapters
+     ✓  hyperfleet.api-url
+     ✗  hyperfleet.token
+○  kubernetes
+     ✗  kubernetes.context
+     ✗  kubernetes.namespace
+○  database
+     ✓  database.host
+     ✗  database.user
+     ✗  database.name
+●  rabbitmq
+     ✓  rabbitmq.host
+     ✓  rabbitmq.user
+○  registry
+     ✗  registry.name

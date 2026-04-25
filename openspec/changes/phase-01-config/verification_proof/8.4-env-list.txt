@@ -1,0 +1,3 @@
+environments:
+    kind                  4 key(s)
+    prod                  7 key(s)
