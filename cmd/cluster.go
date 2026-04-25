@@ -235,15 +235,11 @@ var clusterPatchCmd = &cobra.Command{
 	Use:   "patch <spec|labels> [cluster_id]",
 	Short: "Increment the counter field in cluster spec or labels",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
+		if len(args) == 0 || (args[0] != "spec" && args[0] != "labels") {
 			fmt.Fprintln(os.Stderr, "Usage: hf cluster patch spec|labels [cluster_id]")
-			os.Exit(1)
+			return fmt.Errorf("target must be 'spec' or 'labels'")
 		}
 		target := args[0]
-		if target != "spec" && target != "labels" {
-			fmt.Fprintln(os.Stderr, "Usage: hf cluster patch spec|labels [cluster_id]")
-			os.Exit(1)
-		}
 
 		clusterArg := ""
 		if len(args) > 1 {
