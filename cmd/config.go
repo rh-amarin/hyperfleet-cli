@@ -36,8 +36,8 @@ func dim(s string) string {
 
 // ── active environment guard ──────────────────────────────────────────────────
 
-func requireActiveEnv(s *config.Store) error {
-	if s.State().ActiveEnvironment == "" {
+func requireActiveEnv() error {
+	if cfgStore.State().ActiveEnvironment == "" {
 		return fmt.Errorf(
 			"no active environment\n" +
 				"  → run 'hf config env new' to create one\n" +
@@ -47,6 +47,38 @@ func requireActiveEnv(s *config.Store) error {
 	return nil
 }
 
+// ── shared config table printer ───────────────────────────────────────────────
+
+func printConfigTable(cfg *config.Config) {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	currentSection := ""
+	for _, p := range config.AllPaths {
+		if p.Section != currentSection {
+			if currentSection != "" {
+				fmt.Fprintln(w)
+			}
+			fmt.Fprintf(w, "%s\n", bold("["+p.Section+"]"))
+			currentSection = p.Section
+		}
+		key := strings.TrimPrefix(p.Path, p.Section+".")
+		val, _ := config.GetField(cfg, p.Path)
+		displayVal := secretDisplay(p.Path, val)
+		fmt.Fprintf(w, "  %-38s\t%s\n", key, displayVal)
+	}
+	w.Flush()
+}
+
+func secretDisplay(path, val string) string {
+	if !config.IsSecret(path) {
+		return val
+	}
+	// Integer fields that are unset marshal as "0"; treat as not set.
+	if val == "" || val == "0" {
+		return "<not set>"
+	}
+	return "<set>"
+}
+
 // ── hf config ─────────────────────────────────────────────────────────────────
 
 var configCmd = &cobra.Command{
@@ -54,7 +86,7 @@ var configCmd = &cobra.Command{
 	Short: "Manage CLI configuration",
 	Long:  "View and modify hf configuration, environment profiles, and runtime state.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := requireActiveEnv(cfgStore); err != nil {
+		if err := requireActiveEnv(); err != nil {
 			return err
 		}
 		printEnvList()
@@ -70,7 +102,7 @@ var configShowCmd = &cobra.Command{
 	Short: "Show current configuration",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := requireActiveEnv(cfgStore); err != nil {
+		if err := requireActiveEnv(); err != nil {
 			return err
 		}
 		return printConfigShow()
@@ -78,36 +110,10 @@ var configShowCmd = &cobra.Command{
 }
 
 func printConfigShow() error {
-	activeEnv := cfgStore.State().ActiveEnvironment
-	fmt.Printf("active environment: %s\n\n", cyan(activeEnv))
-
+	fmt.Printf("active environment: %s\n\n", cyan(cfgStore.State().ActiveEnvironment))
 	cfg := cfgStore.Cfg()
+	printConfigTable(&cfg)
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	currentSection := ""
-	for _, p := range config.AllPaths {
-		if p.Section != currentSection {
-			if currentSection != "" {
-				fmt.Fprintln(w)
-			}
-			fmt.Fprintf(w, "%s\n", bold("["+p.Section+"]"))
-			currentSection = p.Section
-		}
-		key := strings.TrimPrefix(p.Path, p.Section+".")
-		val, _ := config.GetField(&cfg, p.Path)
-		displayVal := val
-		if config.IsSecret(p.Path) {
-			if val != "" && val != "0" {
-				displayVal = "<set>"
-			} else {
-				displayVal = "<not set>"
-			}
-		}
-		fmt.Fprintf(w, "  %-38s\t%s\n", key, displayVal)
-	}
-	w.Flush()
-
-	// Print state summary.
 	state := cfgStore.State()
 	fmt.Println()
 	fmt.Println(bold("state:"))
@@ -132,7 +138,7 @@ var configSetCmd = &cobra.Command{
 	Short: "Set a configuration value",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := requireActiveEnv(cfgStore); err != nil {
+		if err := requireActiveEnv(); err != nil {
 			return err
 		}
 		if err := cfgStore.SetConfigValue(args[0], args[1]); err != nil {
@@ -157,7 +163,7 @@ var configClearCmd = &cobra.Command{
 			fmt.Println("runtime state cleared")
 			return nil
 		}
-		if err := requireActiveEnv(cfgStore); err != nil {
+		if err := requireActiveEnv(); err != nil {
 			return err
 		}
 		if err := cfgStore.ClearConfigValue(args[0]); err != nil {
@@ -174,7 +180,7 @@ var configDoctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Check configuration readiness per command group",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := requireActiveEnv(cfgStore); err != nil {
+		if err := requireActiveEnv(); err != nil {
 			return err
 		}
 		cfg := cfgStore.Cfg()
@@ -292,29 +298,7 @@ var configEnvShowCmd = &cobra.Command{
 			return fmt.Errorf("cannot show env %q: %w", args[0], err)
 		}
 		fmt.Printf("environment: %s\n\n", cyan(args[0]))
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		currentSection := ""
-		for _, p := range config.AllPaths {
-			if p.Section != currentSection {
-				if currentSection != "" {
-					fmt.Fprintln(w)
-				}
-				fmt.Fprintf(w, "%s\n", bold("["+p.Section+"]"))
-				currentSection = p.Section
-			}
-			key := strings.TrimPrefix(p.Path, p.Section+".")
-			val, _ := config.GetField(&cfg, p.Path)
-			displayVal := val
-			if config.IsSecret(p.Path) {
-				if val != "" && val != "0" {
-					displayVal = "<set>"
-				} else {
-					displayVal = "<not set>"
-				}
-			}
-			fmt.Fprintf(w, "  %-38s\t%s\n", key, displayVal)
-		}
-		w.Flush()
+		printConfigTable(&cfg)
 		return nil
 	},
 }
@@ -372,7 +356,6 @@ var configEnvNewCmd = &cobra.Command{
 			return line
 		}
 
-		// Determine env name.
 		envName := ""
 		if len(args) == 1 {
 			envName = args[0]
@@ -393,32 +376,28 @@ var configEnvNewCmd = &cobra.Command{
 		def := config.Defaults()
 		var target config.Config
 
-		// Hyperfleet section.
 		fmt.Println(bold("[hyperfleet]"))
-		target.Hyperfleet.APIURL = firstNonEmpty(promptLine("api-url", def.Hyperfleet.APIURL), def.Hyperfleet.APIURL)
+		target.Hyperfleet.APIURL = coalesce(promptLine("api-url", def.Hyperfleet.APIURL), def.Hyperfleet.APIURL)
 		target.Hyperfleet.Token = promptLine("token", "")
-		target.Hyperfleet.GCPProject = firstNonEmpty(promptLine("gcp-project", def.Hyperfleet.GCPProject), def.Hyperfleet.GCPProject)
+		target.Hyperfleet.GCPProject = coalesce(promptLine("gcp-project", def.Hyperfleet.GCPProject), def.Hyperfleet.GCPProject)
 		fmt.Println()
 
-		// Kubernetes section.
 		fmt.Println(bold("[kubernetes]"))
 		target.Kubernetes.Context = promptLine("context", "")
 		target.Kubernetes.Namespace = promptLine("namespace", "")
 		fmt.Println()
 
-		// Database section.
 		fmt.Println(bold("[database]"))
-		target.Database.Host = firstNonEmpty(promptLine("host", def.Database.Host), def.Database.Host)
-		target.Database.User = firstNonEmpty(promptLine("user", def.Database.User), def.Database.User)
-		target.Database.Name = firstNonEmpty(promptLine("name", def.Database.Name), def.Database.Name)
-		target.Database.Password = firstNonEmpty(promptLine("password", def.Database.Password), def.Database.Password)
+		target.Database.Host = coalesce(promptLine("host", def.Database.Host), def.Database.Host)
+		target.Database.User = coalesce(promptLine("user", def.Database.User), def.Database.User)
+		target.Database.Name = coalesce(promptLine("name", def.Database.Name), def.Database.Name)
+		target.Database.Password = coalesce(promptLine("password", def.Database.Password), def.Database.Password)
 		fmt.Println()
 
-		// RabbitMQ section.
 		fmt.Println(bold("[rabbitmq]"))
-		target.RabbitMQ.Host = firstNonEmpty(promptLine("host", def.RabbitMQ.Host), def.RabbitMQ.Host)
-		target.RabbitMQ.User = firstNonEmpty(promptLine("user", def.RabbitMQ.User), def.RabbitMQ.User)
-		target.RabbitMQ.Password = firstNonEmpty(promptLine("password", def.RabbitMQ.Password), def.RabbitMQ.Password)
+		target.RabbitMQ.Host = coalesce(promptLine("host", def.RabbitMQ.Host), def.RabbitMQ.Host)
+		target.RabbitMQ.User = coalesce(promptLine("user", def.RabbitMQ.User), def.RabbitMQ.User)
+		target.RabbitMQ.Password = coalesce(promptLine("password", def.RabbitMQ.Password), def.RabbitMQ.Password)
 		fmt.Println()
 
 		if err := cfgStore.SaveEnv(envName, &target); err != nil {
@@ -430,7 +409,8 @@ var configEnvNewCmd = &cobra.Command{
 	},
 }
 
-func firstNonEmpty(a, b string) string {
+// coalesce returns a if non-empty, otherwise b.
+func coalesce(a, b string) string {
 	if a != "" {
 		return a
 	}

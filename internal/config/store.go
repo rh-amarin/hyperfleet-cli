@@ -44,15 +44,15 @@ func NewStore(dir string) (*Store, error) {
 	// Warn about legacy file-per-property layout.
 	s.warnLegacy()
 
-	// Load config.yaml.
-	// cfg starts from defaults so missing keys fall back to built-ins.
-	// rawCfg starts empty so it only holds what the file explicitly sets.
+	// Load config.yaml once; unmarshal into both cfg (with defaults) and rawCfg (zero base).
 	s.cfg = defaults()
-	if err := s.loadYAML(configFile, &s.cfg); err != nil {
+	cfgPath := filepath.Join(dir, configFile)
+	cfgData, err := s.readOrCreate(cfgPath, &s.rawCfg)
+	if err != nil {
 		return nil, err
 	}
-	if err := s.loadYAML(configFile, &s.rawCfg); err != nil {
-		return nil, err
+	if err := yaml.Unmarshal(cfgData, &s.cfg); err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", cfgPath, err)
 	}
 
 	// Load state.yaml (create empty if missing).
@@ -167,20 +167,29 @@ func (s *Store) loadYAMLReadOnly(path string, out interface{}) error {
 	return yaml.Unmarshal(data, out)
 }
 
+// readOrCreate reads path and unmarshals into out; if the file is missing it
+// writes out's current value as the initial file and returns empty bytes.
+func (s *Store) readOrCreate(path string, out interface{}) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return nil, s.writeYAMLPath(path, out)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+	if err := yaml.Unmarshal(data, out); err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", path, err)
+	}
+	return data, nil
+}
+
 func (s *Store) loadYAML(name string, out interface{}) error {
 	path := name
 	if !filepath.IsAbs(name) {
 		path = filepath.Join(s.dir, name)
 	}
-	data, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		// Write a fresh file with the current value (defaults or zero).
-		return s.writeYAMLPath(path, out)
-	}
-	if err != nil {
-		return fmt.Errorf("reading %s: %w", path, err)
-	}
-	return yaml.Unmarshal(data, out)
+	_, err := s.readOrCreate(path, out)
+	return err
 }
 
 func (s *Store) writeYAML(name string, v interface{}) error {
