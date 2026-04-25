@@ -1,0 +1,12 @@
+hyperfleet:
+    api-url: http://localhost:8000
+    gcp-project: hcm-hyperfleet
+database:
+    host: localhost
+    name: hyperfleet
+    user: hyperfleet
+    password: foobar-bizz-buzz
+rabbitmq:
+    host: rabbitmq
+    user: guest
+    password: guest

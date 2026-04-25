@@ -1,0 +1,14 @@
+  environment name: 
+Configuring environment "myenv"
+(Leave blank to use the shown default)
+
+[hyperfleet]
+  api-url [http://localhost:8000]:   token:   gcp-project [hcm-hyperfleet]: 
+[kubernetes]
+  context:   namespace: 
+[database]
+  host [localhost]:   user [hyperfleet]:   name [hyperfleet]:   password [foobar-bizz-buzz]: 
+[rabbitmq]
+  host [rabbitmq]:   user [guest]:   password [guest]: 
+Saved environment profile "myenv"
+Run 'hf config env activate myenv' to use it.

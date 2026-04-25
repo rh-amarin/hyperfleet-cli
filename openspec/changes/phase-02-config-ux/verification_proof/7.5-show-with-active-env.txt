@@ -1,0 +1,48 @@
+active environment: kind
+
+[hyperfleet]
+  api-url                                 http://localhost:8000
+  api-version                             v1
+  token                                   <not set>
+  gcp-project                             hcm-hyperfleet
+
+[kubernetes]
+  context                                 
+  namespace                               
+
+[maestro]
+  consumer                                cluster1
+  http-endpoint                           http://localhost:8100
+  grpc-endpoint                           localhost:8090
+  namespace                               maestro
+
+[port-forward]
+  api-port                                8000
+  pg-port                                 5432
+  maestro-http-port                       8100
+  maestro-http-remote-port                8000
+  maestro-grpc-port                       8090
+
+[database]
+  host                                    localhost
+  port                                    5432
+  name                                    hyperfleet
+  user                                    hyperfleet
+  password                                <set>
+
+[rabbitmq]
+  host                                    rabbitmq
+  mgmt-port                               15672
+  user                                    guest
+  password                                <set>
+  vhost                                   /
+
+[registry]
+  name                                    
+
+state:
+  active-environment  kind
+  cluster-id          -
+  cluster-name        -
+  nodepool-id         -
+exit: 0

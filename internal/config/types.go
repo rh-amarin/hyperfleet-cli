@@ -70,7 +70,9 @@ type State struct {
 	NodePoolID        string `yaml:"nodepool-id"`
 }
 
-// defaults returns a Config pre-populated with all built-in default values.
+// Defaults returns a Config pre-populated with all built-in default values.
+func Defaults() Config { return defaults() }
+
 func defaults() Config {
 	return Config{
 		Hyperfleet: HyperfleetConfig{
@@ -92,13 +94,17 @@ func defaults() Config {
 			MaestroGRPCPort:   8090,
 		},
 		Database: DatabaseConfig{
-			Host: "localhost",
-			Port: 5432,
+			Host:     "localhost",
+			Port:     5432,
+			User:     "hyperfleet",
+			Name:     "hyperfleet",
+			Password: "foobar-bizz-buzz",
 		},
 		RabbitMQ: RabbitMQConfig{
-			Host:     "localhost",
+			Host:     "rabbitmq",
 			MgmtPort: 15672,
 			User:     "guest",
+			Password: "guest",
 			VHost:    "/",
 		},
 		Registry: RegistryConfig{

@@ -5,6 +5,9 @@ import (
 	"strconv"
 )
 
+// GetField returns the string representation of the field at dotted path.
+func GetField(cfg *Config, path string) (string, error) { return getField(cfg, path) }
+
 // getField returns the string representation of the field at dotted path.
 func getField(cfg *Config, path string) (string, error) {
 	switch path {

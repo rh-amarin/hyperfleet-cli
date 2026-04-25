@@ -12,16 +12,7 @@ type ResolvedValue struct {
 	Path    string
 	Section string
 	Value   string
-	Source  string // [default], [config], [env:<name>], [ENV], [flag]
-}
-
-// envVarFor maps dotted paths to their HF_* override variable.
-var envVarFor = map[string]string{
-	"hyperfleet.api-url":     "HF_API_URL",
-	"hyperfleet.api-version": "HF_API_VERSION",
-	"hyperfleet.token":       "HF_TOKEN",
-	"kubernetes.context":     "HF_CONTEXT",
-	"kubernetes.namespace":   "HF_NAMESPACE",
+	Source  string // [default], [config], [env:<name>]
 }
 
 // Resolve returns the value and source for every config path.
@@ -44,11 +35,6 @@ func (s *Store) Resolve() []ResolvedValue {
 		defVal, _ := getField(&def, p.Path)
 		fileVal, _ := getField(&rawFileValues, p.Path)
 		envProfileVal, _ := getField(&envCfg, p.Path)
-		envVar := envVarFor[p.Path]
-		envVarVal := ""
-		if envVar != "" {
-			envVarVal = os.Getenv(envVar)
-		}
 
 		value := defVal
 		source := "[default]"
@@ -60,10 +46,6 @@ func (s *Store) Resolve() []ResolvedValue {
 		if activeEnv != "" && envProfileVal != "" && envProfileVal != defVal {
 			value = envProfileVal
 			source = "[env:" + activeEnv + "]"
-		}
-		if envVarVal != "" {
-			value = envVarVal
-			source = "[ENV]"
 		}
 
 		out = append(out, ResolvedValue{
