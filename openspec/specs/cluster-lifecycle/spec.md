@@ -21,7 +21,7 @@ The CLI SHALL create a new HyperFleet cluster with configurable name, region, an
   - `spec`: `{"counter": "1", "region": "<region>", "version": "<version>"}`
 - AND the CLI MUST output the JSON response containing the created cluster object
 - AND the response MUST include `id`, `kind: "Cluster"`, `generation: 1`, `status.conditions`
-- AND the CLI MUST auto-search for the created cluster and set `cluster-id` in config
+- AND the CLI MUST look up the created cluster by name (using the shared `api.FindClusterByName` function) and persist its ID to active state via the shared `config.SetClusterID` function
 
 #### Scenario: Create cluster with default arguments
 
@@ -57,7 +57,7 @@ The CLI SHALL search for clusters by name and set the found cluster as the curre
 - THEN the CLI MUST query the API filtering by name
 - AND filter out clusters where `deleted_at` is not null
 - AND output the matching clusters as a JSON array
-- AND set `cluster-id` in config to the found cluster's ID
+- AND persist the found cluster's ID to active state via the shared `config.SetClusterID` function
 
 #### Scenario: Search for non-existent cluster
 
