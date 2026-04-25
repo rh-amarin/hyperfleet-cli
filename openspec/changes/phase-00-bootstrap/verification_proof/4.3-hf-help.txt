@@ -1,0 +1,32 @@
+Verification: 4.3 — hf --help shows usage and flag list
+========================================================
+Date: 2026-04-25T09:43:57Z
+Environment: linux/amd64, go1.25.8
+
+Command:
+  hf --help
+
+Output:
+  hf is the HyperFleet CLI tool for managing clusters, nodepools,
+  adapter statuses, databases, Maestro resources, and Kubernetes operations.
+
+  Usage:
+    hf [command]
+
+  Available Commands:
+    completion  Generate the autocompletion script for the specified shell
+    help        Help about any command
+    version     Print version information
+
+  Flags:
+        --api-token string   override API token
+        --api-url string     override API URL
+        --config string      config directory (default ~/.config/hf)
+    -h, --help               help for hf
+        --no-color           disable colored output
+    -o, --output string      output format: json, table, yaml
+    -v, --verbose            verbose output
+
+  Use "hf [command] --help" for more information about a command.
+
+Exit code: 0

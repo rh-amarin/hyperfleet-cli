@@ -1,0 +1,12 @@
+Verification: 4.1 — go build ./... succeeds with no errors
+==========================================================
+Date: 2026-04-25T09:43:57Z
+Environment: linux/amd64, go1.25.8
+
+Command:
+  cd /workspace/repos/hyperfleet-cli && go build ./...
+
+Output:
+  (no output)
+
+Exit code: 0

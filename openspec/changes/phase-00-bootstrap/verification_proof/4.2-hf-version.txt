@@ -1,0 +1,12 @@
+Verification: 4.2 — hf version prints version string
+=====================================================
+Date: 2026-04-25T09:43:57Z
+Environment: linux/amd64, go1.25.8
+
+Command:
+  hf version
+
+Output:
+  hf version dev (commit: none, built: 2026-04-25)
+
+Exit code: 0
