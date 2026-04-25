@@ -1,0 +1,91 @@
+$ go build ./...
+exit: 0
+
+$ go vet ./...
+exit: 0
+
+$ go test ./internal/api/... ./cmd/... -v
+=== RUN   TestGet_200
+--- PASS: TestGet_200 (0.00s)
+=== RUN   TestPost_201
+--- PASS: TestPost_201 (0.00s)
+=== RUN   TestRFC9457ErrorParsing_404
+--- PASS: TestRFC9457ErrorParsing_404 (0.00s)
+=== RUN   TestValidationErrorParsing_400
+--- PASS: TestValidationErrorParsing_400 (0.00s)
+=== RUN   TestNonJSONErrorResponse_500
+--- PASS: TestNonJSONErrorResponse_500 (0.00s)
+=== RUN   TestVerboseLogging
+[DEBUG] GET http://127.0.0.1:33485/api/hyperfleet/v1/clusters/1 → 200 (0ms)
+--- PASS: TestVerboseLogging (0.00s)
+=== RUN   TestNoAuth_NoAuthorizationHeader
+--- PASS: TestNoAuth_NoAuthorizationHeader (0.00s)
+=== RUN   TestContextCancellation
+--- PASS: TestContextCancellation (0.00s)
+=== RUN   TestNewClient_BaseURL
+--- PASS: TestNewClient_BaseURL (0.00s)
+=== RUN   TestPatch_200
+--- PASS: TestPatch_200 (0.00s)
+=== RUN   TestDelete_200
+--- PASS: TestDelete_200 (0.00s)
+=== RUN   TestDo_BodyMarshalError
+--- PASS: TestDo_BodyMarshalError (0.00s)
+=== RUN   TestParseError_TruncatesLongBody
+--- PASS: TestParseError_TruncatesLongBody (0.00s)
+=== RUN   TestAPIError_ErrorString
+--- PASS: TestAPIError_ErrorString (0.00s)
+=== RUN   TestAuthorizationHeader_SentWithToken
+--- PASS: TestAuthorizationHeader_SentWithToken (0.00s)
+=== RUN   TestFindClusterByName_ExactMatch
+--- PASS: TestFindClusterByName_ExactMatch (0.00s)
+=== RUN   TestFindClusterByName_FiltersDeletedClusters
+--- PASS: TestFindClusterByName_FiltersDeletedClusters (0.00s)
+=== RUN   TestFindClusterByName_FiltersPartialNameMatches
+--- PASS: TestFindClusterByName_FiltersPartialNameMatches (0.00s)
+=== RUN   TestFindClusterByName_NoMatch
+--- PASS: TestFindClusterByName_NoMatch (0.00s)
+=== RUN   TestFindClusterByName_MultipleActiveMatches
+--- PASS: TestFindClusterByName_MultipleActiveMatches (0.00s)
+=== RUN   TestFindClusterByName_SearchQueryEncoded
+--- PASS: TestFindClusterByName_SearchQueryEncoded (0.00s)
+=== RUN   TestFindClusterByName_APIError
+--- PASS: TestFindClusterByName_APIError (0.00s)
+=== RUN   TestFindClusterByName_AllDeletedReturnsEmpty
+--- PASS: TestFindClusterByName_AllDeletedReturnsEmpty (0.00s)
+PASS
+ok  	github.com/rh-amarin/hyperfleet-cli/internal/api	(cached)
+=== RUN   TestClusterCreate_DefaultArgs
+--- PASS: TestClusterCreate_DefaultArgs (0.00s)
+=== RUN   TestClusterCreate_ExplicitArgs
+--- PASS: TestClusterCreate_ExplicitArgs (0.00s)
+=== RUN   TestClusterCreate_DuplicateGuard
+--- PASS: TestClusterCreate_DuplicateGuard (0.00s)
+=== RUN   TestClusterCreate_PersistsClusterID
+--- PASS: TestClusterCreate_PersistsClusterID (0.00s)
+=== RUN   TestClusterGet_OutputsJSON
+--- PASS: TestClusterGet_OutputsJSON (0.00s)
+=== RUN   TestClusterGet_NotFound_RFC7807
+--- PASS: TestClusterGet_NotFound_RFC7807 (0.00s)
+=== RUN   TestClusterSearch_SetsClusterID
+--- PASS: TestClusterSearch_SetsClusterID (0.00s)
+=== RUN   TestClusterSearch_NoMatch_WarnAndEmptyArray
+--- PASS: TestClusterSearch_NoMatch_WarnAndEmptyArray (0.00s)
+=== RUN   TestClusterPatch_NoArgs_ExitsNonZero
+--- PASS: TestClusterPatch_NoArgs_ExitsNonZero (0.00s)
+=== RUN   TestClusterPatch_SpecCounter_IncrementsAndPatches
+--- PASS: TestClusterPatch_SpecCounter_IncrementsAndPatches (0.00s)
+=== RUN   TestClusterPatch_LabelsCounter_IncrementsAndPatches
+--- PASS: TestClusterPatch_LabelsCounter_IncrementsAndPatches (0.00s)
+=== RUN   TestClusterConditions_OutputsGenerationAndConditions
+--- PASS: TestClusterConditions_OutputsGenerationAndConditions (0.00s)
+=== RUN   TestClusterConditionsTable_RendersRows
+--- PASS: TestClusterConditionsTable_RendersRows (0.00s)
+=== RUN   TestClusterStatuses_EmptyList
+--- PASS: TestClusterStatuses_EmptyList (0.00s)
+=== RUN   TestClusterStatuses_404_TreatedAsEmptyList
+--- PASS: TestClusterStatuses_404_TreatedAsEmptyList (0.00s)
+=== RUN   TestClusterDelete_OutputsDeletedCluster
+--- PASS: TestClusterDelete_OutputsDeletedCluster (0.00s)
+PASS
+ok  	github.com/rh-amarin/hyperfleet-cli/cmd	(cached)
+exit: 0
