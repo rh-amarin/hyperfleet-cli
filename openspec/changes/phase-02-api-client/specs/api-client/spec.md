@@ -70,11 +70,18 @@ The API client SHALL parse non-2xx responses as RFC 7807 Problem Details.
 
 #### Scenario: Parse 404 API error
 
-- GIVEN the API returns a 404 response with an RFC 7807 JSON body
+- GIVEN the API returns a 404 response with an RFC 9457 JSON body (content-type `application/problem+json`)
 - WHEN the client parses the response
-- THEN it MUST return an `APIError` with fields: `code`, `detail`, `instance`, `status`, `title`, `trace_id`, `type`, `timestamp`
+- THEN it MUST return an `APIError` with required fields: `type`, `title`, `status`
+- AND optional fields: `detail`, `instance`, `code`, `timestamp`, `trace_id`, `errors` ([]ValidationError)
 - AND the `APIError` MUST implement Go's `error` interface
 - AND `Error()` MUST return a formatted string: `[{status}] {title}: {detail}`
+
+#### Scenario: Parse validation error with field-level details
+
+- GIVEN the API returns a 400 response with `errors` array containing field-level validation failures
+- WHEN the client parses the response
+- THEN the `APIError.Errors` field MUST contain `ValidationError` entries with `field`, `message`, and optional `value`, `constraint`
 
 #### Scenario: Non-JSON error response
 

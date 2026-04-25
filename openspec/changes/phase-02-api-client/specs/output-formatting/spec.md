@@ -50,7 +50,7 @@ The output package SHALL render condition status values as colored dot character
 
 #### Scenario: Unknown status renders yellow
 
-- GIVEN a condition status is `Unknown`
+- GIVEN a condition status is `Unknown` (only valid for `AdapterCondition`, not `ResourceCondition`)
 - WHEN the dot renderer is called
 - THEN it MUST return a yellow-colored dot character (`●`)
 

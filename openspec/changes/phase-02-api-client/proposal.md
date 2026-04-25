@@ -41,6 +41,19 @@ unblocks parallel development of Phases 03–13.
 - `technical-architecture`: ADDED requirements for the api, resource, and output
   package contracts now that the concrete Go types and method signatures are defined.
 
+## Canonical API Contract
+
+All resource types MUST conform to the HyperFleet OpenAPI 3.0 specification at:
+[openshift-hyperfleet/hyperfleet-api-spec/schemas/core/openapi.yaml](https://github.com/openshift-hyperfleet/hyperfleet-api-spec/blob/main/schemas/core/openapi.yaml)
+
+Key alignment points verified against v1.0.7 of the spec:
+- `Labels` → `map[string]string` (not `map[string]any`)
+- `OwnerReferences` → single `ObjectReference` (not array)
+- `ResourceCondition` vs `AdapterCondition` are distinct types with different fields and status enums
+- `AdapterStatus` includes `metadata` object with job execution fields
+- `Error` (RFC 9457) includes `errors: []ValidationError` for field-level validation
+- Pagination fields (`page`, `size`, `total`) are `int32`
+
 ## Impact
 
 - **New packages**: `internal/api/`, `internal/resource/`, `internal/output/`

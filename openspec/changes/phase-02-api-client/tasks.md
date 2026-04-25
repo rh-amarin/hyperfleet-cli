@@ -16,7 +16,7 @@
 
 ## 3. internal/api — RFC 7807 error handling
 
-- [ ] 3.1 Create `internal/api/errors.go`: `APIError` struct with fields `Code`, `Detail`, `Instance`, `Status`, `Title`, `TraceID`, `Type`, `Timestamp` and JSON tags
+- [ ] 3.1 Create `internal/api/errors.go`: `APIError` struct with required fields `Type`, `Title`, `Status` and optional `Detail`, `Instance`, `Code`, `Timestamp`, `TraceID`, `Errors` ([]ValidationError) per RFC 9457 + HyperFleet extensions
 - [ ] 3.2 Implement `APIError.Error() string` returning `[{status}] {title}: {detail}`
 - [ ] 3.3 Implement `parseError(resp *http.Response) *APIError`: try JSON unmarshal as RFC 7807; fall back to raw body with HTTP status text
 - [ ] 3.4 Integrate `parseError` into `Do()`: return `*APIError` for any non-2xx response
@@ -27,32 +27,37 @@
 - [ ] 4.1 Create `internal/api/client_test.go` using `httptest.NewServer`
 - [ ] 4.2 Test `Get[T]` with 200 response: verify JSON unmarshaling into typed result
 - [ ] 4.3 Test `Post[T]` with 201 response: verify request body and typed response
-- [ ] 4.4 Test RFC 7807 error parsing: 404 response with valid JSON → `APIError` with all fields
-- [ ] 4.5 Test non-JSON error response: 500 with plain text → `APIError` with raw body as detail
-- [ ] 4.6 Test verbose logging: capture stderr, verify `[DEBUG]` line format
-- [ ] 4.7 Test no-auth: client without token sends no `Authorization` header
-- [ ] 4.8 Test context cancellation: cancelled context returns `context.Canceled`
+- [ ] 4.4 Test RFC 9457 error parsing: 404 response with valid JSON → `APIError` with all fields
+- [ ] 4.5 Test validation error parsing: 400 response with `errors` array → `APIError.Errors` populated with `ValidationError` entries
+- [ ] 4.6 Test non-JSON error response: 500 with plain text → `APIError` with raw body as detail
+- [ ] 4.7 Test verbose logging: capture stderr, verify `[DEBUG]` line format
+- [ ] 4.8 Test no-auth: client without token sends no `Authorization` header
+- [ ] 4.9 Test context cancellation: cancelled context returns `context.Canceled`
 
-## 5. internal/resource — Cluster and NodePool types
+## 5. internal/resource — Cluster and NodePool types (per OpenAPI spec)
 
-- [ ] 5.1 Create `internal/resource/cluster.go`: `Cluster` struct with all fields and JSON tags
-- [ ] 5.2 Create `internal/resource/nodepool.go`: `NodePool` struct with `OwnerReferences` field, `OwnerReference` struct
-- [ ] 5.3 Create `internal/resource/condition.go`: `Condition` struct, `ResourceStatus` struct
+- [ ] 5.1 Create `internal/resource/cluster.go`: `Cluster` struct (Labels as `map[string]string`, Generation as `int32`), `ClusterStatus` struct with `[]ResourceCondition`
+- [ ] 5.2 Create `internal/resource/nodepool.go`: `NodePool` struct with `OwnerReferences ObjectReference` (single object, not slice), `NodePoolStatus` struct, `ObjectReference` struct (ID, Kind, Href)
+- [ ] 5.3 Create `internal/resource/condition.go`: `ResourceCondition` (8 fields incl. `created_time`, `last_updated_time`, `observed_generation`; status: True|False only) and `AdapterCondition` (5 fields; status: True|False|Unknown), `ConditionRequest` (for create requests)
 
-## 6. internal/resource — AdapterStatus, CloudEvent, ListResponse
+## 6. internal/resource — AdapterStatus, CloudEvent, ListResponse, ValidationError
 
-- [ ] 6.1 Create `internal/resource/adapter.go`: `AdapterStatus` struct with all fields
-- [ ] 6.2 Create `internal/resource/event.go`: `CloudEvent` struct with `specversion` defaulting to `"1.0"`
-- [ ] 6.3 Create `internal/resource/list.go`: `ListResponse[T any]` generic struct with `Items`, `Kind`, `Page`, `Size`, `Total`
+- [ ] 6.1 Create `internal/resource/adapter.go`: `AdapterStatus` struct with `Conditions []AdapterCondition` and `Metadata *AdapterStatusMetadata` (job_name, job_namespace, attempt, started_time, completed_time, duration)
+- [ ] 6.2 Create `internal/resource/adapter.go`: `AdapterStatusCreateRequest` struct with `ObservedTime` field and `Conditions []ConditionRequest`
+- [ ] 6.3 Create `internal/resource/event.go`: `CloudEvent` struct with `specversion` defaulting to `"1.0"`
+- [ ] 6.4 Create `internal/resource/list.go`: `ListResponse[T any]` generic struct with `Items`, `Kind`, `Page` (int32), `Size` (int32), `Total` (int32)
+- [ ] 6.5 Create `internal/resource/errors.go`: `ValidationError` struct with `Field`, `Message`, `Value` (any), `Constraint` (string)
 
 ## 7. internal/resource — Unit tests
 
 - [ ] 7.1 Create `internal/resource/types_test.go`
-- [ ] 7.2 Test Cluster JSON round-trip: unmarshal real API JSON fixture → re-marshal → compare
-- [ ] 7.3 Test NodePool JSON round-trip: verify `owner_references`, `spec.platform.type` preserved
-- [ ] 7.4 Test Condition JSON round-trip: verify all fields including `observed_generation` omitempty
-- [ ] 7.5 Test ListResponse[Cluster] JSON round-trip: verify `items` as empty slice (not nil) when empty
-- [ ] 7.6 Test AdapterStatus JSON round-trip: verify `data` field accepts arbitrary JSON
+- [ ] 7.2 Test Cluster JSON round-trip: unmarshal real API JSON fixture (from OpenAPI examples) → re-marshal → compare; verify `labels` is `map[string]string`
+- [ ] 7.3 Test NodePool JSON round-trip: verify `owner_references` is single object (not array), `href` preserved
+- [ ] 7.4 Test ResourceCondition JSON round-trip: verify all 8 fields including `created_time`, `last_updated_time`, `observed_generation`
+- [ ] 7.5 Test AdapterCondition JSON round-trip: verify only 5 fields, `Unknown` status accepted
+- [ ] 7.6 Test ListResponse[Cluster] JSON round-trip: verify `items` as empty slice (not nil) when empty
+- [ ] 7.7 Test AdapterStatus JSON round-trip: verify `metadata` object and `data` field accepts arbitrary JSON
+- [ ] 7.8 Test AdapterStatusCreateRequest JSON round-trip: verify `observed_time` and `ConditionRequest` fields
 
 ## 8. internal/output — Printer and format dispatch
 

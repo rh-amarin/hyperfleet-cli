@@ -72,14 +72,18 @@ The CLI SHALL define shared Go types for all HyperFleet resources.
 - GIVEN the `internal/resource` package exists
 - WHEN resource types are defined
 - THEN the package MUST include:
-  - `Cluster` struct with fields: ID, Kind, Name, Generation, Labels, Spec, Status, CreatedBy, CreatedTime, UpdatedBy, UpdatedTime, DeletedBy, DeletedTime, Href
-  - `NodePool` struct with fields: ID, Kind, Name, Generation, Labels, Spec, Status, OwnerReferences, CreatedBy, CreatedTime, UpdatedBy, UpdatedTime, DeletedBy, DeletedTime
-  - `AdapterStatus` struct with fields: Adapter, Conditions, ObservedGeneration, LastReportTime, Data, CreatedTime
-  - `Condition` struct with fields: Type, Status, Reason, Message, LastTransitionTime, ObservedGeneration
-  - `CloudEvent` struct with fields: SpecVersion, Type, Source, ID, Data
-  - Generic `ListResponse[T]` with fields: Items, Kind, Page, Size, Total
-  - `ResourceStatus` struct with field: Conditions (shared between Cluster and NodePool)
-  - `OwnerReference` struct with fields: Kind, ID
+  - `Cluster` struct with fields: ID, Kind, Href, Name, Generation (int32), Labels (map[string]string), Spec (map[string]any), Status (ClusterStatus), CreatedBy, CreatedTime, UpdatedBy, UpdatedTime, DeletedBy, DeletedTime
+  - `NodePool` struct with fields: ID, Kind, Href, Name, Generation (int32), Labels (map[string]string), Spec (map[string]any), Status (NodePoolStatus), OwnerReferences (ObjectReference — single object), CreatedBy, CreatedTime, UpdatedBy, UpdatedTime, DeletedBy, DeletedTime
+  - `ResourceCondition` struct for cluster/nodepool conditions: Type, Status (True|False only), Reason, Message, LastTransitionTime, ObservedGeneration, CreatedTime, LastUpdatedTime
+  - `AdapterCondition` struct for adapter status conditions: Type, Status (True|False|Unknown), Reason, Message, LastTransitionTime
+  - `AdapterStatus` struct: Adapter, ObservedGeneration, Conditions ([]AdapterCondition), Metadata (AdapterStatusMetadata), Data, CreatedTime, LastReportTime
+  - `AdapterStatusMetadata` struct: JobName, JobNamespace, Attempt, StartedTime, CompletedTime, Duration
+  - `AdapterStatusCreateRequest` struct: Adapter, ObservedGeneration, ObservedTime, Conditions ([]ConditionRequest), Metadata, Data
+  - `ObjectReference` struct: ID, Kind, Href
+  - `CloudEvent` struct: SpecVersion, Type, Source, ID, Data
+  - `ValidationError` struct: Field, Message, Value, Constraint
+  - Generic `ListResponse[T]` with fields: Items, Kind, Page (int32), Size (int32), Total (int32)
+- AND all types MUST conform to the canonical OpenAPI spec at `openshift-hyperfleet/hyperfleet-api-spec`
 - AND all types MUST have JSON struct tags matching the API field names (snake_case)
-- AND `Spec` and `Labels` MUST use `map[string]any` to support provider-specific content
+- AND `Spec` MUST use `map[string]any` and `Labels` MUST use `map[string]string`
 - AND `ListResponse[T]` MUST use Go type parameters for type-safe list operations

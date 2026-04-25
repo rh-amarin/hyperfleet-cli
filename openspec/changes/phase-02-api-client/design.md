@@ -69,15 +69,17 @@ Making this a concrete Go type lets commands choose between outputting the raw
 error JSON (exit 0, matching bash behavior) or wrapping it in a Go error chain.
 
 ```go
+// Maps to components/schemas/Error (RFC 9457 Problem Details + HyperFleet extensions)
 type APIError struct {
-    Code      string `json:"code"`
-    Detail    string `json:"detail"`
-    Instance  string `json:"instance"`
-    Status    int    `json:"status"`
-    Title     string `json:"title"`
-    TraceID   string `json:"trace_id"`
-    Type      string `json:"type"`
-    Timestamp string `json:"timestamp"`
+    Type      string            `json:"type"`
+    Title     string            `json:"title"`
+    Status    int               `json:"status"`
+    Detail    string            `json:"detail,omitempty"`
+    Instance  string            `json:"instance,omitempty"`
+    Code      string            `json:"code,omitempty"`
+    Timestamp string            `json:"timestamp,omitempty"`
+    TraceID   string            `json:"trace_id,omitempty"`
+    Errors    []ValidationError `json:"errors,omitempty"`
 }
 
 func (e *APIError) Error() string { return fmt.Sprintf("[%d] %s: %s", e.Status, e.Title, e.Detail) }
@@ -86,17 +88,17 @@ func (e *APIError) Error() string { return fmt.Sprintf("[%d] %s: %s", e.Status, 
 Commands that want bash-compatible behavior call `output.Print(apiErr)` and
 exit 0. Commands that want Go-style error handling return the error.
 
-### 3. `map[string]any` for Spec and Labels
+### 3. `map[string]any` for Spec, `map[string]string` for Labels
 
-**Decision:** `Spec` and `Labels` fields use `map[string]any` instead of typed
-structs.
+**Decision:** `Spec` fields use `map[string]any`; `Labels` fields use
+`map[string]string`.
 
-**Rationale:** The HyperFleet API allows arbitrary keys in spec and labels.
-Different adapters inject different fields. Typed structs would require
-updating the CLI for every new adapter field. `map[string]any` keeps the CLI
-forward-compatible.
+**Rationale:** The OpenAPI spec defines `ClusterSpec` and `NodePoolSpec` as
+open objects (`type: object` with no fixed properties), so `map[string]any`
+is correct. Labels are defined as `additionalProperties: type: string`, so
+`map[string]string` is the correct Go representation.
 
-**Trade-off:** No compile-time safety for spec/label field access. Mitigated
+**Trade-off:** No compile-time safety for spec field access. Mitigated
 by helper functions for commonly accessed fields (e.g., `resource.SpecCounter`,
 `resource.SpecRegion`).
 
@@ -155,11 +157,12 @@ internal/
 │   └── client_test.go — unit tests with httptest.Server fixtures
 ├── resource/
 │   ├── cluster.go     — Cluster, ClusterStatus structs
-│   ├── nodepool.go    — NodePool, NodePoolStatus, OwnerReference
-│   ├── condition.go   — Condition struct
-│   ├── adapter.go     — AdapterStatus struct
+│   ├── nodepool.go    — NodePool, NodePoolStatus, ObjectReference
+│   ├── condition.go   — ResourceCondition, AdapterCondition, ConditionRequest
+│   ├── adapter.go     — AdapterStatus, AdapterStatusMetadata, AdapterStatusCreateRequest
 │   ├── event.go       — CloudEvent struct
 │   ├── list.go        — ListResponse[T] generic wrapper
+│   ├── errors.go      — ValidationError struct
 │   └── types_test.go  — JSON round-trip tests
 └── output/
     ├── printer.go     — Printer, Print (json/table/yaml dispatch)
@@ -186,62 +189,138 @@ func NewClient(apiURL, apiVersion, token string, verbose bool) *Client
 
 ### internal/resource
 
+Types aligned with [hyperfleet-api-spec/schemas/core/openapi.yaml](https://github.com/openshift-hyperfleet/hyperfleet-api-spec/blob/main/schemas/core/openapi.yaml).
+
 ```go
+// --- Cluster (maps to components/schemas/Cluster) ---
+
 type Cluster struct {
-    ID              string         `json:"id"`
-    Kind            string         `json:"kind"`
-    Name            string         `json:"name"`
-    Generation      int            `json:"generation"`
-    Labels          map[string]any `json:"labels"`
-    Spec            map[string]any `json:"spec"`
-    Status          ResourceStatus `json:"status"`
-    CreatedBy       string         `json:"created_by"`
-    CreatedTime     string         `json:"created_time"`
-    UpdatedBy       string         `json:"updated_by"`
-    UpdatedTime     string         `json:"updated_time"`
-    DeletedBy       string         `json:"deleted_by,omitempty"`
-    DeletedTime     string         `json:"deleted_time,omitempty"`
-    Href            string         `json:"href"`
+    ID          string            `json:"id"`
+    Kind        string            `json:"kind"`
+    Href        string            `json:"href"`
+    Name        string            `json:"name"`
+    Generation  int32             `json:"generation"`
+    Labels      map[string]string `json:"labels,omitempty"`
+    Spec        map[string]any    `json:"spec"`
+    Status      ClusterStatus     `json:"status"`
+    CreatedBy   string            `json:"created_by"`
+    CreatedTime string            `json:"created_time"`
+    UpdatedBy   string            `json:"updated_by"`
+    UpdatedTime string            `json:"updated_time"`
+    DeletedBy   string            `json:"deleted_by,omitempty"`
+    DeletedTime string            `json:"deleted_time,omitempty"`
 }
 
-type ResourceStatus struct {
-    Conditions []Condition `json:"conditions"`
+type ClusterStatus struct {
+    Conditions []ResourceCondition `json:"conditions"`
 }
+
+// --- NodePool (maps to components/schemas/NodePool) ---
 
 type NodePool struct {
-    ID              string           `json:"id"`
-    Kind            string           `json:"kind"`
-    Name            string           `json:"name"`
-    Generation      int              `json:"generation"`
-    Labels          map[string]any   `json:"labels"`
-    Spec            map[string]any   `json:"spec"`
-    Status          ResourceStatus   `json:"status"`
-    OwnerReferences []OwnerReference `json:"owner_references"`
-    CreatedBy       string           `json:"created_by"`
-    CreatedTime     string           `json:"created_time"`
-    UpdatedBy       string           `json:"updated_by"`
-    UpdatedTime     string           `json:"updated_time"`
-    DeletedBy       string           `json:"deleted_by,omitempty"`
-    DeletedTime     string           `json:"deleted_time,omitempty"`
+    ID              string            `json:"id"`
+    Kind            string            `json:"kind"`
+    Href            string            `json:"href"`
+    Name            string            `json:"name"`
+    Generation      int32             `json:"generation"`
+    Labels          map[string]string `json:"labels,omitempty"`
+    Spec            map[string]any    `json:"spec"`
+    Status          NodePoolStatus    `json:"status"`
+    OwnerReferences ObjectReference   `json:"owner_references"` // single object, not array
+    CreatedBy       string            `json:"created_by"`
+    CreatedTime     string            `json:"created_time"`
+    UpdatedBy       string            `json:"updated_by"`
+    UpdatedTime     string            `json:"updated_time"`
+    DeletedBy       string            `json:"deleted_by,omitempty"`
+    DeletedTime     string            `json:"deleted_time,omitempty"`
 }
 
-type Condition struct {
-    Type               string `json:"type"`
-    Status             string `json:"status"`
-    Reason             string `json:"reason"`
-    Message            string `json:"message"`
-    LastTransitionTime string `json:"last_transition_time"`
-    ObservedGeneration int    `json:"observed_generation,omitempty"`
+type NodePoolStatus struct {
+    Conditions []ResourceCondition `json:"conditions"`
 }
+
+type ObjectReference struct {
+    ID   string `json:"id"`
+    Kind string `json:"kind"`
+    Href string `json:"href"`
+}
+
+// --- ResourceCondition (maps to components/schemas/ResourceCondition) ---
+// Used in Cluster.Status.Conditions and NodePool.Status.Conditions.
+// Status enum: "True" | "False" only (no "Unknown").
+
+type ResourceCondition struct {
+    Type               string `json:"type"`
+    Status             string `json:"status"`              // "True" | "False"
+    Reason             string `json:"reason,omitempty"`
+    Message            string `json:"message,omitempty"`
+    LastTransitionTime string `json:"last_transition_time"`
+    ObservedGeneration int32  `json:"observed_generation"`
+    CreatedTime        string `json:"created_time"`
+    LastUpdatedTime    string `json:"last_updated_time"`
+}
+
+// --- AdapterCondition (maps to components/schemas/AdapterCondition) ---
+// Used inside AdapterStatus.Conditions.
+// Status enum: "True" | "False" | "Unknown".
+
+type AdapterCondition struct {
+    Type               string `json:"type"`
+    Status             string `json:"status"`              // "True" | "False" | "Unknown"
+    Reason             string `json:"reason,omitempty"`
+    Message            string `json:"message,omitempty"`
+    LastTransitionTime string `json:"last_transition_time"`
+}
+
+// --- AdapterStatus (maps to components/schemas/AdapterStatus) ---
 
 type AdapterStatus struct {
-    Adapter            string      `json:"adapter"`
-    Conditions         []Condition `json:"conditions"`
-    ObservedGeneration int         `json:"observed_generation"`
-    LastReportTime     string      `json:"last_report_time"`
-    Data               any         `json:"data"`
-    CreatedTime        string      `json:"created_time"`
+    Adapter            string                `json:"adapter"`
+    ObservedGeneration int32                 `json:"observed_generation"`
+    Conditions         []AdapterCondition    `json:"conditions"`
+    Metadata           *AdapterStatusMetadata `json:"metadata,omitempty"`
+    Data               map[string]any        `json:"data,omitempty"`
+    CreatedTime        string                `json:"created_time"`
+    LastReportTime     string                `json:"last_report_time"`
 }
+
+type AdapterStatusMetadata struct {
+    JobName       string `json:"job_name,omitempty"`
+    JobNamespace  string `json:"job_namespace,omitempty"`
+    Attempt       int32  `json:"attempt,omitempty"`
+    StartedTime   string `json:"started_time,omitempty"`
+    CompletedTime string `json:"completed_time,omitempty"`
+    Duration      string `json:"duration,omitempty"`
+}
+
+// --- AdapterStatusCreateRequest (maps to components/schemas/AdapterStatusCreateRequest) ---
+
+type AdapterStatusCreateRequest struct {
+    Adapter            string                `json:"adapter"`
+    ObservedGeneration int32                 `json:"observed_generation"`
+    ObservedTime       string                `json:"observed_time"`
+    Conditions         []ConditionRequest    `json:"conditions"`
+    Metadata           *AdapterStatusMetadata `json:"metadata,omitempty"`
+    Data               map[string]any        `json:"data,omitempty"`
+}
+
+type ConditionRequest struct {
+    Type    string `json:"type"`
+    Status  string `json:"status"`
+    Reason  string `json:"reason,omitempty"`
+    Message string `json:"message,omitempty"`
+}
+
+// --- ValidationError (maps to components/schemas/ValidationError) ---
+
+type ValidationError struct {
+    Field      string `json:"field"`
+    Message    string `json:"message"`
+    Value      any    `json:"value,omitempty"`
+    Constraint string `json:"constraint,omitempty"`
+}
+
+// --- CloudEvent (CloudEvents 1.0 — not in OpenAPI spec, used for pub/sub) ---
 
 type CloudEvent struct {
     SpecVersion string `json:"specversion"`
@@ -251,17 +330,14 @@ type CloudEvent struct {
     Data        any    `json:"data"`
 }
 
-type OwnerReference struct {
-    Kind string `json:"kind"`
-    ID   string `json:"id"`
-}
+// --- ListResponse (maps to ClusterList/NodePoolList/AdapterStatusList pattern) ---
 
 type ListResponse[T any] struct {
     Items []T    `json:"items"`
     Kind  string `json:"kind"`
-    Page  int    `json:"page"`
-    Size  int    `json:"size"`
-    Total int    `json:"total"`
+    Page  int32  `json:"page"`
+    Size  int32  `json:"size"`
+    Total int32  `json:"total"`
 }
 ```
 
