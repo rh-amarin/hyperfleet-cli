@@ -1,0 +1,8 @@
+schema: openspec/v1
+change: phase-03-cluster
+created: 2026-04-25
+dependsOn:
+  - phase-01-config
+  - phase-02-api-client
+status: archived
+archived: 2026-04-25
