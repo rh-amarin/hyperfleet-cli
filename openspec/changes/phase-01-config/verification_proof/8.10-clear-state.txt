@@ -1,0 +1,6 @@
+
+state:
+  active-environment  -
+  cluster-id          -
+  cluster-name        -
+  nodepool-id         -

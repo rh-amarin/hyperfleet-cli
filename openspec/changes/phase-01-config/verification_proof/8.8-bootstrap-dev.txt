@@ -1,0 +1,6 @@
+hyperfleet:
+    api-url: http://dev.example.com
+    token: dev-token
+kubernetes:
+    context: kind-dev
+    namespace: hyperfleet

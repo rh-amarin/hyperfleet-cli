@@ -1,0 +1,10 @@
+=== deactivate ===
+environment deactivated
+environments:
+    kind                  4 key(s)
+    prod                  7 key(s)
+state.yaml:
+active-environment: ""
+cluster-id: ""
+cluster-name: ""
+nodepool-id: ""
