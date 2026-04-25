@@ -10,6 +10,18 @@ Migration: use `hf config env new [name]` instead.
 
 ---
 
+### Requirement: hf-env-var-overrides
+
+HF_* environment variable config overrides are removed: `HF_API_URL`, `HF_API_VERSION`,
+`HF_TOKEN`, `HF_CONTEXT`, `HF_NAMESPACE`.
+
+`HF_CONFIG_DIR` is retained (controls config directory location, not a config value).
+
+Migration: use a named environment file and `hf config env activate`, or pass `--api-url`
+/ `--api-token` CLI flags for one-off scripted overrides.
+
+---
+
 ## MODIFIED Requirements
 
 ### Requirement: hf-config-show
