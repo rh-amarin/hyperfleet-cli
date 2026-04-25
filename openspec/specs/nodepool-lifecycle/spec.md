@@ -20,7 +20,7 @@ The CLI SHALL create one or more nodepools in the current cluster with configura
   - `name`: `<name>-N`
   - `labels`: `{"counter": "N"}`
   - `spec`: `{"counter": "N", "platform": {"type": "<instance-type>"}, "replicas": 1}`
-- AND the CLI MUST set `nodepool-id` in config to the LAST created nodepool's ID
+- AND the CLI MUST persist the LAST created nodepool's ID to active state via the shared `config.SetNodePoolID` function
 - AND the response MUST include `owner_references` pointing to the parent cluster
 
 #### Scenario: Create nodepool with default arguments
@@ -59,7 +59,7 @@ The CLI SHALL search for a nodepool by name within the current cluster and set i
 - WHEN the user runs `hf nodepool search <name>`
 - THEN the CLI MUST filter nodepools by name within the cluster
 - AND output the matching nodepools as a JSON array
-- AND set `nodepool-id` in config to the found nodepool's ID
+- AND persist the found nodepool's ID to active state via the shared `config.SetNodePoolID` function
 
 ### Requirement: Get NodePool
 

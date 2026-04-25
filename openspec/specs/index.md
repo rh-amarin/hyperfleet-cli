@@ -75,7 +75,7 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 ## Key Design Patterns
 
 1. **Split config**: `config.yaml` for connection settings, `state.yaml` for active cluster/nodepool/environment
-2. **Composable commands**: `cluster create` calls `cluster search` to set context
+2. **Shared internal functions**: Commands reuse `internal/` packages (e.g., `api.FindClusterByName`, `config.SetClusterID`) rather than invoking each other as subprocesses
 3. **Defaults over usage**: Create commands with no args use defaults, not usage display
 4. **Generation tracking**: Resources track generation; adapters report observed_generation
 5. **Convergence logic**: Ready becomes True when ALL required adapters report Available=True at current generation
