@@ -122,6 +122,7 @@ var clusterCreateCmd = &cobra.Command{
 		}
 
 		payload := map[string]any{
+			"kind": "Cluster",
 			"name": name,
 			"labels": map[string]string{
 				"counter":     "1",
@@ -442,11 +443,22 @@ var clusterStatusesCmd = &cobra.Command{
 		p := printer()
 		c := newClient()
 
+		emptyStatuses := resource.ListResponse[resource.AdapterStatus]{
+			Items: []resource.AdapterStatus{},
+			Kind:  "AdapterStatusList",
+			Page:  1,
+			Size:  0,
+			Total: 0,
+		}
+
 		fetch := func() error {
 			list, err := api.Get[resource.ListResponse[resource.AdapterStatus]](
 				c, context.Background(), "clusters/"+clusterID+"/adapter-statuses",
 			)
 			if err != nil {
+				if apiErr, ok := api.IsAPIError(err); ok && apiErr.Status == 404 {
+					return p.Print(emptyStatuses)
+				}
 				return err
 			}
 			return p.Print(list)
