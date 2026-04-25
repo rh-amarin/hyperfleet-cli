@@ -1,0 +1,14 @@
+Verification: 6.2 — hf config set reflects in hf config show
+=============================================================
+Date: 2026-04-25T09:50:21Z
+Environment: linux/amd64, go1.25.8
+
+Commands:
+  hf config set api-url http://example.com
+  hf config show | grep api-url
+
+Output:
+  Set api-url = http://example.com
+  api-url                              http://example.com
+
+Exit code: 0

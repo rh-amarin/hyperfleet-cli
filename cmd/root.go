@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/rh-amarin/hyperfleet-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -13,6 +15,9 @@ var (
 	verbose  bool
 	apiURL   string
 	apiToken string
+
+	// store is initialised in PersistentPreRunE and shared across commands.
+	store *config.Store
 )
 
 var rootCmd = &cobra.Command{
@@ -20,6 +25,14 @@ var rootCmd = &cobra.Command{
 	Short: "HyperFleet CLI — manage clusters, nodepools, and fleet resources",
 	Long: `hf is the HyperFleet CLI tool for managing clusters, nodepools,
 adapter statuses, databases, Maestro resources, and Kubernetes operations.`,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		var err error
+		store, err = config.NewStore(cfgDir)
+		if err != nil {
+			return fmt.Errorf("failed to initialise config store: %w", err)
+		}
+		return nil
+	},
 }
 
 func Execute() {

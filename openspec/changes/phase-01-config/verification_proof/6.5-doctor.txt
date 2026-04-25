@@ -1,0 +1,26 @@
+Verification: 6.5 — hf config doctor runs without panic
+=========================================================
+Date: 2026-04-25T09:50:21Z
+Environment: linux/amd64, go1.25.8
+
+Command:
+  hf config doctor
+
+Output:
+  Config Doctor
+    ● hf cluster create
+    ○ hf cluster get/list/search/delete — missing: cluster-id
+    ○ hf cluster patch — missing: cluster-id
+    ○ hf cluster conditions/statuses — missing: cluster-id
+    ○ hf cluster adapter post-status — missing: cluster-id
+    ○ hf nodepool create — missing: cluster-id
+    ○ hf nodepool get/list/search/delete — missing: cluster-id, nodepool-id
+    ○ hf nodepool adapter post-status — missing: cluster-id, nodepool-id
+    ○ hf db query/delete/statuses — missing: db-name, db-user, db-password
+    ● hf maestro list/get/delete
+    ○ hf kube port-forward — missing: context, namespace
+    ○ hf logs — missing: context, namespace
+    ○ hf pubsub publish — missing: cluster-id
+    ○ hf rabbitmq publish — missing: rabbitmq-password
+
+Exit code: 0

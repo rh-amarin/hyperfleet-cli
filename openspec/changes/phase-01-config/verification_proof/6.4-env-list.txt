@@ -1,0 +1,17 @@
+Verification: 6.4 — hf config env list shows profiles
+======================================================
+Date: 2026-04-25T09:50:21Z
+Environment: linux/amd64, go1.25.8
+
+Setup:
+  echo "http://staging:8000" > $CFGDIR/staging.api-url
+  echo "staging-ns"          > $CFGDIR/staging.namespace
+
+Command:
+  hf config env list
+
+Output:
+  Environments
+    ○ staging                          2 properties
+
+Exit code: 0

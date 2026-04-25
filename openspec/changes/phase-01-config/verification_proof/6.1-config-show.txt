@@ -1,0 +1,52 @@
+Verification: 6.1 — hf config show renders all 6 sections with correct defaults
+================================================================================
+Date: 2026-04-25T09:50:21Z
+Environment: linux/amd64, go1.25.8
+
+Command:
+  hf config show
+
+Output:
+  Environments
+    (none)
+
+  HyperFleet Configuration
+    Config dir: /tmp/hf-test
+
+  hyperfleet
+    api-url                              http://localhost:8000
+    api-version                          v1
+    token                                <not set>
+    context
+    namespace
+    gcp-project                          hcm-hyperfleet
+    cluster-id
+    cluster-name
+    nodepool-id
+  maestro
+    maestro-consumer                     cluster1
+    maestro-http-endpoint                http://localhost:8100
+    maestro-grpc-endpoint                localhost:8090
+    maestro-namespace                    maestro
+  portforward
+    pf-api-port                          8000
+    pf-pg-port                           5432
+    pf-maestro-http-port                 8100
+    pf-maestro-http-remote-port          8000
+    pf-maestro-grpc-port                 8090
+  database
+    db-host                              localhost
+    db-port                              5432
+    db-name
+    db-user
+    db-password                          <not set>
+  rabbitmq
+    rabbitmq-host                        localhost
+    rabbitmq-mgmt-port                   15672
+    rabbitmq-user                        guest
+    rabbitmq-password                    <not set>
+    rabbitmq-vhost                       /
+  registry
+    registry
+
+Exit code: 0

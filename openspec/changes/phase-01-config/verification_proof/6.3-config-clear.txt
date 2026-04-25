@@ -1,0 +1,16 @@
+Verification: 6.3 — hf config clear resets to default
+=======================================================
+Date: 2026-04-25T09:50:21Z
+Environment: linux/amd64, go1.25.8
+
+Commands:
+  hf config set api-url http://example.com
+  hf config clear api-url
+  hf config show | grep api-url
+
+Output:
+  Set api-url = http://example.com
+  Cleared api-url
+  api-url                              http://localhost:8000
+
+Exit code: 0
