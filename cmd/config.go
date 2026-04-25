@@ -34,6 +34,19 @@ func dim(s string) string {
 	return "\033[2m" + s + "\033[0m"
 }
 
+// ── active environment guard ──────────────────────────────────────────────────
+
+func requireActiveEnv(s *config.Store) error {
+	if s.State().ActiveEnvironment == "" {
+		return fmt.Errorf(
+			"no active environment\n" +
+				"  → run 'hf config env new' to create one\n" +
+				"  → run 'hf config env activate <name>' to activate an existing one",
+		)
+	}
+	return nil
+}
+
 // ── hf config ─────────────────────────────────────────────────────────────────
 
 var configCmd = &cobra.Command{
@@ -41,69 +54,60 @@ var configCmd = &cobra.Command{
 	Short: "Manage CLI configuration",
 	Long:  "View and modify hf configuration, environment profiles, and runtime state.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireActiveEnv(cfgStore); err != nil {
+			return err
+		}
 		printEnvList()
 		fmt.Println()
-		return printConfigShow("")
+		return printConfigShow()
 	},
 }
 
-// ── hf config show [env] ──────────────────────────────────────────────────────
+// ── hf config show ────────────────────────────────────────────────────────────
 
 var configShowCmd = &cobra.Command{
-	Use:   "show [env]",
-	Short: "Show resolved configuration with source annotations",
-	Args:  cobra.MaximumNArgs(1),
+	Use:   "show",
+	Short: "Show current configuration",
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		env := ""
-		if len(args) == 1 {
-			env = args[0]
+		if err := requireActiveEnv(cfgStore); err != nil {
+			return err
 		}
-		return printConfigShow(env)
+		return printConfigShow()
 	},
 }
 
-func printConfigShow(env string) error {
-	var resolved []config.ResolvedValue
-	if env != "" {
-		var err error
-		resolved, err = cfgStore.EnvShow(env)
-		if err != nil {
-			return fmt.Errorf("cannot show env %q: %w", env, err)
-		}
-	} else {
-		resolved = cfgStore.Resolve()
-	}
+func printConfigShow() error {
+	activeEnv := cfgStore.State().ActiveEnvironment
+	fmt.Printf("active environment: %s\n\n", cyan(activeEnv))
+
+	cfg := cfgStore.Cfg()
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	currentSection := ""
-	for _, rv := range resolved {
-		if rv.Section != currentSection {
+	for _, p := range config.AllPaths {
+		if p.Section != currentSection {
 			if currentSection != "" {
 				fmt.Fprintln(w)
 			}
-			fmt.Fprintf(w, "%s\n", bold("["+rv.Section+"]"))
-			currentSection = rv.Section
+			fmt.Fprintf(w, "%s\n", bold("["+p.Section+"]"))
+			currentSection = p.Section
 		}
-		key := strings.TrimPrefix(rv.Path, rv.Section+".")
-		displayVal := rv.Value
-		if config.IsSecret(rv.Path) {
-			if rv.Value != "" {
+		key := strings.TrimPrefix(p.Path, p.Section+".")
+		val, _ := config.GetField(&cfg, p.Path)
+		displayVal := val
+		if config.IsSecret(p.Path) {
+			if val != "" && val != "0" {
 				displayVal = "<set>"
 			} else {
 				displayVal = "<not set>"
 			}
 		}
-		src := dim(rv.Source)
-		// Highlight env-sourced values in cyan
-		if strings.HasPrefix(rv.Source, "[env:") {
-			displayVal = cyan(displayVal)
-			src = cyan(rv.Source)
-		}
-		fmt.Fprintf(w, "  %-38s\t%s\t%s\n", key, displayVal, src)
+		fmt.Fprintf(w, "  %-38s\t%s\n", key, displayVal)
 	}
 	w.Flush()
 
-	// Print state summary
+	// Print state summary.
 	state := cfgStore.State()
 	fmt.Println()
 	fmt.Println(bold("state:"))
@@ -128,6 +132,9 @@ var configSetCmd = &cobra.Command{
 	Short: "Set a configuration value",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireActiveEnv(cfgStore); err != nil {
+			return err
+		}
 		if err := cfgStore.SetConfigValue(args[0], args[1]); err != nil {
 			return err
 		}
@@ -150,6 +157,9 @@ var configClearCmd = &cobra.Command{
 			fmt.Println("runtime state cleared")
 			return nil
 		}
+		if err := requireActiveEnv(cfgStore); err != nil {
+			return err
+		}
 		if err := cfgStore.ClearConfigValue(args[0]); err != nil {
 			return err
 		}
@@ -164,6 +174,9 @@ var configDoctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Check configuration readiness per command group",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireActiveEnv(cfgStore); err != nil {
+			return err
+		}
 		cfg := cfgStore.Cfg()
 
 		checks := []struct {
@@ -235,101 +248,6 @@ var configDoctorCmd = &cobra.Command{
 	},
 }
 
-// ── hf config bootstrap ───────────────────────────────────────────────────────
-
-var configBootstrapCmd = &cobra.Command{
-	Use:   "bootstrap [env-name]",
-	Short: "Interactively create a config or environment profile",
-	Args:  cobra.MaximumNArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		envName := ""
-		if len(args) == 1 {
-			envName = args[0]
-		}
-
-		scanner := bufio.NewScanner(os.Stdin)
-		cfg := cfgStore.Cfg()
-		var target config.Config
-		isEnvMode := envName != ""
-
-		// In global config mode, blank = keep current value.
-		// In env profile mode, blank = omit (inherit from config.yaml/defaults).
-		prompt := func(label, hint string) string {
-			if hint != "" {
-				fmt.Printf("  %s [%s]: ", label, hint)
-			} else {
-				fmt.Printf("  %s: ", label)
-			}
-			if !scanner.Scan() {
-				if isEnvMode {
-					return ""
-				}
-				return hint
-			}
-			line := strings.TrimSpace(scanner.Text())
-			if line == "" {
-				if isEnvMode {
-					return ""
-				}
-				return hint
-			}
-			return line
-		}
-
-		if isEnvMode {
-			fmt.Printf("Bootstrapping environment profile %q\n", envName)
-			fmt.Println("(Leave blank to inherit from config.yaml or defaults)")
-		} else {
-			fmt.Println("Bootstrapping hf configuration")
-			fmt.Println("(Leave blank to keep current value)")
-			target = cfgStore.RawCfg()
-		}
-		fmt.Println()
-
-		// Hyperfleet section
-		fmt.Println(bold("[hyperfleet]"))
-		target.Hyperfleet.APIURL = prompt("api-url", cfg.Hyperfleet.APIURL)
-		target.Hyperfleet.Token = prompt("token", "")
-		target.Hyperfleet.GCPProject = prompt("gcp-project", cfg.Hyperfleet.GCPProject)
-		fmt.Println()
-
-		// Kubernetes section
-		fmt.Println(bold("[kubernetes]"))
-		target.Kubernetes.Context = prompt("context", cfg.Kubernetes.Context)
-		target.Kubernetes.Namespace = prompt("namespace", cfg.Kubernetes.Namespace)
-		fmt.Println()
-
-		// Database section
-		fmt.Println(bold("[database]"))
-		target.Database.Host = prompt("host", cfg.Database.Host)
-		target.Database.User = prompt("user", cfg.Database.User)
-		target.Database.Name = prompt("name", cfg.Database.Name)
-		target.Database.Password = prompt("password", "")
-		fmt.Println()
-
-		// RabbitMQ section
-		fmt.Println(bold("[rabbitmq]"))
-		target.RabbitMQ.Host = prompt("host", cfg.RabbitMQ.Host)
-		target.RabbitMQ.User = prompt("user", cfg.RabbitMQ.User)
-		target.RabbitMQ.Password = prompt("password", "")
-		fmt.Println()
-
-		if envName != "" {
-			if err := cfgStore.SaveEnv(envName, &target); err != nil {
-				return fmt.Errorf("saving env profile: %w", err)
-			}
-			fmt.Printf("Saved environment profile to environments/%s.yaml\n", envName)
-		} else {
-			// Merge filled values back into rawCfg
-			if err := cfgStore.SetRawCfg(target); err != nil {
-				return err
-			}
-			fmt.Println("Configuration saved to config.yaml")
-		}
-		return nil
-	},
-}
-
 // ── hf config env ─────────────────────────────────────────────────────────────
 
 var configEnvCmd = &cobra.Command{
@@ -369,7 +287,35 @@ var configEnvShowCmd = &cobra.Command{
 	Short: "Show resolved config as if env profile were active",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return printConfigShow(args[0])
+		cfg, err := cfgStore.EnvCfg(args[0])
+		if err != nil {
+			return fmt.Errorf("cannot show env %q: %w", args[0], err)
+		}
+		fmt.Printf("environment: %s\n\n", cyan(args[0]))
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		currentSection := ""
+		for _, p := range config.AllPaths {
+			if p.Section != currentSection {
+				if currentSection != "" {
+					fmt.Fprintln(w)
+				}
+				fmt.Fprintf(w, "%s\n", bold("["+p.Section+"]"))
+				currentSection = p.Section
+			}
+			key := strings.TrimPrefix(p.Path, p.Section+".")
+			val, _ := config.GetField(&cfg, p.Path)
+			displayVal := val
+			if config.IsSecret(p.Path) {
+				if val != "" && val != "0" {
+					displayVal = "<set>"
+				} else {
+					displayVal = "<not set>"
+				}
+			}
+			fmt.Fprintf(w, "  %-38s\t%s\n", key, displayVal)
+		}
+		w.Flush()
+		return nil
 	},
 }
 
@@ -401,10 +347,100 @@ var configEnvDeactivateCmd = &cobra.Command{
 	},
 }
 
+// ── hf config env new ─────────────────────────────────────────────────────────
+
+var configEnvNewCmd = &cobra.Command{
+	Use:   "new [name]",
+	Short: "Create a new environment profile interactively",
+	Args:  cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		scanner := bufio.NewScanner(os.Stdin)
+
+		promptLine := func(label, defaultVal string) string {
+			if defaultVal != "" {
+				fmt.Printf("  %s [%s]: ", label, defaultVal)
+			} else {
+				fmt.Printf("  %s: ", label)
+			}
+			if !scanner.Scan() {
+				return ""
+			}
+			line := strings.TrimSpace(scanner.Text())
+			if line == "" {
+				return ""
+			}
+			return line
+		}
+
+		// Determine env name.
+		envName := ""
+		if len(args) == 1 {
+			envName = args[0]
+		} else {
+			fmt.Printf("  environment name: ")
+			if scanner.Scan() {
+				envName = strings.TrimSpace(scanner.Text())
+			}
+			if envName == "" {
+				return fmt.Errorf("environment name is required")
+			}
+		}
+
+		fmt.Printf("\nConfiguring environment %q\n", envName)
+		fmt.Println("(Leave blank to use the shown default)")
+		fmt.Println()
+
+		def := config.Defaults()
+		var target config.Config
+
+		// Hyperfleet section.
+		fmt.Println(bold("[hyperfleet]"))
+		target.Hyperfleet.APIURL = firstNonEmpty(promptLine("api-url", def.Hyperfleet.APIURL), def.Hyperfleet.APIURL)
+		target.Hyperfleet.Token = promptLine("token", "")
+		target.Hyperfleet.GCPProject = firstNonEmpty(promptLine("gcp-project", def.Hyperfleet.GCPProject), def.Hyperfleet.GCPProject)
+		fmt.Println()
+
+		// Kubernetes section.
+		fmt.Println(bold("[kubernetes]"))
+		target.Kubernetes.Context = promptLine("context", "")
+		target.Kubernetes.Namespace = promptLine("namespace", "")
+		fmt.Println()
+
+		// Database section.
+		fmt.Println(bold("[database]"))
+		target.Database.Host = firstNonEmpty(promptLine("host", def.Database.Host), def.Database.Host)
+		target.Database.User = firstNonEmpty(promptLine("user", def.Database.User), def.Database.User)
+		target.Database.Name = firstNonEmpty(promptLine("name", def.Database.Name), def.Database.Name)
+		target.Database.Password = firstNonEmpty(promptLine("password", def.Database.Password), def.Database.Password)
+		fmt.Println()
+
+		// RabbitMQ section.
+		fmt.Println(bold("[rabbitmq]"))
+		target.RabbitMQ.Host = firstNonEmpty(promptLine("host", def.RabbitMQ.Host), def.RabbitMQ.Host)
+		target.RabbitMQ.User = firstNonEmpty(promptLine("user", def.RabbitMQ.User), def.RabbitMQ.User)
+		target.RabbitMQ.Password = firstNonEmpty(promptLine("password", def.RabbitMQ.Password), def.RabbitMQ.Password)
+		fmt.Println()
+
+		if err := cfgStore.SaveEnv(envName, &target); err != nil {
+			return fmt.Errorf("saving environment profile: %w", err)
+		}
+		fmt.Printf("Saved environment profile %q\n", envName)
+		fmt.Printf("Run 'hf config env activate %s' to use it.\n", envName)
+		return nil
+	},
+}
+
+func firstNonEmpty(a, b string) string {
+	if a != "" {
+		return a
+	}
+	return b
+}
+
 // ── wiring ────────────────────────────────────────────────────────────────────
 
 func init() {
-	configEnvCmd.AddCommand(configEnvListCmd, configEnvShowCmd, configEnvActivateCmd, configEnvDeactivateCmd)
-	configCmd.AddCommand(configShowCmd, configSetCmd, configClearCmd, configDoctorCmd, configBootstrapCmd, configEnvCmd)
+	configEnvCmd.AddCommand(configEnvListCmd, configEnvShowCmd, configEnvActivateCmd, configEnvDeactivateCmd, configEnvNewCmd)
+	configCmd.AddCommand(configShowCmd, configSetCmd, configClearCmd, configDoctorCmd, configEnvCmd)
 	rootCmd.AddCommand(configCmd)
 }

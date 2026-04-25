@@ -20,10 +20,10 @@ var (
 var cfgStore *config.Store
 
 var rootCmd = &cobra.Command{
-	Use:   "hf",
-	Short: "HyperFleet CLI — manage clusters, nodepools, and fleet resources",
-	Long: `hf is the HyperFleet CLI tool for managing clusters, nodepools,
-adapter statuses, databases, Maestro resources, and Kubernetes operations.`,
+	Use:          "hf",
+	Short:        "HyperFleet CLI — manage clusters, nodepools, and fleet resources",
+	Long:         `hf is the HyperFleet CLI tool for managing clusters, nodepools, adapter statuses, databases, Maestro resources, and Kubernetes operations.`,
+	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// HF_CONFIG_DIR env var as fallback for --config flag
 		dir := cfgDir

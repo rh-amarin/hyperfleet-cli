@@ -1,0 +1,4 @@
+Error: no active environment
+  → run 'hf config env new' to create one
+  → run 'hf config env activate <name>' to activate an existing one
+exit: 1

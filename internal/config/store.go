@@ -68,16 +68,13 @@ func NewStore(dir string) (*Store, error) {
 		}
 	}
 
-	// Apply HF_* environment variable overrides.
-	applyEnvVars(&s.cfg)
-
 	return s, nil
 }
 
 // Dir returns the config directory path.
 func (s *Store) Dir() string { return s.dir }
 
-// Cfg returns the fully resolved Config (defaults ← config.yaml ← env profile ← env vars).
+// Cfg returns the fully resolved Config (defaults ← config.yaml ← env profile).
 func (s *Store) Cfg() Config { return s.cfg }
 
 // RawCfg returns the config as read from config.yaml (before env merge).
@@ -145,6 +142,15 @@ func (s *Store) OverrideCfg(path, value string) error {
 	return setField(&s.cfg, path, value)
 }
 
+// EnvCfg returns a fully merged Config as if the named env were active.
+func (s *Store) EnvCfg(name string) (Config, error) {
+	cfg := defaults()
+	if err := s.loadYAMLReadOnly(filepath.Join(s.dir, envsDir, name+".yaml"), &cfg); err != nil {
+		return Config{}, err
+	}
+	return cfg, nil
+}
+
 // SaveEnv writes envCfg to environments/<name>.yaml.
 func (s *Store) SaveEnv(name string, envCfg *Config) error {
 	path := filepath.Join(s.dir, envsDir, name+".yaml")
@@ -152,6 +158,14 @@ func (s *Store) SaveEnv(name string, envCfg *Config) error {
 }
 
 // ── internal helpers ──────────────────────────────────────────────────────────
+
+func (s *Store) loadYAMLReadOnly(path string, out interface{}) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return yaml.Unmarshal(data, out)
+}
 
 func (s *Store) loadYAML(name string, out interface{}) error {
 	path := name
@@ -198,21 +212,3 @@ func (s *Store) warnLegacy() {
 	}
 }
 
-// applyEnvVars overlays HF_* environment variables onto cfg.
-func applyEnvVars(cfg *Config) {
-	if v := os.Getenv("HF_API_URL"); v != "" {
-		cfg.Hyperfleet.APIURL = v
-	}
-	if v := os.Getenv("HF_API_VERSION"); v != "" {
-		cfg.Hyperfleet.APIVersion = v
-	}
-	if v := os.Getenv("HF_TOKEN"); v != "" {
-		cfg.Hyperfleet.Token = v
-	}
-	if v := os.Getenv("HF_CONTEXT"); v != "" {
-		cfg.Kubernetes.Context = v
-	}
-	if v := os.Getenv("HF_NAMESPACE"); v != "" {
-		cfg.Kubernetes.Namespace = v
-	}
-}
