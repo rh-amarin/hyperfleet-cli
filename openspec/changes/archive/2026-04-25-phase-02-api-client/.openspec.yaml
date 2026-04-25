@@ -1,0 +1,6 @@
+schema: spec-driven
+created: 2026-04-25
+status: archived
+archived: 2026-04-25
+dependsOn:
+  - phase-00-bootstrap
