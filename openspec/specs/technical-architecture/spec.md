@@ -1,0 +1,341 @@
+# Technical Architecture Specification
+
+## Purpose
+
+Define the modular Go architecture for the HyperFleet CLI, including package structure, shared libraries, the Cobra command tree, and dependency bundling strategy. The architecture prioritizes maintainability, extensibility, and a self-contained binary with minimal external tool requirements.
+
+## Requirements
+
+### Requirement: Go Module Structure
+
+The CLI SHALL be organized as a single Go module with internal packages following domain-driven boundaries.
+
+#### Scenario: Top-level module layout
+
+- GIVEN the CLI is built as a Go project
+- WHEN the repository is initialized
+- THEN the module MUST follow this package structure:
+  ```
+  hf/
+  ├── cmd/                    # Cobra command definitions (one file per command group)
+  │   ├── root.go             # Root command, global flags, plugin loading
+  │   ├── cluster.go          # hf cluster [create|get|list|search|patch|delete|conditions|statuses|table]
+  │   ├── nodepool.go         # hf nodepool [create|get|list|search|patch|delete|conditions|statuses|table]
+  │   ├── adapter.go          # hf cluster adapter post-status, hf nodepool adapter post-status
+  │   ├── config.go           # hf config [show|set|clear|doctor|bootstrap|env]
+  │   ├── db.go               # hf db [query|delete|delete-all|statuses|config]
+  │   ├── maestro.go          # hf maestro [list|get|delete|bundles|consumers|tui]
+  │   ├── pubsub.go           # hf pubsub [list|publish]
+  │   ├── rabbitmq.go         # hf rabbitmq [publish]
+  │   ├── kube.go             # hf kube [port-forward|context|curl|debug]
+  │   ├── logs.go             # hf logs [<pattern>|adapter]
+  │   ├── repos.go            # hf repos
+  │   ├── table.go            # hf table (combined overview)
+  │   └── workflow.go         # hf workflow [run|api-only]
+  ├── internal/
+  │   ├── api/                # HyperFleet API client
+  │   ├── config/             # Configuration management (split YAML model)
+  │   ├── output/             # Output formatting (JSON, table, YAML, colored dots)
+  │   ├── resource/           # Shared resource types and data structures
+  │   ├── watch/              # Watch mode (periodic refresh with diff)
+  │   ├── kube/               # Kubernetes operations (client-go wrapper)
+  │   ├── maestro/            # Maestro client (HTTP API + maestro-cli fallback)
+  │   ├── pubsub/             # Pub/Sub and RabbitMQ event publishing
+  │   ├── db/                 # PostgreSQL database operations
+  │   ├── plugin/             # Plugin discovery and loading
+  │   └── version/            # Build version info
+  ├── plugins/                # Example plugin implementations
+  ├── main.go                 # Entry point
+  ├── go.mod
+  └── go.sum
+  ```
+- AND each `cmd/` file MUST register its commands with the Cobra root command
+- AND all business logic MUST reside in `internal/` packages, not in `cmd/` files
+
+### Requirement: Cobra Command Tree
+
+The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command routing, flag parsing, and help generation.
+
+#### Scenario: Command hierarchy
+
+- GIVEN Cobra is the CLI framework
+- WHEN commands are registered
+- THEN the command tree MUST follow this structure:
+  ```
+  hf
+  ├── cluster
+  │   ├── create    <name> [region] [version]
+  │   ├── get       [cluster_id]
+  │   ├── list
+  │   ├── search    <name>
+  │   ├── patch     spec|labels [cluster_id]
+  │   ├── delete    [cluster_id]
+  │   ├── id
+  │   ├── conditions      [-w] [cluster_id]
+  │   ├── conditions-table [cluster_id]
+  │   ├── statuses        [-w] [cluster_id]
+  │   ├── table
+  │   └── adapter
+  │       └── post-status <adapter> <status> [generation]
+  ├── nodepool
+  │   ├── create    <name> [count] [instance-type]
+  │   ├── get       [nodepool_id]
+  │   ├── list      [cluster_id]
+  │   ├── search    <name>
+  │   ├── patch     spec|labels [nodepool_id]
+  │   ├── delete    [nodepool_id]
+  │   ├── id
+  │   ├── conditions      [-w] [nodepool_id]
+  │   ├── conditions-table [nodepool_id]
+  │   ├── statuses        [-w] [nodepool_id]
+  │   ├── table
+  │   └── adapter
+  │       └── post-status <adapter> <status> [generation] [nodepool_id]
+  ├── config
+  │   ├── show      [env-name]
+  │   ├── set       <key> <value>
+  │   ├── clear     <key|all>
+  │   ├── doctor
+  │   ├── bootstrap [env-name]
+  │   └── env
+  │       ├── list
+  │       ├── show     <name>
+  │       └── activate <name>
+  ├── table                  (combined overview)
+  ├── db
+  │   ├── query     <sql> | -f <file>
+  │   ├── delete    <table> [id]
+  │   ├── delete-all
+  │   ├── statuses
+  │   ├── statuses-delete
+  │   └── config
+  ├── maestro
+  │   ├── list
+  │   ├── get       [name]
+  │   ├── delete    [name]
+  │   ├── bundles
+  │   ├── consumers
+  │   └── tui
+  ├── pubsub
+  │   ├── list      [filter]
+  │   └── publish
+  │       ├── cluster  <topic>
+  │       └── nodepool <topic>
+  ├── rabbitmq
+  │   └── publish
+  │       └── cluster  <exchange> [routing-key]
+  ├── kube
+  │   ├── port-forward  start|stop|status
+  │   ├── context
+  │   ├── curl       [options] <url>
+  │   └── debug      <deployment> [namespace]
+  ├── logs           <pattern> [flags]
+  │   └── adapter    <pattern> [flags]
+  ├── repos
+  ├── workflow
+  │   ├── run
+  │   └── api-only
+  ├── version
+  └── completion     bash|zsh|fish|powershell
+  ```
+
+#### Scenario: Global flags
+
+- GIVEN the root command is defined
+- WHEN global flags are registered
+- THEN the following persistent flags MUST be available on every command:
+  - `--config <path>`: override config file location
+  - `--output <format>`: output format (`json`, `table`, `yaml`); default varies per command
+  - `--no-color`: disable colored output
+  - `--verbose` / `-v`: enable verbose/debug logging
+  - `--api-url <url>`: override API URL for this invocation
+  - `--api-token <token>`: override API token for this invocation
+
+### Requirement: Shared API Client Package (internal/api)
+
+The CLI SHALL provide a shared HTTP client for all HyperFleet API operations.
+
+#### Scenario: API client capabilities
+
+- GIVEN the `internal/api` package exists
+- WHEN any command needs to call the HyperFleet API
+- THEN the client MUST provide:
+  - Base URL construction from config (`{api-url}/api/hyperfleet/{api-version}/`)
+  - Methods: `Get`, `Post`, `Patch`, `Delete` with typed request/response
+  - Authentication via Bearer token from config
+  - Automatic JSON marshaling/unmarshaling
+  - RFC 7807 Problem Details error parsing with structured error type
+  - Request/response logging when `--verbose` is set
+  - Configurable timeout (default 30s)
+  - Context propagation for cancellation
+
+#### Scenario: API error handling
+
+- GIVEN the API returns a non-2xx response
+- WHEN the client parses the response
+- THEN it MUST return a structured `APIError` type containing code, detail, status, title, trace_id, type, timestamp
+- AND the error MUST implement Go's `error` interface
+- AND commands MUST be able to choose whether to output the raw error JSON or a formatted message
+
+### Requirement: Shared Output Package (internal/output)
+
+The CLI SHALL provide a shared output formatting package supporting multiple formats.
+
+#### Scenario: Output format dispatch
+
+- GIVEN the `--output` flag is set
+- WHEN a command produces output
+- THEN the output package MUST dispatch to the appropriate formatter:
+  - `json`: pretty-printed JSON with indentation
+  - `table`: formatted table with headers and aligned columns
+  - `yaml`: YAML serialization
+- AND the default format MUST be determined per command (table for list views, json for get views)
+
+#### Scenario: Dynamic column table rendering
+
+- GIVEN a table output is requested for cluster or nodepool resources
+- WHEN conditions vary across resources
+- THEN the table renderer MUST:
+  - Collect all unique condition types across all items
+  - Order columns: fixed columns first, then `Available`, then alphabetical adapter conditions, then `Ready` last
+  - Render status values as colored dots: green=True, red=False, yellow=Unknown, `-`=absent
+  - Respect `--no-color` flag to disable ANSI colors
+
+#### Scenario: Status dot rendering
+
+- GIVEN colored output is enabled
+- WHEN a condition status is rendered
+- THEN `True` MUST render as a green dot character
+- AND `False` MUST render as a red dot character
+- AND `Unknown` MUST render as a yellow dot character
+- AND absent conditions MUST render as `-`
+
+### Requirement: Shared Resource Types Package (internal/resource)
+
+The CLI SHALL define shared Go types for all HyperFleet resources.
+
+#### Scenario: Core resource types
+
+- GIVEN the `internal/resource` package exists
+- WHEN resource types are defined
+- THEN the package MUST include:
+  - `Cluster` struct with fields: ID, Kind, Name, Generation, Labels, Spec, Status, CreatedBy, CreatedTime, UpdatedBy, UpdatedTime, DeletedBy, DeletedTime, Href
+  - `NodePool` struct with fields: ID, Kind, Name, Generation, Labels, Spec, Status, OwnerReferences, CreatedBy, CreatedTime, UpdatedBy, UpdatedTime, DeletedBy, DeletedTime
+  - `AdapterStatus` struct with fields: Adapter, Conditions, ObservedGeneration, LastReportTime, Data, CreatedTime
+  - `Condition` struct with fields: Type, Status, Reason, Message, LastTransitionTime, ObservedGeneration
+  - `CloudEvent` struct with fields: SpecVersion, Type, Source, ID, Data
+  - Generic `ListResponse[T]` with fields: Items, Kind, Page, Size, Total
+- AND all types MUST have JSON struct tags matching the API field names
+- AND `Spec` and `Labels` MUST use `map[string]any` to support provider-specific content
+
+### Requirement: Shared Watch Package (internal/watch)
+
+The CLI SHALL provide a reusable watch mode for commands that support the `-w` flag.
+
+#### Scenario: Watch mode operation
+
+- GIVEN a command supports the `-w` flag
+- WHEN `-w` is passed
+- THEN the watch package MUST:
+  - Execute the data-fetching function on a configurable interval (default 2s)
+  - Clear the terminal and re-render output on each tick
+  - Highlight changes between consecutive renders (optional, based on terminal capability)
+  - Respond to Ctrl+C to stop watching
+  - Display a "Last updated: <timestamp>" footer
+
+### Requirement: Kubernetes Operations Package (internal/kube)
+
+The CLI SHALL bundle `client-go` for all Kubernetes operations without requiring an external `kubectl` binary.
+
+#### Scenario: Bundled client-go capabilities
+
+- GIVEN `client-go` is bundled
+- WHEN the kube package is used
+- THEN it MUST provide:
+  - Kubeconfig loading (respecting `--kubeconfig` flag, `KUBECONFIG` env, and default `~/.kube/config`)
+  - Port-forward lifecycle management (start, stop, status with PID tracking)
+  - Pod log streaming with label/name filtering and multi-pod fan-out (replacing stern)
+  - Pod exec for in-cluster curl and debug operations
+  - Namespace listing and context management
+- AND the binary MUST NOT require `kubectl` to be installed for any core operation
+
+### Requirement: Dependency Bundling Strategy
+
+The CLI SHALL bundle Go libraries to replace external tool dependencies, producing a self-contained binary.
+
+#### Scenario: Bundled dependencies
+
+- GIVEN the CLI is compiled
+- WHEN external tool equivalents are needed
+- THEN the following MUST be bundled as Go libraries:
+  | Former Tool | Go Replacement | Library |
+  |-------------|---------------|---------|
+  | jq | encoding/json | stdlib |
+  | curl | net/http | stdlib |
+  | awk/sed | text/tabwriter + string processing | stdlib |
+  | lsof/ss | net.Listen / os.FindProcess | stdlib |
+  | viddy | internal/watch with ANSI terminal control | custom |
+  | psql | database/sql + pgx | jackc/pgx/v5 |
+  | kubectl | client-go | k8s.io/client-go |
+  | gcloud pubsub | cloud.google.com/go/pubsub | Google Cloud Go SDK |
+  | gh | go-github | google/go-github/v60 |
+  | stern | client-go pod log streaming | k8s.io/client-go |
+
+#### Scenario: Maestro CLI handling
+
+- GIVEN maestro-cli is an external tool with a TUI mode
+- WHEN maestro commands are invoked
+- THEN `hf maestro list`, `hf maestro get`, `hf maestro delete`, `hf maestro bundles`, and `hf maestro consumers` MUST use the Maestro HTTP API directly via `net/http`
+- AND `hf maestro tui` MUST shell out to `maestro-cli` as an optional external dependency
+- AND if `maestro-cli` is not found for TUI mode, the CLI MUST display a clear error with installation instructions
+
+#### Scenario: Zero external dependencies for core operations
+
+- GIVEN the CLI binary is installed on a clean system
+- WHEN the user runs cluster, nodepool, adapter-status, config, table, or output commands
+- THEN the CLI MUST NOT require any external tools to be installed
+- AND only `maestro-cli` (for TUI) and GCP credentials (for Pub/Sub) MAY be required for their respective specialized commands
+
+### Requirement: Error Handling Strategy
+
+The CLI SHALL follow a consistent error handling pattern across all commands.
+
+#### Scenario: Error propagation
+
+- GIVEN an error occurs during command execution
+- WHEN the error is an API error (RFC 7807)
+- THEN the CLI MUST output the structured error in the current output format (json/table/yaml)
+- AND exit with code 0 to maintain backwards compatibility with the shell scripts
+
+#### Scenario: CLI-level errors
+
+- GIVEN an error occurs that is not an API error (network failure, config missing, etc.)
+- WHEN the error is reported
+- THEN the CLI MUST print the error to stderr with a `[ERROR]` prefix
+- AND exit with a non-zero exit code
+
+#### Scenario: Warning and info messages
+
+- GIVEN a non-fatal condition occurs (duplicate creation, empty results)
+- WHEN the condition is reported
+- THEN the CLI MUST print to stderr with `[WARN]` or `[INFO]` prefix
+- AND continue execution or exit with code 0
+
+### Requirement: Logging and Verbosity
+
+The CLI SHALL support structured logging with configurable verbosity.
+
+#### Scenario: Verbose mode
+
+- GIVEN `--verbose` or `-v` is passed
+- WHEN the CLI executes
+- THEN debug-level messages MUST be printed to stderr
+- AND HTTP request/response details (method, URL, status code, duration) MUST be logged
+- AND config resolution steps MUST be logged
+
+#### Scenario: Default mode
+
+- GIVEN no verbosity flag is set
+- WHEN the CLI executes
+- THEN only warnings, errors, and command output MUST be displayed
+- AND no debug information MUST appear

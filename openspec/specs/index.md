@@ -2,29 +2,88 @@
 
 ## Purpose
 
-Complete requirements specification for the HyperFleet CLI tool, reverse-engineered from the shell scripts at [rh-amarin/hyperfleet-cli](https://github.com/rh-amarin/hyperfleet-cli). The CLI manages OpenShift HyperFleet cluster lifecycle operations via the HyperFleet API, Maestro, Kubernetes, and messaging infrastructure.
+Complete requirements specification for the HyperFleet CLI tool (`hf`), reverse-engineered from the shell scripts at [rh-amarin/hyperfleet-cli](https://github.com/rh-amarin/hyperfleet-cli) and extended with technical architecture, configuration model, and non-functional requirements for the Go reimplementation.
 
 ## Specification Index
 
+### Functional Requirements
+
 Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cli/blob/main/scripts/output/00-index.json):
 
-| # | Domain | Spec | Requirements | Scenarios | Scripts Covered |
-|---|--------|------|-------------|-----------|-----------------|
-| 01 | [Configuration](config/spec.md) | Config management, env profiles, diagnostics | 8 | 12 | hf.config.sh, hf.cluster.id.sh, hf.nodepool.id.sh |
-| 02 | [Cluster Lifecycle](cluster-lifecycle/spec.md) | Cluster CRUD operations | 9 | 19 | hf.cluster.{create,search,get,patch,delete,conditions,conditions.table,statuses}.sh |
-| 03 | [NodePool Lifecycle](nodepool-lifecycle/spec.md) | NodePool CRUD operations | 10 | 15 | hf.nodepool.{create,list,search,get,patch,delete,conditions,conditions.table,statuses,table}.sh |
-| 04 | [Adapter Status](adapter-status/spec.md) | Adapter status posting and convergence model | 3 | 8 | hf.cluster.adapter.post.status.sh, hf.nodepool.adapter.post.status.sh |
+| # | Domain | Spec | Req | Scenarios | Scripts Covered |
+|---|--------|------|-----|-----------|-----------------|
+| 01 | [Configuration](config/spec.md) | Config management, env profiles, diagnostics | 8 | 13 | hf.config.sh, hf.cluster.id.sh, hf.nodepool.id.sh |
+| 02 | [Cluster Lifecycle](cluster-lifecycle/spec.md) | Cluster CRUD operations | 8 | 21 | hf.cluster.{create,search,get,patch,delete,conditions,conditions.table,statuses}.sh |
+| 03 | [NodePool Lifecycle](nodepool-lifecycle/spec.md) | NodePool CRUD operations | 10 | 18 | hf.nodepool.{create,list,search,get,patch,delete,conditions,conditions.table,statuses,table}.sh |
+| 04 | [Adapter Status](adapter-status/spec.md) | Adapter status posting and convergence model | 3 | 9 | hf.cluster.adapter.post.status.sh, hf.nodepool.adapter.post.status.sh |
 | 05 | [Tables and Lists](tables-and-lists/spec.md) | Aggregated views and formatted tables | 4 | 7 | hf.cluster.{list,table}.sh, hf.nodepool.table.sh, hf.table.sh |
-| 06 | [Database](database/spec.md) | Direct PostgreSQL operations | 6 | 9 | hf.db.{query,delete,delete.all,statuses,statuses.delete,config}.sh |
+| 06 | [Database](database/spec.md) | Direct PostgreSQL operations | 6 | 10 | hf.db.{query,delete,delete.all,statuses,statuses.delete,config}.sh |
 | 07 | [Maestro](maestro/spec.md) | Maestro resource management | 6 | 8 | hf.maestro.{list,bundles,consumers,get,delete,tui}.sh |
-| 08 | [Pub/Sub & Messaging](pubsub/spec.md) | Event publishing to GCP Pub/Sub and RabbitMQ | 4 | 5 | hf.pubsub.{list,publish.cluster.change,publish.nodepool.change}.sh, hf.rabbitmq.publish.cluster.change.sh |
-| 09 | [Kubernetes](kubernetes/spec.md) | Port-forwarding, debugging, log tailing | 5 | 8 | hf.kube.{port.forward,context,curl,debug.pod}.sh, hf.logs.sh, hf.logs.adapter.sh |
+| 08 | [Pub/Sub & Messaging](pubsub/spec.md) | Event publishing to GCP Pub/Sub and RabbitMQ | 4 | 5 | hf.pubsub.{list,publish.*}.sh, hf.rabbitmq.publish.*.sh |
+| 09 | [Kubernetes](kubernetes/spec.md) | Port-forwarding, debugging, log tailing | 6 | 8 | hf.kube.{port.forward,context,curl,debug.pod}.sh, hf.logs.{sh,adapter}.sh |
 | 10 | [Repos](repos/spec.md) | GitHub repository status overview | 1 | 2 | hf.repos.sh |
-| 11 | [Errors & Usage](errors-and-usage/spec.md) | Error handling, usage messages, edge cases | 7 | 9 | Cross-cutting across all commands |
-| 12 | [Interactive Commands](interactive-commands/spec.md) | Interactive, streaming, and long-running commands | 8 | 13 | hf.workflow.sh, hf.workflow.api-only.sh, and watch/interactive modes |
-| 13 | [Config Registry](config-registry/spec.md) | Configuration property registry and storage model | 7 | 11 | hf.lib.sh (shared library) |
+| 11 | [Errors & Usage](errors-and-usage/spec.md) | Error handling, usage messages, edge cases | 7 | 11 | Cross-cutting across all commands |
+| 12 | [Interactive Commands](interactive-commands/spec.md) | Interactive, streaming, and long-running commands | 8 | 16 | hf.workflow.sh, hf.workflow.api-only.sh, watch/interactive modes |
+| 13 | [Config Registry](config-registry/spec.md) | Configuration property registry and storage model | 6 | 15 | hf.lib.sh (shared library) |
 
-**Totals: 77 requirements, 143 scenarios covering 50+ scripts**
+### Technical & Non-Functional Requirements
+
+| # | Domain | Spec | Req | Scenarios |
+|---|--------|------|-----|-----------|
+| T1 | [Technical Architecture](technical-architecture/spec.md) | Go module structure, Cobra command tree, shared packages, dependency bundling | 10 | 19 |
+| T2 | [Configuration Model](config-model/spec.md) | Split YAML config (config.yaml + state.yaml), environment profiles, migration | 9 | 18 |
+| T3 | [Non-Functional](non-functional/spec.md) | Shell completions, output format flag, cross-compilation, plugin architecture, testing, security | 8 | 31 |
+
+### Summary
+
+| Category | Requirements | Scenarios |
+|----------|-------------|-----------|
+| Functional (01–13) | 77 | 143 |
+| Technical & NFR (T1–T3) | 27 | 68 |
+| **Total** | **104** | **211** |
+
+## Technology Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Language | **Go** | Single binary, strong k8s ecosystem, cross-platform |
+| CLI Framework | **Cobra** | Industry standard (kubectl, gh, docker), subcommand trees, auto-completions |
+| Config Format | **Split YAML** | `config.yaml` for static settings, `state.yaml` for active state (top-level keys) |
+| K8s Client | **client-go (bundled)** | Self-contained binary, no kubectl dependency |
+| DB Driver | **pgx** | Native Go PostgreSQL driver, no psql needed |
+| GCP Pub/Sub | **Cloud Go SDK** | Official library, no gcloud dependency |
+| GitHub | **go-github** | REST client, no gh dependency |
+| Build/Release | **GoReleaser** | Cross-compile linux/mac/windows amd64/arm64 |
+| Extensibility | **Plugin architecture** | `hf-<command>` executables in plugin path |
+
+## Dependency Bundling
+
+| Former External Tool | Go Replacement | Status |
+|---------------------|---------------|--------|
+| jq | encoding/json (stdlib) | Bundled |
+| curl | net/http (stdlib) | Bundled |
+| awk/sed | text/tabwriter + strings | Bundled |
+| lsof/ss | net.Listen / os.FindProcess | Bundled |
+| viddy | internal/watch (ANSI refresh) | Bundled |
+| psql | jackc/pgx/v5 | Bundled |
+| kubectl | k8s.io/client-go | Bundled |
+| gcloud | cloud.google.com/go/pubsub | Bundled |
+| gh | google/go-github/v60 | Bundled |
+| stern | client-go log streaming | Bundled |
+| maestro-cli | HTTP API for data; shell-out for TUI only | Partial |
+
+## Key Design Patterns
+
+1. **Split config**: `config.yaml` for connection settings, `state.yaml` for active cluster/nodepool/environment
+2. **Composable commands**: `cluster create` calls `cluster search` to set context
+3. **Defaults over usage**: Create commands with no args use defaults, not usage display
+4. **Generation tracking**: Resources track generation; adapters report observed_generation
+5. **Convergence logic**: Ready becomes True when ALL required adapters report Available=True at current generation
+6. **Multi-format output**: `--output json|table|yaml` on every data-producing command
+7. **Plugin-extensible**: External `hf-<name>` executables discovered and delegated to
+8. **Zero external deps for core**: Only maestro-cli TUI and GCP credentials needed for specialized commands
+9. **RFC 7807 errors**: API errors follow Problem Details format
+10. **Config precedence**: flags > env vars > environment profile > config.yaml > defaults
 
 ## Environment Context
 
@@ -48,14 +107,3 @@ From the recording environment:
 ## API Base Path
 
 All HyperFleet API calls use: `/api/hyperfleet/v1/`
-
-## Key Design Patterns
-
-1. **Config-driven**: All scripts read from `~/.config/hf/` (one file per property)
-2. **Composable**: Scripts build on each other (e.g., `cluster create` calls `cluster search`)
-3. **Defaults over usage**: Create commands with no args use defaults, not usage display
-4. **Generation tracking**: Resources track generation; adapters report observed_generation
-5. **Convergence logic**: Ready becomes True when ALL required adapters report Available=True at current generation
-6. **Watch mode**: Status/conditions commands support `-w` flag for live updates
-7. **Confirmation prompts**: Destructive operations require typing `yes` to confirm
-8. **RFC 7807 errors**: API errors follow Problem Details format
