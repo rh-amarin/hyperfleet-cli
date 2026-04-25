@@ -2,6 +2,7 @@ package resource
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -204,6 +205,114 @@ func TestAdapterStatus_JSONRoundTrip(t *testing.T) {
 	}
 	if as.Data["key"] != "value" {
 		t.Errorf("data[key] = %v", as.Data["key"])
+	}
+}
+
+func TestCloudEvent_JSONRoundTrip(t *testing.T) {
+	input := `{
+		"specversion": "1.0",
+		"type": "com.hyperfleet.cluster.created",
+		"source": "/clusters",
+		"id": "evt-001",
+		"data": {"cluster_id": "c-001"}
+	}`
+
+	var ev CloudEvent
+	if err := json.Unmarshal([]byte(input), &ev); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if ev.SpecVersion != "1.0" {
+		t.Errorf("specversion = %q, want %q", ev.SpecVersion, "1.0")
+	}
+	if ev.Type != "com.hyperfleet.cluster.created" {
+		t.Errorf("type = %q", ev.Type)
+	}
+	if ev.ID != "evt-001" {
+		t.Errorf("id = %q", ev.ID)
+	}
+
+	out, err := json.Marshal(ev)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var ev2 CloudEvent
+	if err := json.Unmarshal(out, &ev2); err != nil {
+		t.Fatalf("re-unmarshal: %v", err)
+	}
+	if ev2.Source != ev.Source {
+		t.Errorf("round-trip source mismatch: %q vs %q", ev2.Source, ev.Source)
+	}
+}
+
+func TestCluster_SoftDeleteFields(t *testing.T) {
+	input := `{
+		"id": "c-001",
+		"kind": "Cluster",
+		"href": "/api/hyperfleet/v1/clusters/c-001",
+		"name": "deleted-cluster",
+		"generation": 5,
+		"spec": {},
+		"status": {"conditions": []},
+		"created_by": "user@example.com",
+		"created_time": "2026-01-01T00:00:00Z",
+		"updated_by": "admin@example.com",
+		"updated_time": "2026-04-01T00:00:00Z",
+		"deleted_by": "admin@example.com",
+		"deleted_time": "2026-04-25T00:00:00Z"
+	}`
+
+	var c Cluster
+	if err := json.Unmarshal([]byte(input), &c); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if c.DeletedBy != "admin@example.com" {
+		t.Errorf("deleted_by = %q", c.DeletedBy)
+	}
+	if c.DeletedTime != "2026-04-25T00:00:00Z" {
+		t.Errorf("deleted_time = %q", c.DeletedTime)
+	}
+
+	// Verify deleted fields are omitted when empty.
+	c2 := Cluster{ID: "c-002", Kind: "Cluster"}
+	out, err := json.Marshal(c2)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if string(out) != `{"id":"c-002","kind":"Cluster","href":"","name":"","generation":0,"spec":null,"status":{"conditions":null},"created_by":"","created_time":"","updated_by":"","updated_time":""}` {
+		// Just check deleted fields are absent
+		if strings.Contains(string(out), "deleted_by") {
+			t.Errorf("deleted_by should be omitted when empty, got: %s", out)
+		}
+		if strings.Contains(string(out), "deleted_time") {
+			t.Errorf("deleted_time should be omitted when empty, got: %s", out)
+		}
+	}
+}
+
+func TestValidationError_JSONRoundTrip(t *testing.T) {
+	input := `{"field": "name", "message": "must not be empty", "value": "bad-val", "constraint": "required"}`
+
+	var ve ValidationError
+	if err := json.Unmarshal([]byte(input), &ve); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if ve.Field != "name" {
+		t.Errorf("field = %q", ve.Field)
+	}
+	if ve.Constraint != "required" {
+		t.Errorf("constraint = %q", ve.Constraint)
+	}
+
+	out, err := json.Marshal(ve)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var ve2 ValidationError
+	if err := json.Unmarshal(out, &ve2); err != nil {
+		t.Fatalf("re-unmarshal: %v", err)
+	}
+	if ve2.Message != ve.Message {
+		t.Errorf("round-trip message mismatch")
 	}
 }
 

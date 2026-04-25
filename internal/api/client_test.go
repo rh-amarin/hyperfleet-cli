@@ -260,3 +260,121 @@ func TestNewClient_BaseURL(t *testing.T) {
 		t.Errorf("token = %q", c.token)
 	}
 }
+
+func TestPatch_200(t *testing.T) {
+	type patchBody struct{ Name string }
+	want := testResource{ID: "abc", Name: "renamed"}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch {
+			t.Errorf("expected PATCH, got %s", r.Method)
+		}
+		var body patchBody
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Errorf("decode body: %v", err)
+		}
+		if body.Name != "renamed" {
+			t.Errorf("body.Name = %q", body.Name)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(want)
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv, "tok", false)
+	got, err := Patch[testResource](c, context.Background(), "clusters/abc", patchBody{Name: "renamed"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.Name != want.Name {
+		t.Errorf("got name %q, want %q", got.Name, want.Name)
+	}
+}
+
+func TestDelete_200(t *testing.T) {
+	want := testResource{ID: "abc", Name: "deleted-cluster"}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("expected DELETE, got %s", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(want)
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv, "tok", false)
+	got, err := Delete[testResource](c, context.Background(), "clusters/abc")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.ID != want.ID {
+		t.Errorf("got id %q, want %q", got.ID, want.ID)
+	}
+}
+
+func TestDo_BodyMarshalError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("server should not be reached")
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv, "tok", false)
+	// Channels cannot be JSON-marshaled; Do should return an error before sending.
+	_, err := Post[testResource](c, context.Background(), "clusters", make(chan int))
+	if err == nil {
+		t.Fatal("expected marshal error, got nil")
+	}
+	if strings.Contains(err.Error(), "404") || strings.Contains(err.Error(), "500") {
+		t.Errorf("error looks like HTTP error rather than marshal error: %v", err)
+	}
+}
+
+func TestParseError_TruncatesLongBody(t *testing.T) {
+	longBody := strings.Repeat("x", 600) // > 500 chars, non-JSON
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, longBody)
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv, "tok", false)
+	_, err := Get[testResource](c, context.Background(), "clusters")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	apiErr, ok := IsAPIError(err)
+	if !ok {
+		t.Fatalf("expected *APIError, got %T", err)
+	}
+	if len(apiErr.Detail) > 500 {
+		t.Errorf("detail not truncated: len=%d", len(apiErr.Detail))
+	}
+}
+
+func TestAPIError_ErrorString(t *testing.T) {
+	e := &APIError{Status: 404, Title: "Not Found", Detail: "resource missing"}
+	got := e.Error()
+	want := "[404] Not Found: resource missing"
+	if got != want {
+		t.Errorf("Error() = %q, want %q", got, want)
+	}
+}
+
+func TestAuthorizationHeader_SentWithToken(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		if auth != "Bearer secret" {
+			t.Errorf("Authorization = %q, want %q", auth, "Bearer secret")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(testResource{ID: "1"})
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv, "secret", false)
+	_, err := Get[testResource](c, context.Background(), "clusters/1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
