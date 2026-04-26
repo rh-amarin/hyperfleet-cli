@@ -1,2 +1,0 @@
-NAME        GEN  AVAILABLE  CLDEPLOYMENTSUCCESSFUL  CLJOBSUCCESSFUL  CLMAESTROSUCCESSFUL  CLNAMESPACESUCCESSFUL  READY
-my-cluster  1    True       True                    True             True                 True                   True
