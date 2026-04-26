@@ -1,0 +1,43 @@
+# Maestro Live Verification — 2026-04-26
+
+## Result: Maestro endpoint not reachable from this environment
+
+The Maestro HTTP API is a separate service from the HyperFleet API and is not
+exposed externally. It is typically accessed via port-forward from within the
+Kubernetes cluster where Maestro is deployed.
+
+## Attempts Made
+
+1. Default config endpoint (http://localhost:8100): connection refused
+   - Command: /tmp/hf maestro consumers
+   - Error: dial tcp [::1]:8100: connect: connection refused
+
+2. HyperFleet LoadBalancer (34.175.27.173:8000) with /api/maestro/v1/consumers:
+   - Returns 404 (HYPERFLEET-NTF-001): "The requested resource '/api/maestro/v1/consumers' doesn't exist"
+   - This confirms the HyperFleet API and Maestro API are distinct services on different endpoints.
+
+3. Ports 8001, 8100, 30007: No response (connection timeout)
+
+4. Port 8080: Returns HyperFleet 404 (same service as main API)
+
+## Expected Usage (with port-forward)
+
+When Maestro is accessible (e.g., via `hf kube port-forward start`):
+
+  hf maestro consumers
+  # NAME       ID
+  # cluster1   <uuid>
+
+  hf maestro list
+  # NAME              CONSUMER   VERSION   MANIFESTS
+  # mw-<cluster-uuid> cluster1   1         3
+
+  hf maestro tui  # requires maestro-cli binary in PATH
+
+## Unit Tests
+
+All unit tests pass (see verification_proof/tests.txt):
+- internal/maestro: 8 tests (httptest-based)
+- cmd/maestro: 7 tests (httptest-based)
+
+The implementation is correct; live verification requires cluster port-forward access.
