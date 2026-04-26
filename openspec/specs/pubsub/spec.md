@@ -124,8 +124,8 @@ The CLI SHALL publish a cluster reconcile event to a RabbitMQ exchange via the H
 | File | Contents |
 |---|---|
 | `interfaces.go` | `GCPPublisher`, `RabbitPublisher` interfaces; `TopicGroup` struct |
-| `gcp.go` | `GCPClient` — wraps `cloud.google.com/go/pubsub`, auth via `oauth2.StaticTokenSource` |
-| `rabbitmq.go` | `RabbitClient` — HTTP Management API via `net/http` + BasicAuth |
+| `gcp.go` | `GCPClient` — wraps `cloud.google.com/go/pubsub`, auth via `oauth2.StaticTokenSource` using the `hyperfleet.token` config value |
+| `rabbitmq.go` | `RabbitClient` — HTTP Management API via `net/http` + BasicAuth; vhost `/` is URL-encoded to `%2F` |
 
 ### Commands
 
@@ -138,13 +138,13 @@ The CLI SHALL publish a cluster reconcile event to a RabbitMQ exchange via the H
 
 | Key | Default | Purpose |
 |---|---|---|
-| `hyperfleet.token` | — | OAuth2 access token for GCP Pub/Sub |
+| `hyperfleet.token` | — | OAuth2 access token passed to `oauth2.StaticTokenSource` for GCP Pub/Sub |
 | `hyperfleet.gcp-project` | `hcm-hyperfleet` | GCP project ID |
 | `rabbitmq.host` | `rabbitmq` | RabbitMQ management hostname |
 | `rabbitmq.mgmt-port` | `15672` | RabbitMQ HTTP management port |
 | `rabbitmq.user` | `guest` | HTTP BasicAuth username |
 | `rabbitmq.password` | `guest` | HTTP BasicAuth password |
-| `rabbitmq.vhost` | `/` | Virtual host (URL-encoded in requests) |
+| `rabbitmq.vhost` | `/` | Virtual host (URL-encoded as `%2F` in requests when set to `/`) |
 
 ### CloudEvent builders
 

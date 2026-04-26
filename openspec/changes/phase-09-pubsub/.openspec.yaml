@@ -1,7 +1,0 @@
-schema: openspec/v1
-change: phase-09-pubsub
-created: 2026-04-26
-dependsOn:
-  - phase-03-cluster
-  - phase-04-nodepool
-status: in-progress
