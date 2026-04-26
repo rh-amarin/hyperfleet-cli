@@ -36,7 +36,15 @@ checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
   algorithm: sha256
 
+release:
+  github:
+    owner: rh-amarin
+    name: hyperfleet-cli
+  draft: false
+  prerelease: auto
+
 changelog:
+  use: git
   sort: asc
   filters:
     exclude:

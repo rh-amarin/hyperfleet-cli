@@ -1,0 +1,12 @@
+schema: openspec/v1
+change: phase-13-nfr
+created: 2026-04-26
+dependsOn:
+  - phase-06-tables-watch
+  - phase-07-database
+  - phase-08-maestro
+  - phase-09-pubsub
+  - phase-10-kubernetes
+  - phase-11-repos
+  - phase-12-workflow
+status: in-progress
