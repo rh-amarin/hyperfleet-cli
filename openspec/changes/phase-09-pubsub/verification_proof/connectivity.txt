@@ -1,0 +1,39 @@
+Phase 9 — Live Connectivity Verification
+=========================================
+Date: 2026-04-26
+Build: go build -o /tmp/hf . (succeeded)
+
+## GCP Pub/Sub
+
+Command: hf pubsub list
+Result: GCP API responds with SERVICE_DISABLED for project 888214980327 (hcm-hyperfleet).
+        Authentication succeeded (ADC/application default credentials used).
+        The Cloud Pub/Sub API is not enabled in this project.
+        See: verification_proof/3.1-pubsub-list.txt
+
+Command: hf pubsub publish cluster my-topic (with cluster-id from HyperFleet API)
+Result: HyperFleet API fetch succeeded (cluster 019dc85a-afba-7c2c-8234-1fa82c22b560).
+        GCP Publish also returns SERVICE_DISABLED (same API disabled condition).
+        CloudEvent envelope was built and passed to GCPClient.Publish before the error.
+        See: verification_proof/3.2-pubsub-publish-cluster.txt
+
+## RabbitMQ
+
+Command: hf rabbitmq publish cluster my-exchange (with cluster-id from HyperFleet API)
+Result: HyperFleet API fetch succeeded (cluster 019dc85a-afba-7c2c-8234-1fa82c22b560).
+        AMQP Dial failed: "dial tcp: lookup rabbitmq on 172.30.0.10:53: no such host"
+        This confirms the AMQP URL is built correctly from config
+        (amqp://guest:guest@rabbitmq/) and the Dial attempt reaches the network layer.
+        RabbitMQ hostname is not resolvable in this environment.
+        See: verification_proof/3.3-rabbitmq-publish-cluster.txt
+
+## Summary
+
+| Component         | Status      | Notes |
+|-------------------|-------------|-------|
+| GCP auth          | OK          | ADC credentials work; API calls reach GCP |
+| GCP Pub/Sub API   | DISABLED    | API not enabled in project hcm-hyperfleet |
+| HyperFleet API    | OK          | Clusters reachable at http://34.175.27.173:8000 |
+| RabbitMQ          | UNREACHABLE | Hostname 'rabbitmq' not resolvable in this env |
+
+Unit tests cover all command flows without requiring live brokers.

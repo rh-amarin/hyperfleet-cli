@@ -1,0 +1,1 @@
+Error: create RabbitMQ client: amqp.Dial: dial tcp: lookup rabbitmq on 172.30.0.10:53: no such host
