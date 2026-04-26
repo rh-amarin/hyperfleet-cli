@@ -1,0 +1,6 @@
+schema: openspec/v1
+change: phase-11-repos
+created: 2026-04-26
+dependsOn:
+  - phase-00-bootstrap
+status: in-progress

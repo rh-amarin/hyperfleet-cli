@@ -48,7 +48,8 @@ type RabbitMQConfig struct {
 }
 
 type RegistryConfig struct {
-	Name string `yaml:"name,omitempty"`
+	Name  string `yaml:"name,omitempty"`
+	Token string `yaml:"token,omitempty"`
 }
 
 // Config is the full static configuration (config.yaml).
@@ -118,6 +119,7 @@ var secretPaths = map[string]bool{
 	"hyperfleet.token":  true,
 	"database.password": true,
 	"rabbitmq.password": true,
+	"registry.token":    true,
 }
 
 // IsSecret reports whether the dotted path is a secret field.
