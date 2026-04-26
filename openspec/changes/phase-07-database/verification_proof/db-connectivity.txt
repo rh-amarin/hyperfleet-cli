@@ -1,0 +1,43 @@
+## Live DB Verification — Phase 07 Database
+
+Date: 2026-04-26
+Environment: ACP session (Linux container, no cluster port-forward)
+
+### hf db config (no DB connection required)
+
+$ hf db config
+KEY       VALUE
+host      localhost
+port      5432
+name      hyperfleet
+user      hyperfleet
+password  <set>
+
+✓ Config command works without a DB connection; password is masked.
+
+### hf db query "SELECT 1 as ping" (live connection attempt)
+
+$ hf db query "SELECT 1 as ping"
+Error: connect to database: ping database: failed to connect to `user=hyperfleet database=hyperfleet`:
+	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connect: connection refused
+	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connect: connection refused
+
+### Connectivity Assessment
+
+The PostgreSQL database is not accessible from the ACP session container.
+The default config points to localhost:5432. The hyperfleet-dev-amarin-eu1 cluster
+runs PostgreSQL inside Kubernetes, requiring either:
+  1. kubectl port-forward service/postgres 5432:5432 (phase 10 — Kubernetes)
+  2. A direct cloud SQL endpoint configured via hf config set database.host <ip>
+
+Port scan of localhost (5432, 5433, 5434): all CLOSED.
+
+### Result
+
+- hf db config: ✓ PASS
+- hf db query (live): ✗ NOT REACHABLE — DB not accessible from this session
+- Unit tests (all db subcommands): ✓ PASS via mock injection
+
+Live DB verification requires a port-forward to the in-cluster PostgreSQL pod
+(to be implemented in phase 10 - Kubernetes). All unit tests pass with mocked
+DBClient, exercising the full command logic without requiring a live DB.
