@@ -1,0 +1,8 @@
+[INFO] Posting adapter status: cl-maestro = Unknown (gen: 1) for cluster: 019dc845-6f21-7cb6-9621-a74e0123ef9a
+{
+  "adapter": "",
+  "observed_generation": 0,
+  "conditions": null,
+  "created_time": "",
+  "last_report_time": ""
+}

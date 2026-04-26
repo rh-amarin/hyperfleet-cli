@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 )
 
@@ -43,8 +44,16 @@ func Delete[T any](c *Client, ctx context.Context, path string) (*T, error) {
 }
 
 func decode[T any](resp *http.Response) (*T, error) {
+	if resp.StatusCode == http.StatusNoContent {
+		var v T
+		return &v, nil
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	var v T
-	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
+	if err := json.Unmarshal(body, &v); err != nil {
 		return nil, err
 	}
 	return &v, nil
