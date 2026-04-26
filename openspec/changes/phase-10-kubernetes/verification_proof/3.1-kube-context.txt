@@ -1,0 +1,2 @@
+$ /tmp/hf kube context --kubeconfig /tmp/kube/config
+hyperfleet-dev-amarin-eu1

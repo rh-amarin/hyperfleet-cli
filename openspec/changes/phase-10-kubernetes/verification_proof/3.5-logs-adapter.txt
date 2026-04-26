@@ -1,0 +1,13 @@
+$ /tmp/hf logs adapter "" --kubeconfig /tmp/kube/config-insecure --namespace amarin-ns1
+Error: list pods: Unauthorized
+
+Note: Cluster is reachable at 34.175.77.98 (confirmed: TLS handshake succeeds, 
+got 401 Unauthorized with placeholder token).
+The kubeconfig-eu and gcloud-access-token files were not uploaded to /workspace/file-uploads/
+so full live verification with real credentials could not be performed.
+
+The command correctly:
+- Resolves the kubeconfig path
+- Builds the Kubernetes clientset
+- Attempts to list pods in amarin-ns1 namespace
+- Returns the API error (Unauthorized) from the real cluster
