@@ -34,8 +34,6 @@ func init() {
 	dbCmd.AddCommand(dbQueryCmd)
 	dbCmd.AddCommand(dbDeleteCmd)
 	dbCmd.AddCommand(dbDeleteAllCmd)
-	dbCmd.AddCommand(dbStatusesCmd)
-	dbCmd.AddCommand(dbStatusesDeleteCmd)
 	dbCmd.AddCommand(dbConfigCmd)
 }
 
@@ -167,68 +165,6 @@ var dbDeleteAllCmd = &cobra.Command{
 			return err
 		}
 		out.Info(fmt.Sprintf("Deleted all rows from %s", table))
-		return nil
-	},
-}
-
-// ── statuses ──────────────────────────────────────────────────────────────────
-
-var dbStatusesCmd = &cobra.Command{
-	Use:          "statuses",
-	Short:        "Show all adapter statuses from the database",
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := context.Background()
-		client, err := dbConnect(ctx)
-		if err != nil {
-			return fmt.Errorf("connect to database: %w", err)
-		}
-		defer client.Close()
-
-		headers, rows, err := client.Query(ctx, "SELECT * FROM adapter_statuses")
-		if err != nil {
-			return err
-		}
-		if len(rows) == 0 {
-			out.Info("No adapter statuses found")
-			return nil
-		}
-		return printer().PrintTable(headers, rows)
-	},
-}
-
-// ── statuses-delete ───────────────────────────────────────────────────────────
-
-var dbStatusesDeleteCmd = &cobra.Command{
-	Use:          "statuses-delete",
-	Short:        "Delete all adapter statuses from the database",
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := context.Background()
-		client, err := dbConnect(ctx)
-		if err != nil {
-			return fmt.Errorf("connect to database: %w", err)
-		}
-		defer client.Close()
-
-		_, rows, err := client.Query(ctx, "SELECT COUNT(*) FROM adapter_statuses")
-		if err != nil {
-			return err
-		}
-		count := "0"
-		if len(rows) > 0 && len(rows[0]) > 0 {
-			count = rows[0][0]
-		}
-
-		if !confirmPrompt(fmt.Sprintf("Delete all %s adapter status record(s)?", count)) {
-			out.Info("Aborted")
-			return nil
-		}
-
-		if err := client.Exec(ctx, "DELETE FROM adapter_statuses"); err != nil {
-			return err
-		}
-		out.Info(fmt.Sprintf("Deleted %s adapter status record(s)", count))
 		return nil
 	},
 }

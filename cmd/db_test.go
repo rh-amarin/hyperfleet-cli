@@ -249,84 +249,11 @@ func TestDbDeleteAll_ConfirmNo_SkipsDelete(t *testing.T) {
 	}
 }
 
-// ── statuses ──────────────────────────────────────────────────────────────────
-
-func TestDbStatuses_PrintsTable(t *testing.T) {
-	mock := &mockDBClient{
-		queryHeaders: []string{"id", "adapter", "cluster_id"},
-		queryRows:    [][]string{{"s-001", "cl-deployment", "c-001"}},
-	}
-	defer withMockDB(t, mock)()
-
-	stdout, _, err := runDbCmd(t, "db", "statuses")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !strings.Contains(stdout, "cl-deployment") {
-		t.Errorf("expected adapter name in output, got:\n%s", stdout)
-	}
-}
-
-func TestDbStatuses_EmptyResult_PrintsInfo(t *testing.T) {
-	mock := &mockDBClient{
-		queryHeaders: []string{"id"},
-		queryRows:    nil,
-	}
-	defer withMockDB(t, mock)()
-
-	_, stderr, err := runDbCmd(t, "db", "statuses")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !strings.Contains(stderr, "No adapter statuses") {
-		t.Errorf("expected info message, got: %s", stderr)
-	}
-}
-
-// ── statuses-delete ───────────────────────────────────────────────────────────
-
-func TestDbStatusesDelete_ConfirmYes_ExecutesDelete(t *testing.T) {
-	mock := &mockDBClient{
-		queryHeaders: []string{"count"},
-		queryRows:    [][]string{{"7"}},
-	}
-	defer withMockDB(t, mock)()
-	defer withStdin(t, "y\n")()
-
-	_, stderr, err := runDbCmd(t, "db", "statuses-delete")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !mock.execCalled {
-		t.Error("expected Exec to be called after confirmation")
-	}
-	if !strings.Contains(stderr, "Deleted") {
-		t.Errorf("expected 'Deleted' in stderr, got: %s", stderr)
-	}
-}
-
-func TestDbStatusesDelete_ConfirmNo_SkipsDelete(t *testing.T) {
-	mock := &mockDBClient{
-		queryHeaders: []string{"count"},
-		queryRows:    [][]string{{"4"}},
-	}
-	defer withMockDB(t, mock)()
-	defer withStdin(t, "n\n")()
-
-	_, _, err := runDbCmd(t, "db", "statuses-delete")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if mock.execCalled {
-		t.Error("Exec must not be called when confirmation is denied")
-	}
-}
-
 // TestDbCmd_NoArgs_ShowsHelp verifies the db parent command prints help.
 func TestDbCmd_NoArgs_ShowsHelp(t *testing.T) {
 	cfgDir := t.TempDir()
 	stdout, _, _ := runCmdRaw(t, []string{"--config", cfgDir, "db", "--help"})
-	for _, want := range []string{"query", "delete", "statuses", "config"} {
+	for _, want := range []string{"query", "delete", "config"} {
 		if !strings.Contains(stdout, want) {
 			t.Errorf("expected %q in help output, got:\n%s", want, stdout)
 		}
