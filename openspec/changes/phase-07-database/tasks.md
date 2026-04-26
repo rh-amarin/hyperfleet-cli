@@ -38,4 +38,4 @@
 - [x] (a) `go build ./...` succeeds
 - [x] (b) `go vet ./...` no issues
 - [x] (c) `go test ./...` passes — output to `verification_proof/tests.txt`
-- [ ] (d) Live DB verification — output to `verification_proof/db-connectivity.txt`
+- [x] (d) Live DB verification — output to `verification_proof/db-connectivity.txt`

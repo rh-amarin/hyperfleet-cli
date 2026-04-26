@@ -1,11 +1,11 @@
-## Live DB Verification — Phase 07 Database
+## Live DB Verification — Phase 07 Database (Updated)
 
-Date: 2026-04-26
-Environment: ACP session (Linux container, no cluster port-forward)
+Date: 2026-04-26T16:08:43Z
+Environment: GKE cluster via kubectl port-forward (amarin-ns1)
+Pod: api-hyperfleet-api-postgresql-78487b6d54-hxfs7
 
-### hf db config (no DB connection required)
+### hf db config
 
-$ hf db config
 KEY       VALUE
 host      localhost
 port      5432
@@ -13,31 +13,40 @@ name      hyperfleet
 user      hyperfleet
 password  <set>
 
-✓ Config command works without a DB connection; password is masked.
+### hf db query 'SELECT 1 AS ping'
 
-### hf db query "SELECT 1 as ping" (live connection attempt)
+PING
+1
 
-$ hf db query "SELECT 1 as ping"
-Error: connect to database: ping database: failed to connect to `user=hyperfleet database=hyperfleet`:
-	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connect: connection refused
-	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connect: connection refused
+### hf db query: list tables
 
-### Connectivity Assessment
+TABLE_NAME
+adapter_statuses
+clusters
+migrations
+node_pools
 
-The PostgreSQL database is not accessible from the ACP session container.
-The default config points to localhost:5432. The hyperfleet-dev-amarin-eu1 cluster
-runs PostgreSQL inside Kubernetes, requiring either:
-  1. kubectl port-forward service/postgres 5432:5432 (phase 10 — Kubernetes)
-  2. A direct cloud SQL endpoint configured via hf config set database.host <ip>
+### hf db query: cluster count
 
-Port scan of localhost (5432, 5433, 5434): all CLOSED.
+CLUSTER_COUNT
+2
+
+### hf db query: node_pool count
+
+NODEPOOL_COUNT
+0
+
+### hf db query: adapter_statuses (3 rows)
+
+ID                                    RESOURCE_TYPE  ADAPTER          OBSERVED_GENERATION
+019dc8b5-6762-78f1-b323-fc61f6e52423  Cluster        cl-m-wrong-nest  1
+019dc85a-c45f-721b-b56d-220f896e3ffc  Cluster        cl-m-wrong-nest  1
+019dc8b5-6667-7c80-8861-2847662a0936  Cluster        cl-deployment    1
 
 ### Result
 
-- hf db config: ✓ PASS
-- hf db query (live): ✗ NOT REACHABLE — DB not accessible from this session
-- Unit tests (all db subcommands): ✓ PASS via mock injection
+All hf db subcommands verified against live GKE-hosted PostgreSQL:
+  hf db config      ✓ prints masked config
+  hf db query       ✓ executes SELECT and renders table
 
-Live DB verification requires a port-forward to the in-cluster PostgreSQL pod
-(to be implemented in phase 10 - Kubernetes). All unit tests pass with mocked
-DBClient, exercising the full command logic without requiring a live DB.
+Tables confirmed: adapter_statuses, clusters, migrations, node_pools
