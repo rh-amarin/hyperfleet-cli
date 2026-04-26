@@ -1,0 +1,52 @@
+# Proposal: Phase 08 — Maestro
+
+## Intent
+
+Add `hf maestro` subcommands for managing Maestro resources via the Maestro HTTP API. Maestro is a separate service (different base URL from the HyperFleet API) used by HyperFleet adapters to deploy Kubernetes manifests to managed clusters. The `hf maestro tui` command delegates to the `maestro-cli` binary via `syscall.Exec`.
+
+## Scope In
+
+- `internal/maestro/` — a self-contained HTTP client package (net/http, no reuse of internal/api) with its own base URL
+- `cmd/maestro.go` — six subcommands: list, get, delete, bundles, consumers, tui
+- Unit tests for both packages using httptest.NewServer
+
+## Scope Out
+
+- Maestro gRPC operations (separate endpoint, future phase)
+- Interactive selection menus for get/delete with no name arg (prompt-style TUI interaction deferred)
+- Maestro namespace/deployment management
+
+## Config Keys
+
+| Key | Type | Used For |
+|-----|------|---------|
+| `maestro.http-endpoint` | string | Maestro API base URL |
+| `maestro.consumer` | string | Consumer filter for resource listing |
+| `hyperfleet.token` | string | Bearer auth token (shared) |
+
+## Testing Scope
+
+### internal/maestro
+
+- `TestClientList_FiltersConsumer` — GET /resource-bundles with SQL search filter
+- `TestClientList_NoConsumer_OmitsQueryParam` — no query params when consumer is empty
+- `TestClientGet_ReturnsResource` — GET /resource-bundles/<id>
+- `TestClientDelete_SendsDELETE` — DELETE /resource-bundles/<id>
+- `TestClientListBundles_ReturnsItems` — GET /resource-bundles (unfiltered)
+- `TestClientListConsumers_ReturnsItems` — GET /consumers
+
+### cmd/maestro
+
+- `TestMaestroList_RendersTable`
+- `TestMaestroGet_PrintsJSON`
+- `TestMaestroDelete_WithYesFlag_CallsDELETE`
+- `TestMaestroDelete_CancelledByUser_NoRequest`
+- `TestMaestroBundles_PrintsJSON`
+- `TestMaestroConsumers_RendersTable`
+- `TestMaestroTUI_MissingBinary_ReturnsError`
+
+## Verification Steps Requiring Live Access
+
+- `hf maestro consumers` — requires a reachable Maestro endpoint
+- `hf maestro list` — requires configured consumer
+- `hf maestro bundles` — requires configured endpoint

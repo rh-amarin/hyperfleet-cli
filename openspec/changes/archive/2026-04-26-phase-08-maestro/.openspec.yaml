@@ -1,0 +1,6 @@
+schema: openspec/v1
+change: phase-08-maestro
+created: 2026-04-26
+dependsOn:
+  - phase-02-api-client
+status: in-progress
