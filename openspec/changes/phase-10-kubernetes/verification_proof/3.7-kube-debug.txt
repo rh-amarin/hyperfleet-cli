@@ -1,0 +1,3 @@
+Warning: BCID failed open: BCID Constraint disabled by Giraffe
+[INFO] Debug pod ready: hf-debug-api-hyperfleet-api-1777226588
+Run: kubectl exec -it hf-debug-api-hyperfleet-api-1777226588 -n amarin-ns1 -- /bin/sh

@@ -1,0 +1,8 @@
+?   	github.com/rh-amarin/hyperfleet-cli	[no test files]
+ok  	github.com/rh-amarin/hyperfleet-cli/cmd	(cached)
+ok  	github.com/rh-amarin/hyperfleet-cli/internal/api	(cached)
+?   	github.com/rh-amarin/hyperfleet-cli/internal/config	[no test files]
+ok  	github.com/rh-amarin/hyperfleet-cli/internal/kube	(cached)
+ok  	github.com/rh-amarin/hyperfleet-cli/internal/output	(cached)
+ok  	github.com/rh-amarin/hyperfleet-cli/internal/resource	(cached)
+?   	github.com/rh-amarin/hyperfleet-cli/internal/version	[no test files]

@@ -1,0 +1,23 @@
+Stream logs from pods matching pattern
+
+Usage:
+  hf logs <pattern> [flags]
+  hf logs [command]
+
+Available Commands:
+  adapter     Stream logs from adapter pods matching pattern, filtered by cluster-id
+
+Flags:
+  -h, --help                help for logs
+      --kubeconfig string   path to kubeconfig (default: KUBECONFIG env, then ~/.kube/config)
+  -n, --namespace string    Kubernetes namespace (default "amarin-ns1")
+
+Global Flags:
+      --api-token string   override API token
+      --api-url string     override API URL
+      --config string      config directory (default ~/.config/hf)
+      --no-color           disable colored output
+  -o, --output string      output format: json, table, yaml
+  -v, --verbose            verbose output
+
+Use "hf logs [command] --help" for more information about a command.
