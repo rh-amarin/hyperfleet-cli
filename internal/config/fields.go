@@ -63,6 +63,8 @@ func getField(cfg *Config, path string) (string, error) {
 		return cfg.RabbitMQ.VHost, nil
 	case "registry.name":
 		return cfg.Registry.Name, nil
+	case "registry.token":
+		return cfg.Registry.Token, nil
 	}
 	return "", fmt.Errorf("unknown config path %q", path)
 }
@@ -151,6 +153,8 @@ func setField(cfg *Config, path, value string) error {
 		cfg.RabbitMQ.VHost = value
 	case "registry.name":
 		cfg.Registry.Name = value
+	case "registry.token":
+		cfg.Registry.Token = value
 	default:
 		return fmt.Errorf("unknown config path %q", path)
 	}
@@ -188,4 +192,5 @@ var AllPaths = []struct {
 	{"rabbitmq", "rabbitmq.password"},
 	{"rabbitmq", "rabbitmq.vhost"},
 	{"registry", "registry.name"},
+	{"registry", "registry.token"},
 }
