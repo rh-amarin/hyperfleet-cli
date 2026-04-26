@@ -2,7 +2,20 @@
 
 ## Purpose
 
-Provide CLI commands for direct PostgreSQL database operations against the HyperFleet database, including arbitrary SQL queries, selective deletion, bulk deletion, and in-cluster database access via kubectl.
+Provide CLI commands for direct PostgreSQL database operations against the HyperFleet
+database, using native Go (`pgxpool`) instead of `psql` subprocesses or `kubectl exec`.
+
+## Config Keys
+
+| Key | Default |
+|---|---|
+| `database.host` | `localhost` |
+| `database.port` | `5432` |
+| `database.name` | `hyperfleet` |
+| `database.user` | `hyperfleet` |
+| `database.password` | `foobar-bizz-buzz` |
+
+DSN format: `postgres://<user>:<password>@<host>:<port>/<name>`
 
 ## Requirements
 
@@ -12,23 +25,16 @@ The CLI SHALL execute arbitrary SQL queries against the HyperFleet PostgreSQL da
 
 #### Scenario: Query with inline SQL
 
-- GIVEN database connection config is set (db-host, db-port, db-name, db-user, db-password)
+- GIVEN database connection config is set (database.host/port/name/user/password)
 - WHEN the user runs `hf db query "<SQL>"`
-- THEN the CLI MUST set PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD environment variables from config
-- AND execute the query via `psql`
-- AND output the results in psql's default formatted table output
+- THEN the CLI MUST connect via pgxpool using the resolved DSN
+- AND execute the query natively (no subprocess)
+- AND output results as a formatted table
 
-#### Scenario: Query from SQL file
+#### Scenario: Query returns no rows
 
-- GIVEN database connection config is set
-- WHEN the user runs `hf db query -f <file.sql>`
-- THEN the CLI MUST execute the SQL from the specified file
-
-#### Scenario: Query cluster data
-
-- GIVEN clusters exist in the database
-- WHEN the user runs `hf db query "SELECT id, name, generation FROM clusters LIMIT 5"`
-- THEN the output MUST show a formatted table with the requested columns
+- WHEN the query returns 0 rows
+- THEN the CLI MUST print an info message and exit 0
 
 #### Scenario: List database tables
 
@@ -38,65 +44,42 @@ The CLI SHALL execute arbitrary SQL queries against the HyperFleet PostgreSQL da
 
 ### Requirement: Delete Table Rows
 
-The CLI SHALL delete rows from a specific table with a confirmation preview.
+The CLI SHALL delete rows from a specific table with a confirmation prompt.
 
-#### Scenario: Delete from table
-
-- GIVEN database connection is configured
-- WHEN the user runs `hf db delete <table> [id]`
-- THEN the CLI MUST show a count of records to be deleted
-- AND prompt the user for confirmation (requiring `yes`)
-- AND only proceed with deletion after confirmation
-- AND support tables: `clusters`, `node_pools`, `adapter_statuses`
-
-#### Scenario: Delete specific record by ID
-
-- GIVEN a table and record ID are provided
-- WHEN the user runs `hf db delete <table> <id>`
-- THEN only the record matching the ID MUST be deleted
-
-### Requirement: Delete All Records
-
-The CLI SHALL delete ALL records from all HyperFleet tables with confirmation.
-
-#### Scenario: Delete all records
+#### Scenario: Delete from table with WHERE clause
 
 - GIVEN database connection is configured
-- WHEN the user runs `hf db delete-all`
-- THEN the CLI MUST show record counts per table
-- AND prompt the user for confirmation (requiring `yes`)
-- AND delete in foreign-key-safe order: `adapter_statuses` first, then `node_pools`, then `clusters`
+- WHEN the user runs `hf db delete <table> <where>`
+- THEN the CLI MUST show a count of records matching the WHERE clause
+- AND prompt the user for confirmation (requiring `y` or `yes`)
+- AND run `DELETE FROM <table> WHERE <where>` only after confirmation
+- AND print the count of deleted rows
 
-### Requirement: In-Cluster Database Status Query
+#### Scenario: Confirmation denied
 
-The CLI SHALL query adapter statuses from a PostgreSQL instance running inside Kubernetes.
+- WHEN the user does not confirm
+- THEN the CLI MUST print "Aborted" and exit 0 without deleting anything
 
-#### Scenario: Query in-cluster statuses
+### Requirement: Delete All Records from a Table
 
-- GIVEN context, namespace, and cluster-id are configured
-- WHEN the user runs `hf db statuses`
-- THEN the CLI MUST find the postgres pod in the Kubernetes cluster
-- AND execute the SQL query via `kubectl exec`
-- AND display the adapter_statuses results
+The CLI SHALL delete ALL records from a named table with confirmation.
 
-### Requirement: In-Cluster Status Deletion
+#### Scenario: Delete all rows
 
-The CLI SHALL delete adapter statuses from a PostgreSQL instance running inside Kubernetes.
+- GIVEN database connection is configured
+- WHEN the user runs `hf db delete-all <table>`
+- THEN the CLI MUST show the total row count for that table
+- AND prompt the user for confirmation (requiring `y` or `yes`)
+- AND run `DELETE FROM <table>` only after confirmation
 
-#### Scenario: Delete in-cluster statuses
+### Requirement: Database Configuration Display
 
-- GIVEN context, namespace, and cluster-id are configured
-- WHEN the user runs `hf db statuses delete`
-- THEN the CLI MUST connect through kubectl to the postgres pod
-- AND delete adapter_statuses scoped to the current cluster-id
+The CLI SHALL display the resolved database connection parameters.
 
-### Requirement: Database Configuration
-
-The CLI SHALL provide interactive configuration of PostgreSQL connection parameters.
-
-#### Scenario: Configure database interactively
+#### Scenario: Show DB config
 
 - GIVEN the CLI is running
 - WHEN the user runs `hf db config`
-- THEN the CLI MUST prompt for: host, port, database name, user, password
-- AND save each value to the config directory
+- THEN the CLI MUST print host, port, name, user as plain values
+- AND mask the password as `<set>` or `<not set>`
+- AND require no database connection to run
