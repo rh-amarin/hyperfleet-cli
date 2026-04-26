@@ -170,6 +170,39 @@ The CLI SHALL support extending functionality through plugins without modifying 
 - THEN the built-in command MUST take precedence
 - AND a warning MUST be displayed: `[WARN] Plugin 'hf-<name>' is shadowed by built-in command '<name>'`
 
+### Requirement: CI/CD Pipeline
+
+The CLI SHALL have automated build, test, and release pipelines via GitHub Actions.
+
+#### Scenario: CI on pull requests
+
+- GIVEN a pull request is opened against `main` or a commit is pushed to `main`
+- WHEN the CI workflow runs
+- THEN it MUST execute in order: `go build ./...`, `go vet ./...`, `go test ./...`
+- AND it MUST NOT run integration tests (no `-tags integration` flag)
+- AND the workflow MUST fail if any step exits non-zero
+
+#### Scenario: Release on tag push
+
+- GIVEN a tag matching `v*` is pushed
+- WHEN the release workflow runs
+- THEN it MUST invoke GoReleaser with `--clean`
+- AND produce cross-platform binaries, archives, checksums, and a GitHub Release automatically
+
+### Requirement: Error Output Conventions
+
+The CLI SHALL follow consistent conventions for all output to stdout and stderr.
+
+| Situation | Destination | Format | Exit code |
+|---|---|---|---|
+| API error (RFC 9457) | stdout | rendered via `--output` format | 0 |
+| CLI usage error | stderr | `Error: <msg>` (usage suppressed) | 1 |
+| `[WARN]` message | stderr | `[WARN] <msg>` | 0 |
+| `[INFO]` message | stderr | `[INFO] <msg>` | 0 |
+| `[ERROR]` message | stderr | `[ERROR] <msg>` | varies |
+
+`SilenceUsage: true` on the root command suppresses the usage block for all subcommands on runtime errors (Cobra v1.10+ propagation via `!cmd.SilenceUsage && !root.SilenceUsage`).
+
 ### Requirement: Testing Strategy
 
 The CLI SHALL maintain a comprehensive test suite.
