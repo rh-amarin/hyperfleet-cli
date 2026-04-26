@@ -28,19 +28,20 @@ Add `hf maestro` subcommands for managing Maestro resources via the Maestro HTTP
 
 ### internal/maestro
 
-- `TestClientList_FiltersConsumer` — GET with consumer_name query param
-- `TestClientGet_ReturnsResource` — GET /resources/<name>
-- `TestClientDelete_SendsDELETE` — DELETE /resources/<name>
-- `TestClientListBundles_ReturnsItems` — GET /resource-bundles
+- `TestClientList_FiltersConsumer` — GET /resource-bundles with SQL search filter
+- `TestClientList_NoConsumer_OmitsQueryParam` — no query params when consumer is empty
+- `TestClientGet_ReturnsResource` — GET /resource-bundles/<id>
+- `TestClientDelete_SendsDELETE` — DELETE /resource-bundles/<id>
+- `TestClientListBundles_ReturnsItems` — GET /resource-bundles (unfiltered)
 - `TestClientListConsumers_ReturnsItems` — GET /consumers
 
 ### cmd/maestro
 
 - `TestMaestroList_RendersTable`
 - `TestMaestroGet_PrintsJSON`
-- `TestMaestroDelete_WithYesFlag_Deletes`
-- `TestMaestroDelete_NoBinaryDeletion_Cancelled`
-- `TestMaestroBundles_RendersTable`
+- `TestMaestroDelete_WithYesFlag_CallsDELETE`
+- `TestMaestroDelete_CancelledByUser_NoRequest`
+- `TestMaestroBundles_PrintsJSON`
 - `TestMaestroConsumers_RendersTable`
 - `TestMaestroTUI_MissingBinary_ReturnsError`
 

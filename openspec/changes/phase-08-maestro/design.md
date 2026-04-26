@@ -4,7 +4,7 @@
 
 ```
 internal/maestro/
-├── client.go       ← HTTP client + types (Resource, Bundle, Consumer)
+├── client.go       ← HTTP client + types (Resource, Consumer)
 └── client_test.go  ← httptest-based unit tests
 
 cmd/
@@ -29,28 +29,30 @@ func New(httpEndpoint, consumer, token string) *Client
 
 ### Endpoints
 
+Verified against a live Maestro deployment (EU cluster, 2026-04-26). The `/resources` endpoint does not exist; all resource operations use `/resource-bundles`.
+
 | Method | Path | Notes |
 |--------|------|-------|
-| List | GET `/api/maestro/v1/resources?consumer_name=<consumer>` | consumer param omitted when empty |
-| Get | GET `/api/maestro/v1/resources/<name>` | |
-| Delete | DELETE `/api/maestro/v1/resources/<name>` | |
-| ListBundles | GET `/api/maestro/v1/resource-bundles` | per canonical spec |
+| List | GET `/api/maestro/v1/resource-bundles?search=consumer_name = '<consumer>'` | SQL-like search; param omitted when consumer is empty |
+| Get | GET `/api/maestro/v1/resource-bundles/<id>` | id is a UUID |
+| Delete | DELETE `/api/maestro/v1/resource-bundles/<id>` | id is a UUID |
+| ListBundles | GET `/api/maestro/v1/resource-bundles` | unfiltered, used by `maestro bundles` |
 | ListConsumers | GET `/api/maestro/v1/consumers` | |
-
-Note: The task description mentioned `/api/maestro/v1/manifest-bundles` but the canonical spec (`openspec/specs/maestro/spec.md`) specifies `/api/maestro/v1/resource-bundles`. Canonical spec takes precedence.
 
 ### Response Types
 
+Resource name is stored in `metadata["name"]`, not a top-level field. This matches the real Maestro API shape.
+
 ```go
 type Resource struct {
-    ID            string      `json:"id"`
-    Kind          string      `json:"kind"`
-    Name          string      `json:"name"`
-    ConsumerName  string      `json:"consumer_name"`
-    Version       int         `json:"version"`
-    ManifestCount int         `json:"manifest_count"`
-    Manifests     []Manifest  `json:"manifests"`
-    Conditions    []Condition `json:"conditions"`
+    ID            string            `json:"id"`
+    Kind          string            `json:"kind"`
+    Metadata      map[string]string `json:"metadata"`   // name at Metadata["name"]
+    ConsumerName  string            `json:"consumer_name"`
+    Version       int               `json:"version"`
+    ManifestCount int               `json:"manifest_count"`
+    Manifests     []Manifest        `json:"manifests"`
+    Conditions    []Condition       `json:"conditions"`
 }
 
 type Manifest struct {
@@ -63,15 +65,6 @@ type Condition struct {
     Type   string `json:"type"`
     Status string `json:"status"`
     Reason string `json:"reason"`
-}
-
-type Bundle struct {
-    ID              string            `json:"id"`
-    Kind            string            `json:"kind"`
-    Name            string            `json:"name"`
-    Labels          map[string]string `json:"labels"`
-    Manifests       []any             `json:"manifests"`
-    ManifestConfigs []any             `json:"manifest_configs"`
 }
 
 type Consumer struct {
@@ -114,30 +107,32 @@ c := maestro.New(cfg.Maestro.HTTPEndpoint, cfg.Maestro.Consumer, cfg.Hyperfleet.
 
 | Command | Default Output |
 |---------|---------------|
-| list | table (NAME, CONSUMER, VERSION, MANIFESTS, CONDITIONS) |
+| list | table (NAME, CONSUMER, VERSION, MANIFESTS) |
 | get | JSON |
 | delete | success message to stderr |
-| bundles | JSON (pass-through from API) |
+| bundles | JSON (pass-through from API, unfiltered) |
 | consumers | table (ID, NAME) |
 | tui | process replaced via syscall.Exec |
 
 ### Delete Confirmation
 
 ```
-Delete Maestro resource '<name>'? [y/N]: 
+Delete Maestro resource bundle '<id>'? [y/N]: 
 ```
 
 Read from `os.Stdin`. The `--yes` / `-y` flag skips the prompt.
 
 ### TUI Exec
 
+`maestro-cli` reads its endpoint from persistent flags `--http-endpoint` and `--grpc-endpoint`, which can also be set via the env vars `MAESTRO_HTTP_ENDPOINT` and `MAESTRO_GRPC_ENDPOINT`. We inject the env vars so the user does not need to pass flags manually.
+
 ```go
-path, err := exec.LookPath("maestro-cli")
-if err != nil {
-    return fmt.Errorf("maestro-cli not found in PATH; install with:\n  oc apply -f .../maestro-cli-deployment.yaml")
-}
-endpoint := cfgStore.Cfg().Maestro.HTTPEndpoint
-return syscall.Exec(path, []string{"maestro-cli", "tui", "--api-server=" + endpoint}, os.Environ())
+cfg := cfgStore.Cfg().Maestro
+env := append(os.Environ(),
+    "MAESTRO_HTTP_ENDPOINT="+cfg.HTTPEndpoint,
+    "MAESTRO_GRPC_ENDPOINT="+cfg.GRPCEndpoint,
+)
+return syscall.Exec(maestroCLI, []string{"maestro-cli", "tui"}, env)
 ```
 
 ## Test Strategy
@@ -149,7 +144,10 @@ cmd tests use a helper `runMaestroCmd` that writes a `config.yaml` to the temp d
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Separate HTTP client | `internal/maestro.Client` | Maestro has its own base URL, independent auth model |
-| Bundles endpoint | `/resource-bundles` | Canonical spec (`openspec/specs/maestro/spec.md`) takes precedence over task description |
+| Resource endpoint | `/resource-bundles` | `/resources` does not exist in real deployments; verified live |
+| Consumer filter | SQL-like `search=consumer_name = 'X'` | Required by Maestro API; simple `?consumer_name=X` returns 400 |
+| Resource name | `metadata["name"]` | Top-level `name` field is absent in real API responses |
+| TUI env vars | `MAESTRO_HTTP_ENDPOINT` / `MAESTRO_GRPC_ENDPOINT` | maestro-cli reads these natively; avoids passing unknown flags |
 | TUI exec method | `syscall.Exec` | Replaces the process cleanly; no zombie parent process |
 | Delete confirmation | `--yes` flag to skip | Enables scriptability and testability |
 | Error format | Plain `fmt.Errorf("HTTP %d: ...")` | Maestro error shape differs from HyperFleet RFC 7807 |
