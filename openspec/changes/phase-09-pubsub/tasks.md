@@ -36,3 +36,6 @@
 - [x] (b) `go vet ./...` no issues
 - [x] (c) `go test ./...` passes → `verification_proof/tests.txt`
 - [x] (d) Live verification → `verification_proof/connectivity.txt`, `3.1-pubsub-list.txt`, `3.2-pubsub-publish-cluster.txt`, `3.3-rabbitmq-publish-cluster.txt`
+  - GCP pubsub list: topics+subscriptions nested output verified against real `hcm-hyperfleet` project
+  - GCP pubsub publish cluster: published CloudEvent to `amarin-ns1-clusters` (msg-id returned)
+  - RabbitMQ: port-forwarded rabbitmq-5dcb9cdf95-5pmxj (v3.13.7), published to `amq.fanout` and `amq.topic` exchanges via HTTP Management API

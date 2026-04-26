@@ -9,32 +9,22 @@ import (
 	"testing"
 
 	ps "github.com/rh-amarin/hyperfleet-cli/internal/pubsub"
-	"github.com/rh-amarin/hyperfleet-cli/internal/resource"
 )
 
 // fakeGCPClient implements ps.GCPPublisher for testing without a live GCP connection.
 type fakeGCPClient struct {
-	subs           []string
+	groups         []ps.TopicGroup
 	publishedTopic string
 	publishedData  []byte
 	publishErr     error
 	listErr        error
 }
 
-func (f *fakeGCPClient) ListSubscriptions(_ context.Context, filter string) ([]string, error) {
+func (f *fakeGCPClient) ListTopics(_ context.Context, _ string) ([]ps.TopicGroup, error) {
 	if f.listErr != nil {
 		return nil, f.listErr
 	}
-	if filter == "" {
-		return f.subs, nil
-	}
-	var filtered []string
-	for _, s := range f.subs {
-		if strings.Contains(s, filter) {
-			filtered = append(filtered, s)
-		}
-	}
-	return filtered, nil
+	return f.groups, nil
 }
 
 func (f *fakeGCPClient) Publish(_ context.Context, topicID string, data []byte) (string, error) {
@@ -50,64 +40,78 @@ func (f *fakeGCPClient) Close() error { return nil }
 
 var _ ps.GCPPublisher = (*fakeGCPClient)(nil)
 
+// minSrv returns a minimal httptest.Server (returns 200 for all requests).
+func minSrv() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+}
+
 // ── list ──────────────────────────────────────────────────────────────────────
 
-func TestPubSubList_PrintsTable(t *testing.T) {
+func TestPubSubList_PrintsTopicsAndSubscriptions(t *testing.T) {
 	fake := &fakeGCPClient{
-		subs: []string{
-			"projects/my-project/subscriptions/sub-alpha",
-			"projects/my-project/subscriptions/sub-beta",
+		groups: []ps.TopicGroup{
+			{Name: "topic-alpha", Subscriptions: []string{"sub-a", "sub-b"}},
+			{Name: "topic-beta", Subscriptions: []string{"sub-c"}},
 		},
 	}
 	orig := gcpFactory
 	gcpFactory = func(_ context.Context, _, _ string) (ps.GCPPublisher, error) { return fake, nil }
 	defer func() { gcpFactory = orig }()
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
+	srv := minSrv()
 	defer srv.Close()
 
-	stdout, _, err := runCmd(t, srv, "--no-color", "pubsub", "list")
+	stdout, stderr, err := runCmd(t, srv, "pubsub", "list")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(stdout, "SUBSCRIPTION") {
-		t.Errorf("expected SUBSCRIPTION header, got:\n%s", stdout)
+	if !strings.Contains(stdout, "topic-alpha") {
+		t.Errorf("expected topic-alpha in output, got:\n%s", stdout)
 	}
-	if !strings.Contains(stdout, "sub-alpha") {
-		t.Errorf("expected sub-alpha in output, got:\n%s", stdout)
+	if !strings.Contains(stdout, "    sub-a") {
+		t.Errorf("expected indented sub-a in output, got:\n%s", stdout)
 	}
-	if !strings.Contains(stdout, "sub-beta") {
-		t.Errorf("expected sub-beta in output, got:\n%s", stdout)
+	if !strings.Contains(stdout, "    sub-b") {
+		t.Errorf("expected indented sub-b in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "topic-beta") {
+		t.Errorf("expected topic-beta in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stderr, "[INFO]") {
+		t.Errorf("expected [INFO] line in stderr, got:\n%s", stderr)
 	}
 }
 
-func TestPubSubList_WithFilter(t *testing.T) {
+func TestPubSubList_WithFilter_ShowsInfoAndFiltered(t *testing.T) {
 	fake := &fakeGCPClient{
-		subs: []string{
-			"projects/my-project/subscriptions/sub-alpha",
-			"projects/my-project/subscriptions/sub-beta",
+		groups: []ps.TopicGroup{
+			{Name: "amarin-ns1-clusters", Subscriptions: []string{"amarin-ns1-clusters-cl-job", "amarin-ns1-clusters-cl-precondition-error"}},
 		},
 	}
 	orig := gcpFactory
 	gcpFactory = func(_ context.Context, _, _ string) (ps.GCPPublisher, error) { return fake, nil }
 	defer func() { gcpFactory = orig }()
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
+	srv := minSrv()
 	defer srv.Close()
 
-	stdout, _, err := runCmd(t, srv, "--no-color", "pubsub", "list", "alpha")
+	stdout, stderr, err := runCmd(t, srv, "pubsub", "list", "amarin")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(stdout, "sub-alpha") {
-		t.Errorf("expected sub-alpha in output, got:\n%s", stdout)
+	if !strings.Contains(stdout, "amarin-ns1-clusters") {
+		t.Errorf("expected topic in output, got:\n%s", stdout)
 	}
-	if strings.Contains(stdout, "sub-beta") {
-		t.Errorf("sub-beta should be filtered out, got:\n%s", stdout)
+	if !strings.Contains(stdout, "    amarin-ns1-clusters-cl-job") {
+		t.Errorf("expected indented subscription in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stderr, "[INFO]") {
+		t.Errorf("expected [INFO] line in stderr, got:\n%s", stderr)
+	}
+	if !strings.Contains(stderr, "Filtering by") {
+		t.Errorf("expected Filtering by in stderr, got:\n%s", stderr)
 	}
 }
 
@@ -119,14 +123,10 @@ func TestPubSubPublishCluster_PublishesCloudEvent(t *testing.T) {
 	gcpFactory = func(_ context.Context, _, _ string) (ps.GCPPublisher, error) { return fake, nil }
 	defer func() { gcpFactory = orig }()
 
-	cluster := resource.Cluster{ID: "c-001", Name: "prod", Generation: 3}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(cluster)
-	}))
+	srv := minSrv()
 	defer srv.Close()
 
-	_, stderr, err := runCmdWithCluster(t, srv, "c-001", "pubsub", "publish", "cluster", "my-topic")
+	stdout, stderr, err := runCmdWithCluster(t, srv, "c-001", "pubsub", "publish", "cluster", "my-topic")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -139,20 +139,27 @@ func TestPubSubPublishCluster_PublishesCloudEvent(t *testing.T) {
 	if err := json.Unmarshal(fake.publishedData, &event); err != nil {
 		t.Fatalf("published data is not valid JSON: %v", err)
 	}
-	if event["type"] != "com.hyperfleet.cluster.changed" {
-		t.Errorf("event.type = %v, want com.hyperfleet.cluster.changed", event["type"])
+	if event["type"] != "com.redhat.hyperfleet.cluster.reconcile.v1" {
+		t.Errorf("event.type = %v, want com.redhat.hyperfleet.cluster.reconcile.v1", event["type"])
 	}
 	if event["specversion"] != "1.0" {
 		t.Errorf("event.specversion = %v, want 1.0", event["specversion"])
 	}
-	if event["source"] != "/hyperfleet/cli" {
-		t.Errorf("event.source = %v, want /hyperfleet/cli", event["source"])
+	if event["source"] != "/hyperfleet/service/sentinel" {
+		t.Errorf("event.source = %v, want /hyperfleet/service/sentinel", event["source"])
 	}
-	if event["id"] == "" {
-		t.Error("event.id must not be empty")
+	if event["id"] != "c-001" {
+		t.Errorf("event.id = %v, want c-001", event["id"])
+	}
+	if event["datacontenttype"] != "application/json" {
+		t.Errorf("event.datacontenttype = %v, want application/json", event["datacontenttype"])
+	}
+	// stdout should contain the pretty-printed JSON
+	if !strings.Contains(stdout, "specversion") {
+		t.Errorf("expected JSON in stdout, got:\n%s", stdout)
 	}
 	if !strings.Contains(stderr, "[INFO]") {
-		t.Errorf("expected [INFO] line in stderr, got: %s", stderr)
+		t.Errorf("expected [INFO] line in stderr, got:\n%s", stderr)
 	}
 }
 
@@ -164,14 +171,10 @@ func TestPubSubPublishNodepool_PublishesCloudEvent(t *testing.T) {
 	gcpFactory = func(_ context.Context, _, _ string) (ps.GCPPublisher, error) { return fake, nil }
 	defer func() { gcpFactory = orig }()
 
-	np := resource.NodePool{ID: "np-001", Name: "workers-1", Generation: 2}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(np)
-	}))
+	srv := minSrv()
 	defer srv.Close()
 
-	_, stderr, err := runCmdWithClusterAndNodePool(t, srv, "c-001", "np-001", "pubsub", "publish", "nodepool", "np-topic")
+	stdout, stderr, err := runCmdWithClusterAndNodePool(t, srv, "c-001", "np-001", "pubsub", "publish", "nodepool", "np-topic")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -184,8 +187,18 @@ func TestPubSubPublishNodepool_PublishesCloudEvent(t *testing.T) {
 	if err := json.Unmarshal(fake.publishedData, &event); err != nil {
 		t.Fatalf("published data is not valid JSON: %v", err)
 	}
-	if event["type"] != "com.hyperfleet.nodepool.changed" {
-		t.Errorf("event.type = %v, want com.hyperfleet.nodepool.changed", event["type"])
+	if event["type"] != "com.redhat.hyperfleet.nodepool.reconcile.v1" {
+		t.Errorf("event.type = %v, want com.redhat.hyperfleet.nodepool.reconcile.v1", event["type"])
+	}
+	if event["id"] != "np-001" {
+		t.Errorf("event.id = %v, want np-001", event["id"])
+	}
+	if event["source"] != "/hyperfleet/service/sentinel" {
+		t.Errorf("event.source = %v, want /hyperfleet/service/sentinel", event["source"])
+	}
+	// stdout should contain the pretty-printed JSON
+	if !strings.Contains(stdout, "owner_references") {
+		t.Errorf("expected owner_references in stdout JSON, got:\n%s", stdout)
 	}
 	if !strings.Contains(stderr, "[INFO]") {
 		t.Errorf("expected [INFO] line in stderr, got: %s", stderr)

@@ -2,15 +2,13 @@ package cmd
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"time"
 
-	"github.com/rh-amarin/hyperfleet-cli/internal/api"
 	"github.com/rh-amarin/hyperfleet-cli/internal/config"
 	out "github.com/rh-amarin/hyperfleet-cli/internal/output"
 	ps "github.com/rh-amarin/hyperfleet-cli/internal/pubsub"
-	"github.com/rh-amarin/hyperfleet-cli/internal/resource"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +37,7 @@ var gcpFactory = func(ctx context.Context, projectID, token string) (ps.GCPPubli
 
 var pubsubListCmd = &cobra.Command{
 	Use:          "list [filter]",
-	Short:        "List GCP Pub/Sub subscriptions",
+	Short:        "List GCP Pub/Sub topics and subscriptions",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filter := ""
@@ -50,25 +48,104 @@ var pubsubListCmd = &cobra.Command{
 		cfg := cfgStore.Cfg()
 		ctx := context.Background()
 
+		out.Info(fmt.Sprintf("Listing Pub/Sub topics and subscriptions for project: %s", cfg.Hyperfleet.GCPProject))
+		if filter != "" {
+			out.Info(fmt.Sprintf("Filtering by: %s", filter))
+		}
+
 		client, err := gcpFactory(ctx, cfg.Hyperfleet.GCPProject, cfg.Hyperfleet.Token)
 		if err != nil {
 			return fmt.Errorf("create GCP client: %w", err)
 		}
 		defer client.Close()
 
-		subs, err := client.ListSubscriptions(ctx, filter)
+		groups, err := client.ListTopics(ctx, filter)
 		if err != nil {
-			return fmt.Errorf("list subscriptions: %w", err)
+			return fmt.Errorf("list topics: %w", err)
 		}
 
-		p := printer()
-		headers := []string{"SUBSCRIPTION"}
-		rows := make([][]string, len(subs))
-		for i, s := range subs {
-			rows[i] = []string{s}
+		if len(groups) == 0 {
+			fmt.Println("No topics or subscriptions found.")
+			return nil
 		}
-		return p.PrintTable(headers, rows)
+
+		for _, g := range groups {
+			fmt.Println(g.Name)
+			for _, s := range g.Subscriptions {
+				fmt.Printf("    %s\n", s)
+			}
+		}
+		return nil
 	},
+}
+
+// ── CloudEvent builders ───────────────────────────────────────────────────────
+
+type cloudEventData struct {
+	ID              string           `json:"id"`
+	Kind            string           `json:"kind"`
+	Href            string           `json:"href"`
+	Generation      int              `json:"generation"`
+	OwnerReferences *ownerReferences `json:"owner_references,omitempty"`
+}
+
+type ownerReferences struct {
+	ID         string `json:"id"`
+	Kind       string `json:"kind"`
+	Href       string `json:"href"`
+	Generation int    `json:"generation"`
+}
+
+type cloudEventEnvelope struct {
+	SpecVersion     string         `json:"specversion"`
+	Type            string         `json:"type"`
+	Source          string         `json:"source"`
+	ID              string         `json:"id"`
+	Time            string         `json:"time"`
+	DataContentType string         `json:"datacontenttype"`
+	Data            cloudEventData `json:"data"`
+}
+
+func buildClusterEvent(clusterID string) ([]byte, error) {
+	env := cloudEventEnvelope{
+		SpecVersion:     "1.0",
+		Type:            "com.redhat.hyperfleet.cluster.reconcile.v1",
+		Source:          "/hyperfleet/service/sentinel",
+		ID:              clusterID,
+		Time:            time.Now().UTC().Format(time.RFC3339),
+		DataContentType: "application/json",
+		Data: cloudEventData{
+			ID:         clusterID,
+			Kind:       "Cluster",
+			Href:       fmt.Sprintf("https://api.hyperfleet.com/v1/clusters/%s", clusterID),
+			Generation: 1,
+		},
+	}
+	return json.MarshalIndent(env, "", "  ")
+}
+
+func buildNodePoolEvent(clusterID, nodepoolID string) ([]byte, error) {
+	env := cloudEventEnvelope{
+		SpecVersion:     "1.0",
+		Type:            "com.redhat.hyperfleet.nodepool.reconcile.v1",
+		Source:          "/hyperfleet/service/sentinel",
+		ID:              nodepoolID,
+		Time:            time.Now().UTC().Format(time.RFC3339),
+		DataContentType: "application/json",
+		Data: cloudEventData{
+			ID:         nodepoolID,
+			Kind:       "NodePool",
+			Href:       fmt.Sprintf("http://localhost:8000/api/hyperfleet/v1/clusters/%s/node_pools/%s", clusterID, nodepoolID),
+			Generation: 1,
+			OwnerReferences: &ownerReferences{
+				ID:         clusterID,
+				Kind:       "NodePool",
+				Href:       fmt.Sprintf("http://localhost:8000/api/hyperfleet/v1/clusters/%s", clusterID),
+				Generation: 1,
+			},
+		},
+	}
+	return json.MarshalIndent(env, "", "  ")
 }
 
 // ── publish ───────────────────────────────────────────────────────────────────
@@ -76,30 +153,6 @@ var pubsubListCmd = &cobra.Command{
 var pubsubPublishCmd = &cobra.Command{
 	Use:   "publish",
 	Short: "Publish a CloudEvent to a GCP Pub/Sub topic",
-}
-
-// cloudEvent wraps data in a CloudEvents 1.0 envelope.
-func cloudEvent(eventType string, data any) ([]byte, error) {
-	id, err := randomID()
-	if err != nil {
-		return nil, err
-	}
-	env := map[string]any{
-		"specversion": "1.0",
-		"type":        eventType,
-		"source":      "/hyperfleet/cli",
-		"id":          id,
-		"data":        data,
-	}
-	return json.Marshal(env)
-}
-
-func randomID() (string, error) {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:]), nil
 }
 
 var pubsubPublishClusterCmd = &cobra.Command{
@@ -117,16 +170,13 @@ var pubsubPublishClusterCmd = &cobra.Command{
 			return err
 		}
 
-		c := newClient()
-		cluster, err := api.Get[resource.Cluster](c, ctx, "clusters/"+clusterID)
+		payload, err := buildClusterEvent(clusterID)
 		if err != nil {
 			return err
 		}
 
-		payload, err := cloudEvent("com.hyperfleet.cluster.changed", cluster)
-		if err != nil {
-			return err
-		}
+		out.Info(fmt.Sprintf("Publishing change message to topic: %s", topic))
+		fmt.Println(string(payload))
 
 		gcpClient, err := gcpFactory(ctx, cfg.Hyperfleet.GCPProject, cfg.Hyperfleet.Token)
 		if err != nil {
@@ -163,16 +213,13 @@ var pubsubPublishNodepoolCmd = &cobra.Command{
 			return err
 		}
 
-		c := newClient()
-		np, err := api.Get[resource.NodePool](c, ctx, "clusters/"+clusterID+"/nodepools/"+nodepoolID)
+		payload, err := buildNodePoolEvent(clusterID, nodepoolID)
 		if err != nil {
 			return err
 		}
 
-		payload, err := cloudEvent("com.hyperfleet.nodepool.changed", np)
-		if err != nil {
-			return err
-		}
+		out.Info(fmt.Sprintf("Publishing change message to topic: %s", topic))
+		fmt.Println(string(payload))
 
 		gcpClient, err := gcpFactory(ctx, cfg.Hyperfleet.GCPProject, cfg.Hyperfleet.Token)
 		if err != nil {

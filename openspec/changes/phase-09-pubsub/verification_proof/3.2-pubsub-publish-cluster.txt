@@ -1,4 +1,17 @@
-Error: publish to GCP: publish to topic "my-topic": rpc error: code = PermissionDenied desc = Cloud Pub/Sub API has not been used in project 888214980327 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/pubsub.googleapis.com/overview?project=888214980327 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
-error details: name = ErrorInfo reason = SERVICE_DISABLED domain = googleapis.com metadata = map[activationUrl:https://console.developers.google.com/apis/api/pubsub.googleapis.com/overview?project=888214980327 consumer:projects/888214980327 containerInfo:888214980327 service:pubsub.googleapis.com serviceTitle:Cloud Pub/Sub API]
-error details: name = Help desc = Google developers console API activation url = https://console.developers.google.com/apis/api/pubsub.googleapis.com/overview?project=888214980327
-error details: name = LocalizedMessage locale = en-US msg = Cloud Pub/Sub API has not been used in project 888214980327 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/pubsub.googleapis.com/overview?project=888214980327 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+$ hf pubsub publish cluster amarin-ns1-clusters
+[INFO] Publishing change message to topic: amarin-ns1-clusters
+{
+  "specversion": "1.0",
+  "type": "com.redhat.hyperfleet.cluster.reconcile.v1",
+  "source": "/hyperfleet/service/sentinel",
+  "id": "c-amarin-live-test-001",
+  "time": "2026-04-26T18:03:53Z",
+  "datacontenttype": "application/json",
+  "data": {
+    "id": "c-amarin-live-test-001",
+    "kind": "Cluster",
+    "href": "https://api.hyperfleet.com/v1/clusters/c-amarin-live-test-001",
+    "generation": 1
+  }
+}
+[INFO] Published cluster c-amarin-live-test-001 to topic amarin-ns1-clusters (msg-id: 18777841194221954)

@@ -1,42 +1,84 @@
 package pubsub
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-
-	amqp "github.com/rabbitmq/amqp091-go"
+	"io"
+	"net/http"
+	"net/url"
+	"time"
 )
 
-// RabbitClient wraps an AMQP connection.
+// RabbitClient publishes to RabbitMQ via the HTTP Management API.
+// This mirrors the bash hf.rabbitmq.publish.cluster.change.sh implementation
+// which uses POST /api/exchanges/{vhost}/{exchange}/publish.
 type RabbitClient struct {
-	conn *amqp.Connection
+	baseURL    string // http://<host>:<mgmt-port>/api/exchanges/<vhost-enc>
+	user       string
+	password   string
+	httpClient *http.Client
 }
 
-// NewRabbit dials the given AMQP URL and returns a RabbitClient.
-// url format: amqp://<user>:<pass>@<host>/<vhost>
-func NewRabbit(url string) (*RabbitClient, error) {
-	conn, err := amqp.Dial(url)
-	if err != nil {
-		return nil, fmt.Errorf("amqp.Dial: %w", err)
+// NewRabbit creates a RabbitMQ HTTP Management API client.
+// vhost "/" is URL-encoded to "%2F" as required by the RabbitMQ management API.
+func NewRabbit(host string, mgmtPort int, user, password, vhost string) (*RabbitClient, error) {
+	vhostEnc := url.PathEscape(vhost)
+	if vhost == "/" {
+		vhostEnc = "%2F"
 	}
-	return &RabbitClient{conn: conn}, nil
+	baseURL := fmt.Sprintf("http://%s:%d/api/exchanges/%s", host, mgmtPort, vhostEnc)
+	return &RabbitClient{
+		baseURL:    baseURL,
+		user:       user,
+		password:   password,
+		httpClient: &http.Client{Timeout: 10 * time.Second},
+	}, nil
 }
 
-// Publish sends body to the named exchange with the given routing key.
-// A new channel is opened per call; channels are cheap and this avoids concurrency issues.
-func (c *RabbitClient) Publish(_ context.Context, exchange, routingKey string, body []byte) error {
-	ch, err := c.conn.Channel()
-	if err != nil {
-		return fmt.Errorf("open channel: %w", err)
+type rabbitPublishRequest struct {
+	Properties      map[string]any `json:"properties"`
+	RoutingKey      string         `json:"routing_key"`
+	Payload         string         `json:"payload"`
+	PayloadEncoding string         `json:"payload_encoding"`
+}
+
+// Publish sends body (a JSON string) to the named exchange via the HTTP Management API.
+// body is passed as-is in the "payload" field (string encoding).
+func (c *RabbitClient) Publish(ctx context.Context, exchange, routingKey string, body []byte) error {
+	reqBody := rabbitPublishRequest{
+		Properties:      map[string]any{},
+		RoutingKey:      routingKey,
+		Payload:         string(body),
+		PayloadEncoding: "string",
 	}
-	defer ch.Close()
-	return ch.Publish(exchange, routingKey, false, false, amqp.Publishing{
-		ContentType: "application/json",
-		Body:        body,
-	})
+	data, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("marshal request: %w", err)
+	}
+
+	endpoint := c.baseURL + "/" + exchange + "/publish"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(data))
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(c.user, c.password)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("POST %s: %w", endpoint, err)
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("RabbitMQ management API returned %d: %s", resp.StatusCode, respBody)
+	}
+
+	return nil
 }
 
-// Close releases the AMQP connection.
-func (c *RabbitClient) Close() error {
-	return c.conn.Close()
-}
+// Close is a no-op; HTTP Management API uses stateless requests.
+func (c *RabbitClient) Close() error { return nil }

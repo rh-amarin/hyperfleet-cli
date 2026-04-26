@@ -3,13 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"net/url"
 
-	"github.com/rh-amarin/hyperfleet-cli/internal/api"
 	"github.com/rh-amarin/hyperfleet-cli/internal/config"
 	out "github.com/rh-amarin/hyperfleet-cli/internal/output"
 	ps "github.com/rh-amarin/hyperfleet-cli/internal/pubsub"
-	"github.com/rh-amarin/hyperfleet-cli/internal/resource"
 	"github.com/spf13/cobra"
 )
 
@@ -28,23 +25,8 @@ func init() {
 }
 
 // rabbitFactory creates a RabbitPublisher. Overridable in tests.
-var rabbitFactory = func(amqpURL string) (ps.RabbitPublisher, error) {
-	return ps.NewRabbit(amqpURL)
-}
-
-// buildRabbitURL constructs an AMQP URL from the resolved config.
-func buildRabbitURL(cfg config.Config) string {
-	vhost := cfg.RabbitMQ.VHost
-	if vhost == "/" {
-		vhost = ""
-	}
-	u := &url.URL{
-		Scheme: "amqp",
-		User:   url.UserPassword(cfg.RabbitMQ.User, cfg.RabbitMQ.Password),
-		Host:   cfg.RabbitMQ.Host,
-		Path:   "/" + vhost,
-	}
-	return u.String()
+var rabbitFactory = func(host string, mgmtPort int, user, password, vhost string) (ps.RabbitPublisher, error) {
+	return ps.NewRabbit(host, mgmtPort, user, password, vhost)
 }
 
 // ── publish ───────────────────────────────────────────────────────────────────
@@ -74,18 +56,19 @@ var rabbitmqPublishClusterCmd = &cobra.Command{
 			return err
 		}
 
-		c := newClient()
-		cluster, err := api.Get[resource.Cluster](c, ctx, "clusters/"+clusterID)
+		payload, err := buildClusterEvent(clusterID)
 		if err != nil {
 			return err
 		}
 
-		payload, err := cloudEvent("com.hyperfleet.cluster.changed", cluster)
-		if err != nil {
-			return err
+		rkDisplay := routingKey
+		if rkDisplay == "" {
+			rkDisplay = "<empty>"
 		}
+		out.Info(fmt.Sprintf("Publishing change message to exchange: %s (routing-key: %s)", exchange, rkDisplay))
+		fmt.Println(string(payload))
 
-		rabbitClient, err := rabbitFactory(buildRabbitURL(cfg))
+		rabbitClient, err := rabbitFactory(cfg.RabbitMQ.Host, cfg.RabbitMQ.MgmtPort, cfg.RabbitMQ.User, cfg.RabbitMQ.Password, cfg.RabbitMQ.VHost)
 		if err != nil {
 			return fmt.Errorf("create RabbitMQ client: %w", err)
 		}

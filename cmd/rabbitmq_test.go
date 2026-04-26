@@ -3,13 +3,10 @@ package cmd
 import (
 	"context"
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
 	ps "github.com/rh-amarin/hyperfleet-cli/internal/pubsub"
-	"github.com/rh-amarin/hyperfleet-cli/internal/resource"
 )
 
 // fakeRabbitClient implements ps.RabbitPublisher for testing without a live RabbitMQ.
@@ -39,17 +36,13 @@ var _ ps.RabbitPublisher = (*fakeRabbitClient)(nil)
 func TestRabbitMQPublishCluster_PublishesCloudEvent(t *testing.T) {
 	fake := &fakeRabbitClient{}
 	orig := rabbitFactory
-	rabbitFactory = func(_ string) (ps.RabbitPublisher, error) { return fake, nil }
+	rabbitFactory = func(_ string, _ int, _, _, _ string) (ps.RabbitPublisher, error) { return fake, nil }
 	defer func() { rabbitFactory = orig }()
 
-	cluster := resource.Cluster{ID: "c-001", Name: "prod", Generation: 3}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(cluster)
-	}))
+	srv := minSrv()
 	defer srv.Close()
 
-	_, stderr, err := runCmdWithCluster(t, srv, "c-001", "rabbitmq", "publish", "cluster", "my-exchange")
+	stdout, stderr, err := runCmdWithCluster(t, srv, "c-001", "rabbitmq", "publish", "cluster", "my-exchange")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -65,11 +58,21 @@ func TestRabbitMQPublishCluster_PublishesCloudEvent(t *testing.T) {
 	if err := json.Unmarshal(fake.publishedData, &event); err != nil {
 		t.Fatalf("published data is not valid JSON: %v", err)
 	}
-	if event["type"] != "com.hyperfleet.cluster.changed" {
-		t.Errorf("event.type = %v, want com.hyperfleet.cluster.changed", event["type"])
+	if event["type"] != "com.redhat.hyperfleet.cluster.reconcile.v1" {
+		t.Errorf("event.type = %v, want com.redhat.hyperfleet.cluster.reconcile.v1", event["type"])
 	}
 	if event["specversion"] != "1.0" {
 		t.Errorf("event.specversion = %v, want 1.0", event["specversion"])
+	}
+	if event["source"] != "/hyperfleet/service/sentinel" {
+		t.Errorf("event.source = %v, want /hyperfleet/service/sentinel", event["source"])
+	}
+	if event["id"] != "c-001" {
+		t.Errorf("event.id = %v, want c-001", event["id"])
+	}
+	// stdout should contain the pretty-printed JSON
+	if !strings.Contains(stdout, "specversion") {
+		t.Errorf("expected JSON in stdout, got:\n%s", stdout)
 	}
 	if !strings.Contains(stderr, "[INFO]") {
 		t.Errorf("expected [INFO] line in stderr, got: %s", stderr)
@@ -79,14 +82,10 @@ func TestRabbitMQPublishCluster_PublishesCloudEvent(t *testing.T) {
 func TestRabbitMQPublishCluster_WithRoutingKey(t *testing.T) {
 	fake := &fakeRabbitClient{}
 	orig := rabbitFactory
-	rabbitFactory = func(_ string) (ps.RabbitPublisher, error) { return fake, nil }
+	rabbitFactory = func(_ string, _ int, _, _, _ string) (ps.RabbitPublisher, error) { return fake, nil }
 	defer func() { rabbitFactory = orig }()
 
-	cluster := resource.Cluster{ID: "c-001", Name: "prod"}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(cluster)
-	}))
+	srv := minSrv()
 	defer srv.Close()
 
 	_, _, err := runCmdWithCluster(t, srv, "c-001", "rabbitmq", "publish", "cluster", "my-exchange", "cluster.changed")
