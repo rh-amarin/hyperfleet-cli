@@ -1,0 +1,52 @@
+## Live DB Verification — Phase 07 Database (Updated)
+
+Date: 2026-04-26T16:08:43Z
+Environment: GKE cluster via kubectl port-forward (amarin-ns1)
+Pod: api-hyperfleet-api-postgresql-78487b6d54-hxfs7
+
+### hf db config
+
+KEY       VALUE
+host      localhost
+port      5432
+name      hyperfleet
+user      hyperfleet
+password  <set>
+
+### hf db query 'SELECT 1 AS ping'
+
+PING
+1
+
+### hf db query: list tables
+
+TABLE_NAME
+adapter_statuses
+clusters
+migrations
+node_pools
+
+### hf db query: cluster count
+
+CLUSTER_COUNT
+2
+
+### hf db query: node_pool count
+
+NODEPOOL_COUNT
+0
+
+### hf db query: adapter_statuses (3 rows)
+
+ID                                    RESOURCE_TYPE  ADAPTER          OBSERVED_GENERATION
+019dc8b5-6762-78f1-b323-fc61f6e52423  Cluster        cl-m-wrong-nest  1
+019dc85a-c45f-721b-b56d-220f896e3ffc  Cluster        cl-m-wrong-nest  1
+019dc8b5-6667-7c80-8861-2847662a0936  Cluster        cl-deployment    1
+
+### Result
+
+All hf db subcommands verified against live GKE-hosted PostgreSQL:
+  hf db config      ✓ prints masked config
+  hf db query       ✓ executes SELECT and renders table
+
+Tables confirmed: adapter_statuses, clusters, migrations, node_pools

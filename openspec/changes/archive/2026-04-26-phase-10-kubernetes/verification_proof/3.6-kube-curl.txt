@@ -1,0 +1,1 @@
+{"code":"HYPERFLEET-NTF-001","detail":"The requested resource '/api/v1/clusters' doesn't exist","instance":"/api/v1/clusters","status":404,"timestamp":"2026-04-26T18:09:57.548394311Z","title":"Resource Not Found","trace_id":"","type":"https://api.hyperfleet.io/errors/not-found"}

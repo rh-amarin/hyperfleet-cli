@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/rh-amarin/hyperfleet-cli/internal/api"
 	"github.com/rh-amarin/hyperfleet-cli/internal/config"
 	out "github.com/rh-amarin/hyperfleet-cli/internal/output"
 	"github.com/rh-amarin/hyperfleet-cli/internal/resource"
+	"github.com/rh-amarin/hyperfleet-cli/internal/watch"
 	"github.com/spf13/cobra"
 )
 
@@ -33,12 +35,16 @@ func init() {
 
 	nodepoolCmd.AddCommand(nodepoolConditionsCmd)
 	nodepoolConditionsCmd.AddCommand(nodepoolConditionsTableCmd)
-	nodepoolConditionsCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh every 2s")
+	nodepoolConditionsCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh on interval")
+	nodepoolConditionsCmd.Flags().DurationP("interval", "i", 2*time.Second, "refresh interval for watch mode")
 
 	nodepoolCmd.AddCommand(nodepoolStatusesCmd)
-	nodepoolStatusesCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh every 2s")
+	nodepoolStatusesCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh on interval")
+	nodepoolStatusesCmd.Flags().DurationP("interval", "i", 2*time.Second, "refresh interval for watch mode")
 
 	nodepoolCmd.AddCommand(nodepoolTableCmd)
+	nodepoolTableCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh on interval")
+	nodepoolTableCmd.Flags().DurationP("interval", "i", 2*time.Second, "refresh interval for watch mode")
 }
 
 // ── create ────────────────────────────────────────────────────────────────────
@@ -335,7 +341,8 @@ var nodepoolConditionsCmd = &cobra.Command{
 			return err
 		}
 
-		watch, _ := cmd.Flags().GetBool("watch")
+		watchMode, _ := cmd.Flags().GetBool("watch")
+		interval, _ := cmd.Flags().GetDuration("interval")
 		p := printer()
 		c := newClient()
 
@@ -351,8 +358,8 @@ var nodepoolConditionsCmd = &cobra.Command{
 			return p.Print(result)
 		}
 
-		if watch {
-			return watchLoop(fetch)
+		if watchMode {
+			return watch.Watch(interval, fetch)
 		}
 		return fetch()
 	},
@@ -419,7 +426,8 @@ var nodepoolStatusesCmd = &cobra.Command{
 			return err
 		}
 
-		watch, _ := cmd.Flags().GetBool("watch")
+		watchMode, _ := cmd.Flags().GetBool("watch")
+		interval, _ := cmd.Flags().GetDuration("interval")
 		p := printer()
 		c := newClient()
 
@@ -444,8 +452,8 @@ var nodepoolStatusesCmd = &cobra.Command{
 			return p.Print(list)
 		}
 
-		if watch {
-			return watchLoop(fetch)
+		if watchMode {
+			return watch.Watch(interval, fetch)
 		}
 		return fetch()
 	},
@@ -466,55 +474,61 @@ var nodepoolTableCmd = &cobra.Command{
 			return err
 		}
 
+		watchMode, _ := cmd.Flags().GetBool("watch")
+		interval, _ := cmd.Flags().GetDuration("interval")
 		c := newClient()
 		p := printer()
 
-		list, err := api.Get[resource.ListResponse[resource.NodePool]](c, context.Background(), "clusters/"+clusterID+"/nodepools")
-		if err != nil {
-			return err
+		fetch := func() error {
+			list, err := api.Get[resource.ListResponse[resource.NodePool]](c, context.Background(), "clusters/"+clusterID+"/nodepools")
+			if err != nil {
+				return err
+			}
+
+			allConditions := make([][]out.Condition, 0, len(list.Items))
+			for _, np := range list.Items {
+				var conds []out.Condition
+				for _, c := range np.Status.Conditions {
+					conds = append(conds, out.Condition{Type: c.Type})
+				}
+				allConditions = append(allConditions, conds)
+			}
+			dynCols := out.DynamicColumns(allConditions)
+
+			headers := append([]string{"ID", "NAME", "REPLICAS", "TYPE", "GEN"}, dynCols...)
+
+			rows := make([][]string, 0, len(list.Items))
+			for _, np := range list.Items {
+				replicas := fmt.Sprintf("%v", np.Spec["replicas"])
+				instanceType := ""
+				if platform, ok := np.Spec["platform"].(map[string]any); ok {
+					instanceType, _ = platform["type"].(string)
+				}
+
+				condMap := make(map[string]string)
+				for _, cond := range np.Status.Conditions {
+					condMap[cond.Type] = cond.Status
+				}
+
+				row := []string{
+					np.ID,
+					np.Name,
+					replicas,
+					instanceType,
+					fmt.Sprintf("%d", np.Generation),
+				}
+				for _, col := range dynCols {
+					row = append(row, p.Dot(condMap[col]))
+				}
+				rows = append(rows, row)
+			}
+
+			return p.PrintTable(headers, rows)
 		}
 
-		// Collect condition lists for dynamic column ordering
-		allConditions := make([][]out.Condition, 0, len(list.Items))
-		for _, np := range list.Items {
-			var conds []out.Condition
-			for _, c := range np.Status.Conditions {
-				conds = append(conds, out.Condition{Type: c.Type})
-			}
-			allConditions = append(allConditions, conds)
+		if watchMode {
+			return watch.Watch(interval, fetch)
 		}
-		dynCols := out.DynamicColumns(allConditions)
-
-		headers := append([]string{"ID", "NAME", "REPLICAS", "TYPE", "GEN"}, dynCols...)
-
-		rows := make([][]string, 0, len(list.Items))
-		for _, np := range list.Items {
-			// Extract replicas and instance type from spec
-			replicas := fmt.Sprintf("%v", np.Spec["replicas"])
-			instanceType := ""
-			if platform, ok := np.Spec["platform"].(map[string]any); ok {
-				instanceType, _ = platform["type"].(string)
-			}
-
-			// Build condition lookup for this nodepool
-			condMap := make(map[string]string)
-			for _, cond := range np.Status.Conditions {
-				condMap[cond.Type] = cond.Status
-			}
-
-			row := []string{
-				np.ID,
-				np.Name,
-				replicas,
-				instanceType,
-				fmt.Sprintf("%d", np.Generation),
-			}
-			for _, col := range dynCols {
-				row = append(row, p.Dot(condMap[col]))
-			}
-			rows = append(rows, row)
-		}
-
-		return p.PrintTable(headers, rows)
+		return fetch()
 	},
 }

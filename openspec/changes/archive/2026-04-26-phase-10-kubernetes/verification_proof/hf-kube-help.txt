@@ -1,0 +1,25 @@
+Kubernetes operations: port-forward, logs, exec
+
+Usage:
+  hf kube [command]
+
+Available Commands:
+  context      Print the current kubeconfig context name
+  curl         Port-forward to service then HTTP GET <path>, print response body
+  debug        Find the first running pod matching deployment name and print exec command
+  port-forward Manage background port-forwards to in-cluster services
+
+Flags:
+  -h, --help                help for kube
+      --kubeconfig string   path to kubeconfig (default: KUBECONFIG env, then ~/.kube/config)
+  -n, --namespace string    Kubernetes namespace (default "amarin-ns1")
+
+Global Flags:
+      --api-token string   override API token
+      --api-url string     override API URL
+      --config string      config directory (default ~/.config/hf)
+      --no-color           disable colored output
+  -o, --output string      output format: json, table, yaml
+  -v, --verbose            verbose output
+
+Use "hf kube [command] --help" for more information about a command.

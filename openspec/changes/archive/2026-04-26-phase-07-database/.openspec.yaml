@@ -1,0 +1,7 @@
+schema: openspec/v1
+change: phase-07-database
+created: 2026-04-26
+dependsOn:
+  - phase-01-config
+  - phase-02-api-client
+status: in-progress

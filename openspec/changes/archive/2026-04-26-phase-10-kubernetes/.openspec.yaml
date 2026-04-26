@@ -1,0 +1,6 @@
+schema: openspec/v1
+change: phase-10-kubernetes
+created: 2026-04-26
+dependsOn:
+  - phase-01-config
+status: in-progress

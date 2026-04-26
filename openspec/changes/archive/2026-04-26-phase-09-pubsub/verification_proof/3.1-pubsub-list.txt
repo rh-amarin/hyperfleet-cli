@@ -1,0 +1,61 @@
+$ hf pubsub list
+[INFO] Listing Pub/Sub topics and subscriptions for project: hcm-hyperfleet
+Cluster
+landing-zone-2-dlq
+landing-zone-v2-dlq
+landing-zone-dlq
+ci-infra-99619840-default-clusters-adapter2-dlq
+ci-infra-32122880-default-nodepools
+    ci-infra-32122880-default-nodepools-adapter3
+ci-infra-11019776-default-clusters-adapter1-dlq
+ci-infra-03598080-default-clusters-adapter1-dlq
+hyperfleet-clusters-cl-maestro-dlq
+ci-infra-11019776-default-nodepools-adapter3-dlq
+ci-infra-11019776-default-clusters
+    ci-infra-11019776-default-clusters-adapter1
+    ci-infra-11019776-default-clusters-adapter2
+ci-infra-03598080-default-nodepools-adapter3-dlq
+shared-subscription-dlq
+example-topic
+hyperfleet-adapter-cluster
+hyperfleet-adapter-topic
+test-topic-1
+e2e-2046244519208292352-clusters-cl-invalid-resource-dlq
+dandreev-default-clusters-adapter2-dlq
+dandreev-default-nodepools-adapter3-dlq
+CHANGE_ME-dlq
+hyperfleet-clusters
+    hyperfleet-clusters-cl-namespace
+    hyperfleet-clusters-cl-maestro-debug
+    hyperfleet-clusters-cl-job
+    hyperfleet-clusters-cl-deployment
+...
+$ hf pubsub list amarin
+[INFO] Listing Pub/Sub topics and subscriptions for project: hcm-hyperfleet
+[INFO] Filtering by: amarin
+amarin-ns1-clusters
+    amarin-ns1-clusters-cl-job
+    amarin-ns1-clusters-cl-precondition-error
+    amarin-ns1-clusters-cl-invalid-resource
+    amarin-ns1-clusters-cl-m-wrong-ds
+    amarin-ns1-clusters-cl-maestro
+    amarin-ns1-clusters-cl-namespace
+    amarin-ns1-clusters-cl-m-unreg-consumer
+    amarin-ns1-clusters-cl-m-bad-api
+    amarin-ns1-clusters-cl-m-wrong-nest
+    amarin-ns1-clusters-cl-deployment
+    amarin-ns1-clusters-cl-crash
+amarin-ns1-clusters-cl-crash-dlq
+amarin-ns1-nodepools-np-configmap-dlq
+amarin-ns1-clusters-cl-m-unreg-consumer-dlq
+amarin-ns1-clusters-cl-m-wrong-nest-dlq
+amarin-ns1-clusters-cl-deployment-dlq
+amarin-ns1-clusters-cl-job-dlq
+amarin-ns1-clusters-cl-precondition-error-dlq
+amarin-ns1-clusters-cl-invalid-resource-dlq
+amarin-ns1-clusters-cl-m-wrong-ds-dlq
+amarin-ns1-clusters-cl-maestro-dlq
+amarin-ns1-clusters-cl-namespace-dlq
+amarin-ns1-nodepools
+    amarin-ns1-nodepools-np-configmap
+amarin-ns1-clusters-cl-m-bad-api-dlq

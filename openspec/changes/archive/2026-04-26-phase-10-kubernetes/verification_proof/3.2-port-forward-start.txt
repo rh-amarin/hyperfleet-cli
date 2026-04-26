@@ -1,0 +1,4 @@
+[INFO] Started hyperfleet-api: localhost:8000 → 8000 (pid 15375)
+[INFO] Started postgresql: localhost:5432 → 5432 (pid 15376)
+[INFO] Started maestro-http: localhost:8100 → 8000 (pid 15377)
+[INFO] Started maestro-grpc: localhost:8090 → 8090 (pid 15378)
