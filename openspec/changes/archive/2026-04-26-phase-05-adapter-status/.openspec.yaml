@@ -1,0 +1,7 @@
+schema: openspec/v1
+change: phase-05-adapter-status
+created: 2026-04-25
+dependsOn:
+  - phase-04-nodepool
+status: archived
+archived: 2026-04-26
