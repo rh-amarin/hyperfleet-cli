@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/rh-amarin/hyperfleet-cli/internal/api"
 	"github.com/rh-amarin/hyperfleet-cli/internal/config"
 	out "github.com/rh-amarin/hyperfleet-cli/internal/output"
 	"github.com/rh-amarin/hyperfleet-cli/internal/resource"
+	"github.com/rh-amarin/hyperfleet-cli/internal/watch"
 	"github.com/spf13/cobra"
 )
 
@@ -49,11 +48,13 @@ func init() {
 	// conditions + conditions table
 	clusterCmd.AddCommand(clusterConditionsCmd)
 	clusterConditionsCmd.AddCommand(clusterConditionsTableCmd)
-	clusterConditionsCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh every 2s")
+	clusterConditionsCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh on interval")
+	clusterConditionsCmd.Flags().DurationP("interval", "i", 2*time.Second, "refresh interval for watch mode")
 
 	// statuses
 	clusterCmd.AddCommand(clusterStatusesCmd)
-	clusterStatusesCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh every 2s")
+	clusterStatusesCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh on interval")
+	clusterStatusesCmd.Flags().DurationP("interval", "i", 2*time.Second, "refresh interval for watch mode")
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -65,27 +66,6 @@ func newClient() *api.Client {
 
 func printer() *out.Printer {
 	return out.NewPrinter(output, noColor)
-}
-
-// watchLoop clears the terminal and calls fn every 2s until SIGINT.
-func watchLoop(fn func() error) error {
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-	defer signal.Stop(quit)
-
-	for {
-		fmt.Print("\033[H\033[2J")
-		if err := fn(); err != nil {
-			return err
-		}
-		fmt.Fprintf(os.Stderr, "\nLast updated: %s  (Ctrl+C to stop)\n", time.Now().Format("15:04:05"))
-
-		select {
-		case <-quit:
-			return nil
-		case <-time.After(2 * time.Second):
-		}
-	}
 }
 
 // ── create ────────────────────────────────────────────────────────────────────
@@ -359,7 +339,8 @@ var clusterConditionsCmd = &cobra.Command{
 			return err
 		}
 
-		watch, _ := cmd.Flags().GetBool("watch")
+		watchMode, _ := cmd.Flags().GetBool("watch")
+		interval, _ := cmd.Flags().GetDuration("interval")
 		p := printer()
 		c := newClient()
 
@@ -375,8 +356,8 @@ var clusterConditionsCmd = &cobra.Command{
 			return p.Print(result)
 		}
 
-		if watch {
-			return watchLoop(fetch)
+		if watchMode {
+			return watch.Watch(interval, fetch)
 		}
 		return fetch()
 	},
@@ -435,7 +416,8 @@ var clusterStatusesCmd = &cobra.Command{
 			return err
 		}
 
-		watch, _ := cmd.Flags().GetBool("watch")
+		watchMode, _ := cmd.Flags().GetBool("watch")
+		interval, _ := cmd.Flags().GetDuration("interval")
 		p := printer()
 		c := newClient()
 
@@ -460,8 +442,8 @@ var clusterStatusesCmd = &cobra.Command{
 			return p.Print(list)
 		}
 
-		if watch {
-			return watchLoop(fetch)
+		if watchMode {
+			return watch.Watch(interval, fetch)
 		}
 		return fetch()
 	},
