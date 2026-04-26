@@ -1,0 +1,2 @@
+NAME        KIND     CLUSTER  GEN  AVAILABLE  CLDEPLOYMENTSUCCESSFUL  CLJOBSUCCESSFUL  CLMAESTROSUCCESSFUL  CLNAMESPACESUCCESSFUL  READY
+my-cluster  Cluster           1    True       True                    True             True                 True                   True

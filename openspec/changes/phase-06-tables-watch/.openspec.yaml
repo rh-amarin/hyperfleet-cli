@@ -1,0 +1,6 @@
+schema: openspec/v1
+change: phase-06-tables-watch
+created: 2026-04-26
+dependsOn:
+  - phase-05-adapter-status
+status: in-progress
