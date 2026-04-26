@@ -22,8 +22,10 @@ type AdapterStatusMetadata struct {
 type AdapterStatusCreateRequest struct {
 	Adapter            string                 `json:"adapter"`
 	ObservedGeneration int32                  `json:"observed_generation"`
-	ObservedTime       string                 `json:"observed_time"`
+	ObservedTime       string                 `json:"observed_time,omitempty"`
 	Conditions         []ConditionRequest     `json:"conditions"`
 	Metadata           *AdapterStatusMetadata `json:"metadata,omitempty"`
 	Data               map[string]any         `json:"data,omitempty"`
+	CreatedTime        string                 `json:"created_time,omitempty"`
+	LastReportTime     string                 `json:"last_report_time,omitempty"`
 }
