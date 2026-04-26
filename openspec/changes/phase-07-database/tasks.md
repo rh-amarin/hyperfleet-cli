@@ -21,9 +21,7 @@
 - [x] 3.1 `hf db query <sql>` — connect, Query, PrintTable
 - [x] 3.2 `hf db delete <table> <where>` — count + confirm + Exec
 - [x] 3.3 `hf db delete-all <table>` — count + confirm + Exec
-- [x] 3.4 `hf db statuses` — SELECT * FROM adapter_statuses → PrintTable
-- [x] 3.5 `hf db statuses-delete` — count + confirm + DELETE FROM adapter_statuses
-- [x] 3.6 `hf db config` — print resolved DB config (password masked)
+- [x] 3.4 `hf db config` — print resolved DB config (password masked)
 
 ## 4. cmd/db Unit Tests
 
@@ -34,9 +32,6 @@
 - [x] 4.5 `TestDbDelete_ConfirmYes` — mock confirm Y, Exec called
 - [x] 4.6 `TestDbDelete_ConfirmNo` — mock confirm N, Exec not called
 - [x] 4.7 `TestDbDeleteAll_ConfirmYes` — mock confirm Y
-- [x] 4.8 `TestDbStatuses_PrintsTable` — mock returns adapter status rows
-- [x] 4.9 `TestDbStatuses_EmptyResult` — prints info
-- [x] 4.10 `TestDbStatusesDelete_ConfirmYes` — mock confirm Y
 
 ## 5. Verify
 

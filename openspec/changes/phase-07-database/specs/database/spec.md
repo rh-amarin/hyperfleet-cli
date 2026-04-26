@@ -25,12 +25,6 @@ native Go `pgxpool` instead:
 - Shows COUNT before prompting
 - Requires `y` or `yes` confirmation
 
-### MODIFIED: Adapter Statuses (statuses / statuses-delete)
-
-- `hf db statuses` — connects via pgxpool, runs `SELECT * FROM adapter_statuses`, prints as table
-- `hf db statuses-delete` — shows count, prompts, then `DELETE FROM adapter_statuses`
-- No longer requires `kubectl exec`; uses direct DB connection
-
 ### ADDED: Database Config Display
 
 - `hf db config` — prints resolved DB connection parameters (host, port, name, user)

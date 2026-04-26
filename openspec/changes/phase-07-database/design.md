@@ -49,8 +49,6 @@ hf db
   query <sql>              SELECT → table via printer().PrintTable
   delete <table> <where>   DELETE FROM <table> WHERE <where> with count + confirm
   delete-all <table>       DELETE FROM <table> with count + confirm
-  statuses                 SELECT * FROM adapter_statuses → table
-  statuses-delete          DELETE FROM adapter_statuses with count + confirm
   config                   Show resolved DB config (password masked)
 ```
 
