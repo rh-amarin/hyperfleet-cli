@@ -1,3 +1,0 @@
-$ go vet ./...
-(no output — vet passed with no issues)
-exit: 0

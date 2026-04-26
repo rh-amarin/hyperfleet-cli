@@ -1,3 +1,5 @@
-$ /tmp/hf kube port-forward status
-SERVICE  LOCAL_PORT  REMOTE_PORT  PID  STATUS
-No port-forwards configured.
+Port Forward Status
+  ● hyperfleet-api - localhost:8000 (PID: 15375)
+  ● maestro-grpc - localhost:8090 (PID: 15378)
+  ● maestro-http - localhost:8100 (PID: 15377)
+  ● postgresql - localhost:5432 (PID: 15376)

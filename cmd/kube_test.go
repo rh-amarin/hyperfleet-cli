@@ -83,8 +83,8 @@ func TestKubePortForwardStatus_Empty(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	out := bufOut.String()
-	if !strings.Contains(out, "SERVICE") {
-		t.Errorf("expected SERVICE header in output, got:\n%s", out)
+	if !strings.Contains(out, "Port Forward Status") {
+		t.Errorf("expected 'Port Forward Status' header in output, got:\n%s", out)
 	}
 	if !strings.Contains(out, "No port-forwards") {
 		t.Errorf("expected 'No port-forwards' message, got:\n%s", out)

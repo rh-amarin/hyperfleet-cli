@@ -1,3 +1,0 @@
-$ go build ./...
-(no output — build succeeded)
-exit: 0
