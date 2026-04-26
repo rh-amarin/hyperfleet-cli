@@ -1,7 +1,0 @@
-TYPE                    STATUS  LAST TRANSITION       REASON                                                                   MESSAGE
-Ready                   True    2026-04-26T05:33:21Z  All required adapters reported Available=True at the current generation  All required adapters reported Available=True at the current generation
-Available               True    2026-04-26T05:33:21Z  All required adapters report Available=True for the tracked generation   All required adapters report Available=True for the tracked generation
-ClNamespaceSuccessful   True    2026-04-26T05:31:29Z  ManualStatusPost                                                         Status posted via hf adapter post-status
-ClMaestroSuccessful     True    2026-04-26T05:31:34Z  AllResourcesAvailable                                                    All manifests (namespace, configmap) are available on spoke cluster
-ClDeploymentSuccessful  True    2026-04-26T05:32:04Z  ManualStatusPost                                                         Status posted via hf adapter post-status
-ClJobSuccessful         True    2026-04-26T05:33:29Z  ValidationPassed                                                         Environment validated successfully (default simulation)
