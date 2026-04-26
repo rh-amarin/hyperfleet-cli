@@ -42,7 +42,7 @@ func newMaestroClient() *maestro.Client {
 
 var maestroListCmd = &cobra.Command{
 	Use:          "list",
-	Short:        "List Maestro resources for the configured consumer",
+	Short:        "List Maestro resource bundles for the configured consumer",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c := newMaestroClient()
@@ -55,7 +55,7 @@ var maestroListCmd = &cobra.Command{
 		rows := make([][]string, 0, len(resources))
 		for _, r := range resources {
 			rows = append(rows, []string{
-				r.Name,
+				r.Metadata["name"],
 				r.ConsumerName,
 				fmt.Sprintf("%d", r.Version),
 				fmt.Sprintf("%d", r.ManifestCount),
@@ -68,8 +68,8 @@ var maestroListCmd = &cobra.Command{
 // ── get ───────────────────────────────────────────────────────────────────────
 
 var maestroGetCmd = &cobra.Command{
-	Use:          "get <name>",
-	Short:        "Get a Maestro resource by name",
+	Use:          "get <id>",
+	Short:        "Get a Maestro resource bundle by ID",
 	Args:         cobra.ExactArgs(1),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -85,16 +85,16 @@ var maestroGetCmd = &cobra.Command{
 // ── delete ────────────────────────────────────────────────────────────────────
 
 var maestroDeleteCmd = &cobra.Command{
-	Use:          "delete <name>",
-	Short:        "Delete a Maestro resource",
+	Use:          "delete <id>",
+	Short:        "Delete a Maestro resource bundle by ID",
 	Args:         cobra.ExactArgs(1),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		name := args[0]
+		id := args[0]
 		yes, _ := cmd.Flags().GetBool("yes")
 
 		if !yes {
-			fmt.Fprintf(os.Stderr, "Delete Maestro resource '%s'? [y/N]: ", name)
+			fmt.Fprintf(os.Stderr, "Delete Maestro resource bundle '%s'? [y/N]: ", id)
 			scanner := bufio.NewScanner(os.Stdin)
 			scanner.Scan()
 			answer := strings.TrimSpace(strings.ToLower(scanner.Text()))
@@ -105,10 +105,10 @@ var maestroDeleteCmd = &cobra.Command{
 		}
 
 		c := newMaestroClient()
-		if err := c.Delete(context.Background(), name); err != nil {
+		if err := c.Delete(context.Background(), id); err != nil {
 			return err
 		}
-		out.Info(fmt.Sprintf("Deleted Maestro resource '%s'", name))
+		out.Info(fmt.Sprintf("Deleted Maestro resource bundle '%s'", id))
 		return nil
 	},
 }
@@ -117,7 +117,7 @@ var maestroDeleteCmd = &cobra.Command{
 
 var maestroBundlesCmd = &cobra.Command{
 	Use:          "bundles",
-	Short:        "List Maestro resource bundles",
+	Short:        "List all Maestro resource bundles (unfiltered)",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c := newMaestroClient()
@@ -166,7 +166,11 @@ var maestroTUICmd = &cobra.Command{
 					"  oc apply -f <maestro-deployment-url>",
 			)
 		}
-		endpoint := cfgStore.Cfg().Maestro.HTTPEndpoint
-		return syscall.Exec(maestroCLI, []string{"maestro-cli", "tui", "--api-server=" + endpoint}, os.Environ())
+		cfg := cfgStore.Cfg().Maestro
+		env := append(os.Environ(),
+			"MAESTRO_HTTP_ENDPOINT="+cfg.HTTPEndpoint,
+			"MAESTRO_GRPC_ENDPOINT="+cfg.GRPCEndpoint,
+		)
+		return syscall.Exec(maestroCLI, []string{"maestro-cli", "tui"}, env)
 	},
 }

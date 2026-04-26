@@ -2,7 +2,7 @@
 === RUN   TestClusterAdapterPostStatus_PostsCorrectURL
 --- PASS: TestClusterAdapterPostStatus_PostsCorrectURL (0.00s)
 === RUN   TestClusterAdapterPostStatus_PayloadShape
---- PASS: TestClusterAdapterPostStatus_PayloadShape (0.00s)
+--- PASS: TestClusterAdapterPostStatus_PayloadShape (0.01s)
 === RUN   TestClusterAdapterPostStatus_DefaultGeneration
 --- PASS: TestClusterAdapterPostStatus_DefaultGeneration (0.00s)
 === RUN   TestClusterAdapterPostStatus_AllThreeConditionTypes
@@ -98,7 +98,7 @@
 === RUN   TestNodePoolTable_RendersWithDynamicColumns
 --- PASS: TestNodePoolTable_RendersWithDynamicColumns (0.00s)
 PASS
-ok  	github.com/rh-amarin/hyperfleet-cli/cmd	0.088s
+ok  	github.com/rh-amarin/hyperfleet-cli/cmd	(cached)
 === RUN   TestGet_200
 --- PASS: TestGet_200 (0.00s)
 === RUN   TestPost_201
@@ -161,7 +161,7 @@ ok  	github.com/rh-amarin/hyperfleet-cli/cmd	0.088s
 === RUN   TestFindNodePoolByName_APIError
 --- PASS: TestFindNodePoolByName_APIError (0.00s)
 PASS
-ok  	github.com/rh-amarin/hyperfleet-cli/internal/api	0.021s
+ok  	github.com/rh-amarin/hyperfleet-cli/internal/api	(cached)
 ?   	github.com/rh-amarin/hyperfleet-cli/internal/config	[no test files]
 === RUN   TestClientList_FiltersConsumer
 --- PASS: TestClientList_FiltersConsumer (0.00s)
@@ -180,7 +180,7 @@ ok  	github.com/rh-amarin/hyperfleet-cli/internal/api	0.021s
 === RUN   TestClientDo_AuthHeader_SendsBearer
 --- PASS: TestClientDo_AuthHeader_SendsBearer (0.00s)
 PASS
-ok  	github.com/rh-amarin/hyperfleet-cli/internal/maestro	0.009s
+ok  	github.com/rh-amarin/hyperfleet-cli/internal/maestro	(cached)
 === RUN   TestJSONOutput
 --- PASS: TestJSONOutput (0.00s)
 === RUN   TestDotRendering_Color
@@ -214,7 +214,7 @@ ok  	github.com/rh-amarin/hyperfleet-cli/internal/maestro	0.009s
 === RUN   TestNewPrinter_Defaults
 --- PASS: TestNewPrinter_Defaults (0.00s)
 PASS
-ok  	github.com/rh-amarin/hyperfleet-cli/internal/output	0.004s
+ok  	github.com/rh-amarin/hyperfleet-cli/internal/output	(cached)
 === RUN   TestCluster_JSONRoundTrip
 --- PASS: TestCluster_JSONRoundTrip (0.00s)
 === RUN   TestNodePool_JSONRoundTrip
@@ -236,5 +236,5 @@ ok  	github.com/rh-amarin/hyperfleet-cli/internal/output	0.004s
 === RUN   TestAdapterStatusCreateRequest_JSONRoundTrip
 --- PASS: TestAdapterStatusCreateRequest_JSONRoundTrip (0.00s)
 PASS
-ok  	github.com/rh-amarin/hyperfleet-cli/internal/resource	0.004s
+ok  	github.com/rh-amarin/hyperfleet-cli/internal/resource	(cached)
 ?   	github.com/rh-amarin/hyperfleet-cli/internal/version	[no test files]

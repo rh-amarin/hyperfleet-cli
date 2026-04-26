@@ -28,12 +28,12 @@ func runMaestroCmd(t *testing.T, srv *httptest.Server, args ...string) (string, 
 	return runCmdRaw(t, fullArgs)
 }
 
-// maestroResourceJSON returns a minimal Maestro resource as JSON bytes.
+// maestroResourceJSON returns a minimal Maestro resource bundle as JSON bytes.
 func maestroResourceJSON(id, name, consumer string) []byte {
 	r := maestro.Resource{
 		ID:            id,
-		Kind:          "Resource",
-		Name:          name,
+		Kind:          "ResourceBundle",
+		Metadata:      map[string]string{"name": name},
 		ConsumerName:  consumer,
 		Version:       1,
 		ManifestCount: 2,
@@ -50,15 +50,15 @@ func maestroResourceListJSON(items []maestro.Resource) []byte {
 		Kind  string             `json:"kind"`
 		Total int                `json:"total"`
 	}
-	b, _ := json.Marshal(listResp{Items: items, Kind: "ResourceList", Total: len(items)})
+	b, _ := json.Marshal(listResp{Items: items, Kind: "ResourceBundleList", Total: len(items)})
 	return b
 }
 
-func maestroBundleListJSON(items []maestro.Bundle) []byte {
+func maestroBundleListJSON(items []maestro.Resource) []byte {
 	type listResp struct {
-		Items []maestro.Bundle `json:"items"`
-		Kind  string           `json:"kind"`
-		Total int              `json:"total"`
+		Items []maestro.Resource `json:"items"`
+		Kind  string             `json:"kind"`
+		Total int                `json:"total"`
 	}
 	b, _ := json.Marshal(listResp{Items: items, Kind: "ResourceBundleList", Total: len(items)})
 	return b
@@ -78,8 +78,8 @@ func maestroConsumerListJSON(items []maestro.Consumer) []byte {
 
 func TestMaestroList_RendersTable(t *testing.T) {
 	resources := []maestro.Resource{
-		{ID: "r-001", Name: "mw-abc", ConsumerName: "cluster1", Version: 3, ManifestCount: 4},
-		{ID: "r-002", Name: "mw-def", ConsumerName: "cluster1", Version: 1, ManifestCount: 2},
+		{ID: "r-001", Metadata: map[string]string{"name": "mw-abc"}, ConsumerName: "cluster1", Version: 3, ManifestCount: 4},
+		{ID: "r-002", Metadata: map[string]string{"name": "mw-def"}, ConsumerName: "cluster1", Version: 1, ManifestCount: 2},
 	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -118,16 +118,16 @@ func TestMaestroGet_PrintsJSON(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !strings.HasSuffix(strings.TrimRight(capturedPath, "/"), "/resources/mw-abc") {
-		t.Errorf("expected GET /resources/mw-abc, got path: %s", capturedPath)
+	if !strings.HasSuffix(strings.TrimRight(capturedPath, "/"), "/resource-bundles/mw-abc") {
+		t.Errorf("expected GET /resource-bundles/mw-abc, got path: %s", capturedPath)
 	}
 
 	var got maestro.Resource
 	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
 		t.Fatalf("output not valid JSON: %v\nout: %s", err, stdout)
 	}
-	if got.Name != "mw-abc" {
-		t.Errorf("name = %q, want mw-abc", got.Name)
+	if got.Metadata["name"] != "mw-abc" {
+		t.Errorf("name = %q, want mw-abc", got.Metadata["name"])
 	}
 }
 
@@ -149,7 +149,7 @@ func TestMaestroDelete_WithYesFlag_CallsDELETE(t *testing.T) {
 	if capturedMethod != http.MethodDelete {
 		t.Errorf("expected DELETE, got %s", capturedMethod)
 	}
-	if !strings.HasSuffix(capturedPath, "/resources/mw-abc") {
+	if !strings.HasSuffix(capturedPath, "/resource-bundles/mw-abc") {
 		t.Errorf("unexpected path: %s", capturedPath)
 	}
 	if !strings.Contains(stderr, "Deleted") {
@@ -194,9 +194,9 @@ func TestMaestroDelete_CancelledByUser_NoRequest(t *testing.T) {
 
 func TestMaestroBundles_PrintsJSON(t *testing.T) {
 	var capturedPath string
-	bundles := []maestro.Bundle{
-		{ID: "b-001", Name: "bundle-1", Kind: "ResourceBundle"},
-		{ID: "b-002", Name: "bundle-2", Kind: "ResourceBundle"},
+	bundles := []maestro.Resource{
+		{ID: "b-001", Metadata: map[string]string{"name": "bundle-1"}, Kind: "ResourceBundle"},
+		{ID: "b-002", Metadata: map[string]string{"name": "bundle-2"}, Kind: "ResourceBundle"},
 	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path

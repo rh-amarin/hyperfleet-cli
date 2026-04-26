@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -29,40 +30,30 @@ func New(httpEndpoint, consumer, token string) *Client {
 	}
 }
 
-// Resource represents a Maestro resource.
+// Resource represents a Maestro resource bundle (resource-bundles endpoint).
 type Resource struct {
-	ID            string      `json:"id"`
-	Kind          string      `json:"kind"`
-	Name          string      `json:"name"`
-	ConsumerName  string      `json:"consumer_name"`
-	Version       int         `json:"version"`
-	ManifestCount int         `json:"manifest_count"`
-	Manifests     []Manifest  `json:"manifests"`
-	Conditions    []Condition `json:"conditions"`
+	ID            string            `json:"id"`
+	Kind          string            `json:"kind"`
+	Metadata      map[string]string `json:"metadata"`
+	ConsumerName  string            `json:"consumer_name"`
+	Version       int               `json:"version"`
+	ManifestCount int               `json:"manifest_count"`
+	Manifests     []Manifest        `json:"manifests"`
+	Conditions    []Condition       `json:"conditions"`
 }
 
-// Manifest is a summary of a Kubernetes manifest within a resource.
+// Manifest is a summary of a Kubernetes manifest within a resource bundle.
 type Manifest struct {
 	Kind      string `json:"kind"`
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 }
 
-// Condition is a status condition on a Maestro resource.
+// Condition is a status condition on a Maestro resource bundle.
 type Condition struct {
 	Type   string `json:"type"`
 	Status string `json:"status"`
 	Reason string `json:"reason"`
-}
-
-// Bundle represents a Maestro resource bundle.
-type Bundle struct {
-	ID              string            `json:"id"`
-	Kind            string            `json:"kind"`
-	Name            string            `json:"name"`
-	Labels          map[string]string `json:"labels"`
-	Manifests       []any             `json:"manifests"`
-	ManifestConfigs []any             `json:"manifest_configs"`
 }
 
 // Consumer represents a Maestro consumer.
@@ -110,11 +101,12 @@ func (c *Client) do(ctx context.Context, method, path string, body any) (*http.R
 	return resp, nil
 }
 
-// List returns all resources for the configured consumer.
+// List returns all resource bundles for the configured consumer.
+// The consumer filter uses the Maestro SQL-like search syntax.
 func (c *Client) List(ctx context.Context) ([]Resource, error) {
-	path := "resources"
+	path := "resource-bundles"
 	if c.consumer != "" {
-		path += "?consumer_name=" + c.consumer
+		path += "?search=" + url.QueryEscape(fmt.Sprintf("consumer_name = '%s'", c.consumer))
 	}
 	resp, err := c.do(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -128,9 +120,9 @@ func (c *Client) List(ctx context.Context) ([]Resource, error) {
 	return result.Items, nil
 }
 
-// Get retrieves a single resource by name.
-func (c *Client) Get(ctx context.Context, name string) (*Resource, error) {
-	resp, err := c.do(ctx, http.MethodGet, "resources/"+name, nil)
+// Get retrieves a single resource bundle by ID.
+func (c *Client) Get(ctx context.Context, id string) (*Resource, error) {
+	resp, err := c.do(ctx, http.MethodGet, "resource-bundles/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -142,9 +134,9 @@ func (c *Client) Get(ctx context.Context, name string) (*Resource, error) {
 	return &result, nil
 }
 
-// Delete removes a resource by name.
-func (c *Client) Delete(ctx context.Context, name string) error {
-	resp, err := c.do(ctx, http.MethodDelete, "resources/"+name, nil)
+// Delete removes a resource bundle by ID.
+func (c *Client) Delete(ctx context.Context, id string) error {
+	resp, err := c.do(ctx, http.MethodDelete, "resource-bundles/"+id, nil)
 	if err != nil {
 		return err
 	}
@@ -152,14 +144,14 @@ func (c *Client) Delete(ctx context.Context, name string) error {
 	return nil
 }
 
-// ListBundles returns all resource bundles.
-func (c *Client) ListBundles(ctx context.Context) ([]Bundle, error) {
+// ListBundles returns all resource bundles without consumer filtering.
+func (c *Client) ListBundles(ctx context.Context) ([]Resource, error) {
 	resp, err := c.do(ctx, http.MethodGet, "resource-bundles", nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	var result listResponse[Bundle]
+	var result listResponse[Resource]
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}

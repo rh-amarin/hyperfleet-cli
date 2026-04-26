@@ -43,4 +43,4 @@
 - [x] (a) `go build ./...` succeeds → see `verification_proof/build.txt`
 - [x] (b) `go vet ./...` reports no issues → see `verification_proof/vet.txt`
 - [x] (c) `go test ./...` passes → `verification_proof/tests.txt`
-- [ ] (d) Live verification → `verification_proof/maestro-connectivity.txt`
+- [x] (d) Live verification → `verification_proof/maestro-connectivity.txt`

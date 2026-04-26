@@ -11,12 +11,7 @@ import (
 )
 
 func resourceListJSON(items []Resource) []byte {
-	b, _ := json.Marshal(listResponse[Resource]{Items: items, Kind: "ResourceList", Total: len(items)})
-	return b
-}
-
-func bundleListJSON(items []Bundle) []byte {
-	b, _ := json.Marshal(listResponse[Bundle]{Items: items, Kind: "ResourceBundleList", Total: len(items)})
+	b, _ := json.Marshal(listResponse[Resource]{Items: items, Kind: "ResourceBundleList", Total: len(items)})
 	return b
 }
 
@@ -29,7 +24,7 @@ func TestClientList_FiltersConsumer(t *testing.T) {
 	var capturedQuery string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedQuery = r.URL.RawQuery
-		items := []Resource{{ID: "r-001", Name: "mw-abc", ConsumerName: "cluster1"}}
+		items := []Resource{{ID: "r-001", Metadata: map[string]string{"name": "mw-abc"}, ConsumerName: "cluster1"}}
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(resourceListJSON(items))
 	}))
@@ -40,10 +35,10 @@ func TestClientList_FiltersConsumer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(capturedQuery, "consumer_name=cluster1") {
-		t.Errorf("expected consumer_name in query, got: %s", capturedQuery)
+	if !strings.Contains(capturedQuery, "search=") || !strings.Contains(capturedQuery, "consumer_name") {
+		t.Errorf("expected consumer_name search filter in query, got: %s", capturedQuery)
 	}
-	if len(resources) != 1 || resources[0].Name != "mw-abc" {
+	if len(resources) != 1 || resources[0].Metadata["name"] != "mw-abc" {
 		t.Errorf("unexpected resources: %+v", resources)
 	}
 }
@@ -68,12 +63,12 @@ func TestClientList_NoConsumer_OmitsQueryParam(t *testing.T) {
 }
 
 func TestClientGet_ReturnsResource(t *testing.T) {
-	expected := Resource{ID: "r-002", Name: "mw-xyz", ConsumerName: "cluster1", Version: 3}
+	expected := Resource{ID: "r-002", Metadata: map[string]string{"name": "mw-xyz"}, ConsumerName: "cluster1", Version: 3}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if !strings.HasSuffix(r.URL.Path, "/resources/mw-xyz") {
+		if !strings.HasSuffix(r.URL.Path, "/resource-bundles/mw-xyz") {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -109,7 +104,7 @@ func TestClientDelete_SendsDELETE(t *testing.T) {
 	if capturedMethod != http.MethodDelete {
 		t.Errorf("expected DELETE, got %s", capturedMethod)
 	}
-	if !strings.HasSuffix(capturedPath, "/resources/mw-abc") {
+	if !strings.HasSuffix(capturedPath, "/resource-bundles/mw-abc") {
 		t.Errorf("unexpected path: %s", capturedPath)
 	}
 }
@@ -118,9 +113,9 @@ func TestClientListBundles_ReturnsItems(t *testing.T) {
 	var capturedPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
-		items := []Bundle{{ID: "b-001", Name: "bundle-1"}}
+		items := []Resource{{ID: "b-001", Metadata: map[string]string{"name": "bundle-1"}}}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(bundleListJSON(items))
+		w.Write(resourceListJSON(items))
 	}))
 	defer srv.Close()
 
@@ -132,7 +127,7 @@ func TestClientListBundles_ReturnsItems(t *testing.T) {
 	if !strings.HasSuffix(capturedPath, "/resource-bundles") {
 		t.Errorf("expected /resource-bundles path, got: %s", capturedPath)
 	}
-	if len(bundles) != 1 || bundles[0].Name != "bundle-1" {
+	if len(bundles) != 1 || bundles[0].Metadata["name"] != "bundle-1" {
 		t.Errorf("unexpected bundles: %+v", bundles)
 	}
 }

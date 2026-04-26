@@ -1,43 +1,56 @@
 # Maestro Live Verification — 2026-04-26
 
-## Result: Maestro endpoint not reachable from this environment
+## Result: Live API tested via kubectl port-forward; bugs found and fixed
 
-The Maestro HTTP API is a separate service from the HyperFleet API and is not
-exposed externally. It is typically accessed via port-forward from within the
-Kubernetes cluster where Maestro is deployed.
+Live testing was performed against the GKE cluster at 34.175.77.98, Maestro
+namespace, using kubectl port-forward svc/maestro 18002:8000.
 
-## Attempts Made
+## Live API Findings
 
-1. Default config endpoint (http://localhost:8100): connection refused
-   - Command: /tmp/hf maestro consumers
-   - Error: dial tcp [::1]:8100: connect: connection refused
+1. GET /api/maestro/v1/consumers → HTTP 200
+   - Returns 1 consumer: cluster1 (id: 6f56f8da-d465-4c07-9291-58facdd78fde)
 
-2. HyperFleet LoadBalancer (34.175.27.173:8000) with /api/maestro/v1/consumers:
-   - Returns 404 (HYPERFLEET-NTF-001): "The requested resource '/api/maestro/v1/consumers' doesn't exist"
-   - This confirms the HyperFleet API and Maestro API are distinct services on different endpoints.
+2. GET /api/maestro/v1/resources → HTTP 404
+   - The /resources endpoint does NOT exist in this Maestro deployment.
+   - Initial implementation was wrong: used /resources for List/Get/Delete.
 
-3. Ports 8001, 8100, 30007: No response (connection timeout)
+3. GET /api/maestro/v1/resource-bundles → HTTP 200
+   - Returns 326 bundles for consumer cluster1.
+   - Resource name is in metadata.name, NOT a top-level "name" field.
 
-4. Port 8080: Returns HyperFleet 404 (same service as main API)
+4. GET /api/maestro/v1/resource-bundles?search=consumer_name%20%3D%20%27cluster1%27 → HTTP 200
+   - SQL-like search filter works: consumer_name = 'cluster1'
+   - 326 results for cluster1 consumer.
 
-## Expected Usage (with port-forward)
+5. GET /api/maestro/v1/resource-bundles/<uuid> → HTTP 200
+   - Direct lookup by UUID works.
+   - Bundle name comes from metadata["name"], e.g. "019db4a7-91fa-721c-ba93-4d9af6592a67-cl-m-bad-api"
 
-When Maestro is accessible (e.g., via `hf kube port-forward start`):
+## Bugs Fixed
 
-  hf maestro consumers
-  # NAME       ID
-  # cluster1   <uuid>
+1. Resource struct: removed top-level "name" field, added Metadata map[string]string
+   with name stored at metadata["name"] to match real API shape.
 
-  hf maestro list
-  # NAME              CONSUMER   VERSION   MANIFESTS
-  # mw-<cluster-uuid> cluster1   1         3
+2. List(): changed from GET /resources?consumer_name=X
+   to GET /resource-bundles?search=consumer_name%20%3D%20%27X%27
 
-  hf maestro tui  # requires maestro-cli binary in PATH
+3. Get(): changed from GET /resources/<name>
+   to GET /resource-bundles/<id>
 
-## Unit Tests
+4. Delete(): changed from DELETE /resources/<name>
+   to DELETE /resource-bundles/<id>
 
-All unit tests pass (see verification_proof/tests.txt):
+5. tui command: replaced --api-server=<endpoint> (invalid flag)
+   with MAESTRO_HTTP_ENDPOINT and MAESTRO_GRPC_ENDPOINT env vars
+   (what maestro-cli actually reads per its root.go source).
+
+## maestro-cli Flag Reference (github.com/openshift-hyperfleet/maestro-cli)
+
+  Persistent flags: --http-endpoint, --grpc-endpoint, --grpc-insecure, --grpc-client-token
+  Env vars: MAESTRO_HTTP_ENDPOINT, MAESTRO_GRPC_ENDPOINT, MAESTRO_GRPC_TOKEN
+
+## Unit Tests After Fix
+
+All unit tests pass (see tests.txt):
 - internal/maestro: 8 tests (httptest-based)
 - cmd/maestro: 7 tests (httptest-based)
-
-The implementation is correct; live verification requires cluster port-forward access.
