@@ -17,7 +17,7 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 | 03 | [NodePool Lifecycle](nodepool-lifecycle/spec.md) | NodePool CRUD operations | 10 | 18 | hf.nodepool.{create,list,search,get,patch,delete,conditions,conditions.table,statuses,table}.sh |
 | 04 | [Adapter Status](adapter-status/spec.md) | Adapter status posting and convergence model | 3 | 9 | hf.cluster.adapter.post.status.sh, hf.nodepool.adapter.post.status.sh |
 | 05 | [Tables and Lists](tables-and-lists/spec.md) | Aggregated views and formatted tables | 4 | 7 | hf.cluster.{list,table}.sh, hf.nodepool.table.sh, hf.table.sh |
-| 06 | [Database](database/spec.md) | Direct PostgreSQL operations | 6 | 10 | hf.db.{query,delete,delete.all,statuses,statuses.delete,config}.sh |
+| 06 | [Database](database/spec.md) | Direct PostgreSQL operations | 4 | 7 | hf.db.{query,delete,delete.all,config}.sh |
 | 07 | [Maestro](maestro/spec.md) | Maestro resource management | 6 | 8 | hf.maestro.{list,bundles,consumers,get,delete,tui}.sh |
 | 08 | [Pub/Sub & Messaging](pubsub/spec.md) | Event publishing to GCP Pub/Sub and RabbitMQ | 4 | 5 | hf.pubsub.{list,publish.*}.sh, hf.rabbitmq.publish.*.sh |
 | 09 | [Kubernetes](kubernetes/spec.md) | Port-forwarding, debugging, log tailing | 6 | 8 | hf.kube.{port.forward,context,curl,debug.pod}.sh, hf.logs.{sh,adapter}.sh |
@@ -38,9 +38,9 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 
 | Category | Requirements | Scenarios |
 |----------|-------------|-----------|
-| Functional (01–13) | 75 | 141 |
+| Functional (01–13) | 74 | 138 |
 | Technical & NFR (T1–T3) | 27 | 68 |
-| **Total** | **102** | **209** |
+| **Total** | **101** | **206** |
 
 ## Technology Decisions
 
