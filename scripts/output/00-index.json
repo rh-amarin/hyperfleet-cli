@@ -39,7 +39,7 @@
       "pubsub": ["hf.pubsub.list.sh", "hf.pubsub.publish.cluster.change.sh", "hf.pubsub.publish.nodepool.change.sh"],
       "rabbitmq": ["hf.rabbitmq.publish.cluster.change.sh"],
       "kubernetes": ["hf.kube.port.forward.sh", "hf.kube.curl.sh", "hf.kube.debug.pod.sh", "hf.logs.sh", "hf.logs.adapter.sh"],
-      "utility": ["hf.table.sh", "hf.repos.sh", "hf.workflow.sh", "hf.workflow.api-only.sh"]
+      "utility": ["hf.table.sh", "hf.repos.sh"]
     }
   },
   "dependency_graph": {
