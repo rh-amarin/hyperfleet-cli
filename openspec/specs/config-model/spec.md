@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define the split YAML configuration model for the HyperFleet CLI. Configuration is divided into two files: a static configuration file for connection properties and settings that rarely change, and an active state file for transient runtime state like the current cluster or nodepool selection. This replaces the file-per-property model from the shell scripts while maintaining backwards compatibility during migration.
+Define the split YAML configuration model for the HyperFleet CLI. Configuration is divided into two files: a static configuration file for connection properties and settings that rarely change, and an active state file for transient runtime state like the current cluster or nodepool selection. This replaces the file-per-property model from the shell scripts.
 
 ## Requirements
 
@@ -217,25 +217,6 @@ The CLI SHALL annotate displayed config values with their source.
   - `[ENV]` for environment variable overrides
   - `[flag]` for CLI flag overrides (when applicable)
 - AND the source annotation MUST appear after the value in a distinct color
-
-### Requirement: Migration from File-Per-Property
-
-The CLI SHALL support one-time migration from the legacy file-per-property config format.
-
-#### Scenario: Auto-detect legacy config
-
-- GIVEN individual property files exist in `~/.config/hf/` (e.g., `api-url`, `cluster-id`)
-- WHEN the CLI starts and no `config.yaml` exists
-- THEN the CLI MUST detect the legacy format
-- AND offer to migrate by reading all property files and writing `config.yaml` and `state.yaml`
-- AND upon successful migration, rename the legacy files to `~/.config/hf/legacy/` for backup
-
-#### Scenario: No legacy config
-
-- GIVEN no legacy files exist and no `config.yaml` exists
-- WHEN the CLI starts
-- THEN the CLI MUST create `config.yaml` with defaults
-- AND create an empty `state.yaml`
 
 ### Requirement: Config File Path Override
 
