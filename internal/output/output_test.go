@@ -46,6 +46,46 @@ func TestDotRendering_Color(t *testing.T) {
 	}
 }
 
+func TestPrintTable_AlignedWithColoredDots(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+
+	var buf bytes.Buffer
+	p := &Printer{format: "table", noColor: false, writer: &buf}
+
+	headers := []string{"col1", "col2"}
+	rows := [][]string{
+		{dot("True", false), dot("True", false)},
+	}
+	if err := p.PrintTable(headers, rows); err != nil {
+		t.Fatalf("PrintTable: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimRight(buf.String(), "\n"), "\n")
+	if len(lines) < 2 {
+		t.Fatalf("expected at least 2 lines, got: %q", buf.String())
+	}
+
+	// Strip ANSI codes to get the visually equivalent plain-text lines.
+	stripped := ansiEscape.ReplaceAllString(lines[1], "")
+
+	col2Idx := strings.Index(lines[0], "COL2")
+	if col2Idx < 0 {
+		t.Fatalf("COL2 not found in header: %q", lines[0])
+	}
+	// In the stripped data line the dot char (●) of the second column must
+	// start at the same rune offset as "COL2" in the (pure ASCII) header.
+	// Since the header is ASCII, its byte index == rune index.
+	dataRunes := []rune(stripped)
+	if col2Idx >= len(dataRunes) {
+		t.Fatalf("data line too short (%d runes) to reach col2 rune offset %d: %q",
+			len(dataRunes), col2Idx, stripped)
+	}
+	if string(dataRunes[col2Idx]) != dotChar {
+		t.Errorf("column 2 misaligned: got %q at rune offset %d in %q (header: %q)",
+			string(dataRunes[col2Idx]), col2Idx, stripped, lines[0])
+	}
+}
+
 func TestDotRendering_NoColor(t *testing.T) {
 	cases := []struct {
 		status string

@@ -23,8 +23,17 @@ The output package SHALL dispatch rendering based on the `--output` flag value.
 
 - GIVEN `--output table` is set
 - WHEN a command calls `Printer.PrintTable(headers, rows)`
-- THEN the output MUST be rendered using aligned columns (tab-separated via tabwriter)
+- THEN the output MUST be rendered using aligned columns
 - AND headers MUST be displayed in uppercase
+
+#### Scenario: Colored dot cells align with plain-text header cells
+
+- GIVEN `--output table` is set and color output is enabled
+- WHEN a command calls `Printer.PrintTable` with headers and rows that contain
+  colored dot characters
+- THEN each data column MUST start at the same horizontal position as the
+  corresponding header column
+- AND ANSI color escape sequences MUST NOT contribute to the computed column width
 
 #### Scenario: YAML output
 

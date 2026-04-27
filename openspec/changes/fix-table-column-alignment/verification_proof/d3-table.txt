@@ -1,0 +1,3 @@
+NAME           KIND      CLUSTER     GEN  AVAILABLE  CLMAESTROSUCCESSFUL  CLNAMESPACESUCCESSFUL  READY
+test-align     Cluster               1    [31m●[0m          [32m●[0m                    [32m●[0m                      [31m●[0m
+my-nodepool-1  NodePool  test-align  1    [31m●[0m          -                    -                      [31m●[0m

@@ -2,9 +2,9 @@
 
 ## Root Cause
 
-`text/tabwriter` aligns columns by counting the rune width of each cell's content.
-ANSI terminal color codes (`\x1b[32m`, `\x1b[0m`, etc.) are invisible on screen but
-are counted as real runes:
+`text/tabwriter` aligns columns by counting runes in each cell. ANSI terminal color
+codes (e.g., `\x1b[32m`, `\x1b[0m`) are invisible on screen but are counted as
+real runes:
 
 | String | Rune count | Visual width |
 |---|---|---|
@@ -12,62 +12,47 @@ are counted as real runes:
 | `AVAILABLE` | 9 | 9 |
 
 When a data cell (colored dot, 10 runes) is wider than the header (9 runes), tabwriter
-pads subsequent columns with 9 extra spaces of phantom width, pushing all following
-columns to the right on every row that contains a dot.
+pads subsequent columns with phantom whitespace — the `Available` cell is treated as
+10 chars wide but only 1 char wide on screen, so every following column shifts right.
 
-## Fix: tabwriter Escape Mechanism
+> Note: Go's `tabwriter.Escape` (`\xff`) mechanism was considered but ruled out.
+> `string(tabwriter.Escape)` produces the 2-byte UTF-8 sequence for U+00FF (`\xc3\xbf`),
+> not the literal `\xff` byte tabwriter actually watches for — a subtle trap.
+> Additionally, the escape-pair mechanism only prevents tab/newline interpretation
+> inside the sequence; it does not make the enclosed bytes zero-width for column
+> measurement, so it cannot fix the alignment bug.
 
-Go's `text/tabwriter` provides a built-in zero-width escape mechanism:
+## Fix: ANSI-Aware Column Width in `PrintTable`
 
-> Content between two `tabwriter.Escape` bytes (`\xff`) is passed through to output
-> unchanged but contributes **zero width** to column alignment.
+Replace the `tabwriter`-based rendering with a manual approach in
+`internal/output/table.go`:
 
-With the `tabwriter.StripEscape` flag, the `\xff` delimiters are removed from the
-final output (they are only used internally for width accounting).
-
-### `internal/output/dots.go`
-
-Change the colored-dot return values to wrap every ANSI sequence in `\xff` pairs:
-
-```go
-import "text/tabwriter"
-
-const esc = string(tabwriter.Escape) // "\xff"
-
-// Before:
-return colorGreen + dotChar + colorReset
-
-// After:
-return esc + colorGreen + esc + dotChar + esc + colorReset + esc
-```
-
-The result is that:
-- `tabwriter` sees: `<esc><5 bytes><esc>●<esc><4 bytes><esc>`
-- Width counted: 1 rune (just `●`, which is a single rune in UTF-8)
-- Output written: `\x1b[32m●\x1b[0m` (identical to before; `\xff` stripped)
-
-The `dot` function receives `noColor bool`; the escaping is only needed for the
-colored branch. No-color returns plain ASCII text and needs no change.
-
-### `internal/output/table.go`
-
-Add `tabwriter.StripEscape` to the writer flags:
+1. **Compute visible widths**: strip ANSI codes (`\x1b[...m`) from every cell using
+   a compiled regex, then count runes with `unicode/utf8`.
+2. **Track per-column max**: iterate headers and all data rows to find the maximum
+   visible width per column.
+3. **Write with explicit padding**: for each row, write the cell content (ANSI codes
+   intact), then append `(col_width - visible_width + 2)` space characters. Skip
+   trailing padding on the last column.
 
 ```go
-// Before:
-tw := tabwriter.NewWriter(p.writer, 0, 0, 2, ' ', 0)
+var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
-// After:
-tw := tabwriter.NewWriter(p.writer, 0, 0, 2, ' ', tabwriter.StripEscape)
+func visibleRuneCount(s string) int {
+    return utf8.RuneCountInString(ansiEscape.ReplaceAllString(s, ""))
+}
+
+func (p *Printer) PrintTable(headers []string, rows [][]string) error {
+    // ... compute widths from visibleRuneCount ...
+    // ... write each row, padding by (width - visibleRuneCount(cell) + 2) ...
+}
 ```
 
-Without this flag, the `\xff` bytes would appear in terminal output as garbage
-characters. With `StripEscape` they are silently removed after alignment is computed.
+The dot strings in `dots.go` are unchanged; the fix lives entirely in `PrintTable`.
 
 ## Spec Update: `openspec/specs/output-formatting/spec.md`
 
-Add a new scenario under "Requirement: Multi-Format Output Dispatch" to explicitly
-capture the alignment invariant:
+Add a new scenario under "Requirement: Multi-Format Output Dispatch":
 
 ```
 #### Scenario: Colored dot cells align with plain-text header cells
@@ -84,10 +69,10 @@ capture the alignment invariant:
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| Use `tabwriter.Escape` | Yes | Stdlib mechanism; no new dependencies; transparent to callers |
-| Escape whole ANSI sequences or just boundaries | Each ANSI code individually | Matches tabwriter contract: only the escape payload is zero-width, visible content (`●`) must still be counted |
-| Change `Dot()` package-level function | Yes, same as `dot()` | Both functions delegate to `dot()`; fix is in `dot()` only |
-| Update spec | Yes, add scenario | Makes the alignment invariant explicit and testable |
+| Manual padding vs tabwriter | Manual | tabwriter has no reliable way to make ANSI codes zero-width; the escape mechanism is for tab/newline isolation, not width override |
+| Regex compiled at package level | Yes | Avoids recompilation on every `PrintTable` call |
+| Dots unchanged | Yes | The fix is entirely in the width-measurement layer — callers need not change |
+| Trailing column padding | None | Matches tabwriter convention; avoids trailing spaces on last column |
 
 ## Unit Test Plan
 
@@ -95,7 +80,4 @@ capture the alignment invariant:
 
 | Test | Setup | Assertion |
 |---|---|---|
-| `TestPrintTable_AlignedWithColoredDots` | `Printer{noColor: false}`; headers `["COL1", "COL2"]`; row `[dot("True"), dot("True")]` | Split output into lines; verify column 2 starts at the same byte offset in both the header line and the data line |
-| `TestDot_TabwriterEscaped` | Call `dot("True", false)`, `dot("False", false)`, `dot("Unknown", false)` | Each returned string begins with `\xff` and ends with `\xff` |
-
-The existing `TestDot_*` and `TestPrintTable_*` tests continue to pass unchanged.
+| `TestPrintTable_AlignedWithColoredDots` | `Printer{noColor: false}`; headers `["col1", "col2"]`; row `[dot("True"), dot("True")]` | Strip ANSI from data line; assert `[]rune(stripped)[col2HeaderIdx]` == `●`, i.e. second column starts at the same rune offset as `"COL2"` in the ASCII header |

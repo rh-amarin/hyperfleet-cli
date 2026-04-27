@@ -1,0 +1,2 @@
+ID                                    NAME           REPLICAS  TYPE  GEN  AVAILABLE  READY
+019dd0f8-ce7a-77bb-a3a9-385f416e17f5  my-nodepool-1  1         m4    1    [31m●[0m          [31m●[0m

@@ -1,0 +1,2 @@
+NAME        GEN  AVAILABLE  CLMAESTROSUCCESSFUL  CLNAMESPACESUCCESSFUL  READY
+test-align  1    [31m●[0m          [31m●[0m                    [32m●[0m                      [31m●[0m
