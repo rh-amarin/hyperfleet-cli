@@ -22,7 +22,7 @@ The CLI SHALL be organized as a single Go module with internal packages followin
   │   ├── cluster.go          # hf cluster [create|get|list|search|patch|delete|conditions|statuses|table]
   │   ├── nodepool.go         # hf nodepool [create|get|list|search|patch|delete|conditions|statuses|table]
   │   ├── adapter.go          # hf cluster adapter post-status, hf nodepool adapter post-status
-  │   ├── config.go           # hf config [show|set|clear|doctor|bootstrap|env]
+  │   ├── config.go           # hf config [show|set|clear|doctor|env]
   │   ├── db.go               # hf db [query|delete|delete-all|statuses|config]
   │   ├── maestro.go          # hf maestro [list|get|delete|bundles|consumers|tui]
   │   ├── pubsub.go           # hf pubsub [list|publish]
@@ -53,7 +53,7 @@ The CLI SHALL be organized as a single Go module with internal packages followin
 
 ### Requirement: Cobra Command Tree
 
-The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command routing, flag parsing, and help generation.
+The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command routing, flag parsing, and help generation. The command tree MUST NOT include `config bootstrap`; `hf config env new` supersedes it.
 
 #### Scenario: Command hierarchy
 
@@ -95,8 +95,8 @@ The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command rout
   │   ├── set       <key> <value>
   │   ├── clear     <key|all>
   │   ├── doctor
-  │   ├── bootstrap [env-name]
   │   └── env
+  │       ├── new      [name]
   │       ├── list
   │       ├── show     <name>
   │       └── activate <name>
