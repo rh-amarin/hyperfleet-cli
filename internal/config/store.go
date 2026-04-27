@@ -41,9 +41,6 @@ func NewStore(dir string) (*Store, error) {
 
 	s := &Store{dir: dir}
 
-	// Warn about legacy file-per-property layout.
-	s.warnLegacy()
-
 	// Load config.yaml once; unmarshal into both cfg (with defaults) and rawCfg (zero base).
 	s.cfg = defaults()
 	cfgPath := filepath.Join(dir, configFile)
@@ -208,16 +205,4 @@ func (s *Store) writeYAMLPath(path string, v interface{}) error {
 	return os.Rename(tmp, path)
 }
 
-func (s *Store) warnLegacy() {
-	// Detect old file-per-property files (flat, no extension, not yaml files).
-	legacyKeys := []string{"api-url", "api-version", "token", "cluster-id"}
-	for _, k := range legacyKeys {
-		if _, err := os.Stat(filepath.Join(s.dir, k)); err == nil {
-			fmt.Fprintf(os.Stderr,
-				"[WARN] Legacy file-per-property config detected in %s. "+
-					"Run 'hf config migrate' to convert to YAML format.\n", s.dir)
-			return
-		}
-	}
-}
 

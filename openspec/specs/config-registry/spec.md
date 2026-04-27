@@ -7,8 +7,6 @@ The CLI SHALL store configuration as two YAML files in `~/.config/hf/`:
 - `config.yaml` for static settings (sections: hyperfleet, kubernetes, maestro, port-forward, database, rabbitmq, registry)
 - `state.yaml` for active runtime state (flat top-level keys: active-environment, cluster-id, cluster-name, nodepool-id)
 
-(Previously: file-per-property storage at `~/.config/hf/<key>`. Superseded by config-model/spec.md.)
-
 #### Scenario: YAML config storage
 - GIVEN the CLI is initialized
 - WHEN any configuration property is set
