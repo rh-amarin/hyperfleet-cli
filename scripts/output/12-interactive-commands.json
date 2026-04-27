@@ -86,16 +86,6 @@
       "script": "hf.config.sh bootstrap",
       "type": "interactive-prompts",
       "description": "Interactive environment setup wizard"
-    },
-    {
-      "script": "hf.workflow.sh",
-      "type": "long-running",
-      "description": "Full adapter workflow - creates cluster, waits for adapters, patches, waits, creates nodepool, deletes. Runs until completion."
-    },
-    {
-      "script": "hf.workflow.api-only.sh",
-      "type": "template",
-      "description": "Simulated workflow showing API-only steps with manual adapter status posts"
     }
   ]
 }
