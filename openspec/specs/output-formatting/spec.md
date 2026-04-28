@@ -94,6 +94,41 @@ The output package SHALL compute column order for condition-based resource table
 - WHEN the column builder processes the conditions
 - THEN only the fixed columns MUST appear (no dynamic condition columns)
 
+### Requirement: Colored JSON Output
+
+The CLI SHALL colorize JSON output when writing to an interactive terminal.
+
+#### Scenario: Color enabled (default)
+
+- GIVEN the writer is an interactive TTY
+- AND `--no-color` is not set
+- AND the `NO_COLOR` environment variable is not set
+- WHEN `hf` prints JSON output
+- THEN object keys MUST be rendered in cyan
+- AND string values MUST be rendered in green
+- AND numeric values MUST be rendered in yellow
+- AND `true` MUST be rendered in green, `false` in red
+- AND `null` MUST be rendered in dim/faint style
+- AND delimiters (`{`, `}`, `[`, `]`) MUST be uncolored
+
+#### Scenario: Color suppressed — --no-color flag
+
+- GIVEN the `--no-color` flag is set
+- WHEN `hf` prints JSON output
+- THEN the output MUST be plain text with no ANSI escape codes
+
+#### Scenario: Color suppressed — NO_COLOR env var
+
+- GIVEN the `NO_COLOR` environment variable is set to any non-empty value
+- WHEN `hf` prints JSON output
+- THEN the output MUST be plain text with no ANSI escape codes
+
+#### Scenario: Color suppressed — non-TTY writer
+
+- GIVEN the output is piped to a file or another process (not a TTY)
+- WHEN `hf` prints JSON output
+- THEN the output MUST be plain text with no ANSI escape codes
+
 ### Requirement: Printer Initialization
 
 The output printer SHALL be initialized with format and color settings.
