@@ -6,6 +6,8 @@ const (
 	colorGreen  = "\033[32m"
 	colorRed    = "\033[31m"
 	colorYellow = "\033[33m"
+	colorCyan   = "\033[36m"
+	colorDim    = "\033[2m"
 	colorReset  = "\033[0m"
 	dotChar     = "●"
 )

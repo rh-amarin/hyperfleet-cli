@@ -37,7 +37,11 @@ func (p *Printer) printJSON(v any) error {
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(p.writer, "%s\n", data)
+	out := string(data)
+	if !p.noColor && os.Getenv("NO_COLOR") == "" && isTerminal(p.writer) {
+		out = colorizeJSON(data)
+	}
+	_, err = fmt.Fprintf(p.writer, "%s\n", out)
 	return err
 }
 
