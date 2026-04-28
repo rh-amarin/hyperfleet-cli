@@ -4,6 +4,20 @@
 
 Provide CLI commands for publishing CloudEvent messages to GCP Pub/Sub topics and RabbitMQ exchanges, and for listing Pub/Sub topics and subscriptions. These events trigger adapter reconciliation in the HyperFleet system.
 
+## CloudEvent href Convention
+
+All `href` values in CloudEvent payloads MUST be constructed from the configured `api-url` and `api-version` using the same pattern as the API client:
+
+```
+{hyperfleet.api-url}/api/hyperfleet/{hyperfleet.api-version}/{resource-path}
+```
+
+Examples:
+- Cluster: `{api-url}/api/hyperfleet/{api-version}/clusters/{cluster_id}`
+- NodePool: `{api-url}/api/hyperfleet/{api-version}/clusters/{cluster_id}/nodepools/{nodepool_id}`
+
+This ensures hrefs are always consistent with the configured environment and never contain hardcoded hostnames.
+
 ## Requirements
 
 ### Requirement: List Pub/Sub Topics and Subscriptions
@@ -49,12 +63,12 @@ The CLI SHALL publish a cluster reconcile event to a GCP Pub/Sub topic.
     "data": {
       "id": "<cluster_id>",
       "kind": "Cluster",
-      "href": "https://api.hyperfleet.com/v1/clusters/<cluster_id>",
-      "generation": 1
+      "href": "{api-url}/api/hyperfleet/{api-version}/clusters/<cluster_id>"
     }
   }
   ```
 - AND the cluster-id MUST be read from state (no HyperFleet API fetch)
+- AND the href MUST be constructed using the configured `api-url` and `api-version`
 - AND print `[INFO] Published cluster <id> to topic <topic> (msg-id: <id>)` on success
 
 ### Requirement: Publish NodePool Change Event to Pub/Sub
@@ -78,18 +92,17 @@ The CLI SHALL publish a nodepool reconcile event to a GCP Pub/Sub topic.
     "data": {
       "id": "<nodepool_id>",
       "kind": "NodePool",
-      "href": "http://localhost:8000/api/hyperfleet/v1/clusters/<cluster_id>/node_pools/<nodepool_id>",
-      "generation": 1,
+      "href": "{api-url}/api/hyperfleet/{api-version}/clusters/<cluster_id>/nodepools/<nodepool_id>",
       "owner_references": {
         "id": "<cluster_id>",
-        "kind": "NodePool",
-        "href": "http://localhost:8000/api/hyperfleet/v1/clusters/<cluster_id>",
-        "generation": 1
+        "kind": "Cluster",
+        "href": "{api-url}/api/hyperfleet/{api-version}/clusters/<cluster_id>"
       }
     }
   }
   ```
 - AND both cluster-id and nodepool-id MUST be read from state (no HyperFleet API fetch)
+- AND all hrefs MUST be constructed using the configured `api-url` and `api-version`
 
 ### Requirement: Publish Cluster Change Event to RabbitMQ
 
@@ -115,16 +128,30 @@ The CLI SHALL publish a cluster reconcile event to a RabbitMQ exchange via the H
 - AND cluster-id MUST be read from state (no HyperFleet API fetch)
 - AND routing-key defaults to empty string when not provided
 
+### Requirement: Publish NodePool Change Event to RabbitMQ
+
+The CLI SHALL publish a nodepool reconcile event to a RabbitMQ exchange via the HTTP Management API.
+
+#### Scenario: Publish nodepool event to RabbitMQ
+
+- GIVEN rabbitmq-host, rabbitmq-mgmt-port, rabbitmq-user, rabbitmq-password, rabbitmq-vhost, cluster-id, and nodepool-id are configured
+- WHEN the user runs `hf rabbitmq publish nodepool <exchange> [routing-key]`
+- THEN the CLI MUST print the CloudEvent JSON to stdout
+- AND send a POST to `http://{host}:{mgmt-port}/api/exchanges/{vhost-encoded}/{exchange}/publish`
+- AND the CloudEvent payload MUST use the same nodepool envelope as `hf pubsub publish nodepool`
+- AND both cluster-id and nodepool-id MUST be read from state (no HyperFleet API fetch)
+- AND routing-key defaults to empty string when not provided
+
 ---
 
-## Go Implementation (added in phase-09-pubsub)
+## Go Implementation
 
 ### Package: `internal/pubsub`
 
 | File | Contents |
 |---|---|
 | `interfaces.go` | `GCPPublisher`, `RabbitPublisher` interfaces; `TopicGroup` struct |
-| `gcp.go` | `GCPClient` — wraps `cloud.google.com/go/pubsub`, auth via `oauth2.StaticTokenSource` using the `hyperfleet.token` config value |
+| `gcp.go` | `GCPClient` — wraps `cloud.google.com/go/pubsub`, auth via Application Default Credentials (`google.FindDefaultCredentials`) |
 | `rabbitmq.go` | `RabbitClient` — HTTP Management API via `net/http` + BasicAuth; vhost `/` is URL-encoded to `%2F` |
 
 ### Commands
@@ -138,7 +165,6 @@ The CLI SHALL publish a cluster reconcile event to a RabbitMQ exchange via the H
 
 | Key | Default | Purpose |
 |---|---|---|
-| `hyperfleet.token` | — | OAuth2 access token passed to `oauth2.StaticTokenSource` for GCP Pub/Sub |
 | `hyperfleet.gcp-project` | `hcm-hyperfleet` | GCP project ID |
 | `rabbitmq.host` | `rabbitmq` | RabbitMQ management hostname |
 | `rabbitmq.mgmt-port` | `15672` | RabbitMQ HTTP management port |
@@ -146,9 +172,11 @@ The CLI SHALL publish a cluster reconcile event to a RabbitMQ exchange via the H
 | `rabbitmq.password` | `guest` | HTTP BasicAuth password |
 | `rabbitmq.vhost` | `/` | Virtual host (URL-encoded as `%2F` in requests when set to `/`) |
 
+GCP authentication uses Application Default Credentials. The binary searches for credentials in the following order: `GOOGLE_APPLICATION_CREDENTIALS` environment variable, gcloud user credentials (`gcloud auth application-default login`), and the GCE metadata server. No static token is used.
+
 ### CloudEvent builders
 
-`buildClusterEvent(clusterID string) ([]byte, error)` and
-`buildNodePoolEvent(clusterID, nodepoolID string) ([]byte, error)` in `cmd/pubsub.go`
+`buildClusterEvent(clusterID, apiURL, apiVersion string) ([]byte, error)` and
+`buildNodePoolEvent(clusterID, nodepoolID, apiURL, apiVersion string) ([]byte, error)` in `cmd/pubsub.go`
 construct the canonical CloudEvent envelopes. Both are used by both `hf pubsub` and
 `hf rabbitmq` commands.

@@ -74,7 +74,7 @@ Commands that require arguments SHALL show usage when arguments are missing.
 
 - GIVEN no arguments are provided
 - WHEN the user runs `hf cluster patch`
-- THEN the CLI MUST display: `Usage: hf.cluster.patch.sh spec|labels [cluster_id]`
+- THEN the CLI MUST display: `Usage: hf cluster patch spec|labels [cluster_id]`
 - AND list argument descriptions
 - AND exit with code 1
 

@@ -12,6 +12,15 @@ THEN the active environment name is printed at the top
 AND config values are shown grouped by section with no source annotations
 AND secrets (token, database.password, rabbitmq.password) are shown as `<set>` or `<not set>`
 
+#### Scenario: Show config for a named environment
+
+GIVEN environment profiles exist in `~/.config/hf/environments/`
+WHEN the user runs `hf config show <env-name>`
+THEN the CLI MUST display the file path of that environment file (e.g., `~/.config/hf/environments/<env-name>.yaml`)
+AND display the values defined in that environment file grouped by section
+AND secrets MUST be shown as `<set>` or `<not set>`
+AND the active environment is NOT changed
+
 #### Scenario: No active environment
 
 GIVEN no active environment is configured
@@ -53,13 +62,6 @@ GIVEN a config property has been set in config.yaml and an active environment is
 WHEN the user runs `hf config clear <section.key>`
 THEN the field MUST be reset to its default value in config.yaml
 
-#### Scenario: Clear runtime state
-
-GIVEN runtime state exists in state.yaml
-WHEN the user runs `hf config clear state`
-THEN all fields in state.yaml MUST be cleared (cluster-id, nodepool-id, active-environment)
-AND config.yaml MUST NOT be affected
-
 ---
 
 ## Requirement: hf-config-env-new
@@ -96,6 +98,60 @@ THEN the saved environment file contains:
 
 ---
 
+## Requirement: hf-config-env-show
+
+`hf config env show <name>` displays the file location and values of a named environment profile without activating it.
+
+#### Scenario: Show named environment
+
+GIVEN an environment named `<name>` exists at `~/.config/hf/environments/<name>.yaml`
+WHEN the user runs `hf config env show <name>`
+THEN the CLI MUST print the absolute file path of the environment file
+AND display all key-value pairs defined in that file, grouped by section
+AND secrets MUST be shown as `<set>` or `<not set>`
+AND the currently active environment MUST NOT be changed
+
+#### Scenario: Non-existent environment
+
+GIVEN no environment named `<name>` exists
+WHEN the user runs `hf config env show <name>`
+THEN the CLI MUST print `[ERROR] environment '<name>' not found`
+AND exit with code 1
+
+---
+
+## Requirement: Show Current Cluster and NodePool IDs
+
+`hf cluster id` and `hf nodepool id` display the currently active resource IDs from state.
+
+#### Scenario: Display cluster ID
+
+GIVEN a cluster-id is set in state.yaml
+WHEN the user runs `hf cluster id`
+THEN the CLI MUST print the value of `cluster-id` from `~/.config/hf/state.yaml`
+
+#### Scenario: No cluster ID set
+
+GIVEN no cluster-id is set in state.yaml
+WHEN the user runs `hf cluster id`
+THEN the CLI MUST print `[WARN] No cluster-id set in state`
+AND exit with code 0
+
+#### Scenario: Display nodepool ID
+
+GIVEN a nodepool-id is set in state.yaml
+WHEN the user runs `hf nodepool id`
+THEN the CLI MUST print the value of `nodepool-id` from `~/.config/hf/state.yaml`
+
+#### Scenario: No nodepool ID set
+
+GIVEN no nodepool-id is set in state.yaml
+WHEN the user runs `hf nodepool id`
+THEN the CLI MUST print `[WARN] No nodepool-id set in state`
+AND exit with code 0
+
+---
+
 ## Requirement: active-env-guard
 
 Commands that require a configured target must fail when no active environment is set.
@@ -103,12 +159,12 @@ Commands that require a configured target must fail when no active environment i
 #### Scenario: Command requires active env, none set
 
 GIVEN no active environment is configured
-WHEN the user runs any of: `hf config show`, `hf config set`, `hf config clear <key>`, `hf config doctor`
+WHEN the user runs any of: `hf config show`, `hf config set`, `hf config clear <key>`
 THEN the command exits non-zero
 AND prints the no-active-environment error with guidance
 
 #### Scenario: Always-available commands
 
 GIVEN no active environment is configured
-WHEN the user runs any of: `hf config env list`, `hf config env new`, `hf config env activate`, `hf config env deactivate`, `hf config clear state`
+WHEN the user runs any of: `hf config env list`, `hf config env new`, `hf config env activate`, `hf config env show`
 THEN the command succeeds normally

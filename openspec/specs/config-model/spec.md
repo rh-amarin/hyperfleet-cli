@@ -135,13 +135,6 @@ The CLI SHALL support named environment profiles that override static configurat
 - AND subsequent config reads MUST merge the environment overrides on top of the base config
 - AND the CLI MUST NOT modify `config.yaml` — overrides are applied at runtime
 
-#### Scenario: Deactivate environment
-
-- GIVEN an environment is active
-- WHEN the user runs `hf config env activate ""` or `hf config env deactivate`
-- THEN the CLI MUST clear `active-environment` from `state.yaml`
-- AND subsequent config reads MUST use only the base config and defaults
-
 ### Requirement: Environment Variable Overrides
 
 The CLI SHALL support environment variable overrides for key configuration properties.
@@ -177,13 +170,6 @@ The CLI SHALL manage active state separately from configuration.
 - WHEN the CLI updates the active nodepool
 - THEN `nodepool-id` MUST be updated in `state.yaml`
 
-#### Scenario: Clear state
-
-- GIVEN the user wants to reset state
-- WHEN the user runs `hf config clear state`
-- THEN all properties in `state.yaml` MUST be cleared
-- AND `config.yaml` MUST NOT be affected
-
 ### Requirement: Secret Handling
 
 The CLI SHALL protect sensitive configuration values.
@@ -201,22 +187,6 @@ The CLI SHALL protect sensitive configuration values.
 - WHEN the file is written
 - THEN the CLI SHOULD warn the user about file permissions
 - AND the config file SHOULD be created with mode `0600` (owner read/write only)
-
-### Requirement: Config Show with Source Annotation
-
-The CLI SHALL annotate displayed config values with their source.
-
-#### Scenario: Show config with sources
-
-- GIVEN config values come from multiple sources
-- WHEN the user runs `hf config show`
-- THEN each value MUST be annotated with its source:
-  - `[default]` for built-in defaults
-  - `[config]` for values from `config.yaml`
-  - `[env:<name>]` for environment profile overrides
-  - `[ENV]` for environment variable overrides
-  - `[flag]` for CLI flag overrides (when applicable)
-- AND the source annotation MUST appear after the value in a distinct color
 
 ### Requirement: Config File Path Override
 

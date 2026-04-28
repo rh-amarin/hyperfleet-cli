@@ -61,6 +61,22 @@ The CLI SHALL search for a nodepool by name within the current cluster and set i
 - AND output the matching nodepools as a JSON array
 - AND persist the found nodepool's ID to active state via the shared `config.SetNodePoolID` function
 
+#### Scenario: Search for non-existent nodepool
+
+- GIVEN no nodepool matches the search name within the cluster
+- WHEN the user runs `hf nodepool search <name>`
+- THEN the CLI MUST display `[WARN] No nodepools found matching '<name>'`
+- AND output an empty JSON array `[]`
+- AND exit with code 0
+
+#### Scenario: Multiple matches
+
+- GIVEN multiple nodepools match the search name within the cluster
+- WHEN the user runs `hf nodepool search <name>`
+- THEN the CLI MUST display `[WARN] Multiple nodepools found matching '<name>', using first result`
+- AND set nodepool-id to the first element in the returned `items` array
+- AND persist that nodepool-id to active state
+
 ### Requirement: Get NodePool
 
 The CLI SHALL retrieve and display full details of a specific nodepool.
@@ -132,19 +148,19 @@ The CLI SHALL display the generation and status conditions of a nodepool.
 
 ### Requirement: Get NodePool Conditions Table
 
-The CLI SHALL display nodepool conditions in a formatted table.
+The CLI SHALL display nodepool conditions in a formatted table via the `--table` flag.
 
 #### Scenario: Display conditions table before adapters report
 
 - GIVEN a nodepool exists with no adapter statuses
-- WHEN the user runs `hf nodepool conditions table`
+- WHEN the user runs `hf nodepool conditions --table`
 - THEN the CLI MUST output a table with columns: TYPE, STATUS, LAST TRANSITION, REASON, MESSAGE
 - AND Ready and Available MUST show `False`
 
 #### Scenario: Display conditions table after all adapters report
 
 - GIVEN all required adapters have reported `Available=True` at the current generation
-- WHEN the user runs `hf nodepool conditions table`
+- WHEN the user runs `hf nodepool conditions --table`
 - THEN Ready and Available MUST show `True` (green)
 - AND per-adapter conditions (e.g., `NpConfigmapSuccessful`) MUST appear as additional rows
 
@@ -167,12 +183,12 @@ The CLI SHALL display adapter statuses for a nodepool.
 
 ### Requirement: Display NodePool Table
 
-The CLI SHALL display nodepools in the current cluster as a formatted table with dynamic condition columns.
+The CLI SHALL display nodepools in the current cluster as a formatted table when the `--table` flag is passed to `hf nodepool list`.
 
 #### Scenario: Display nodepool table
 
 - GIVEN nodepools exist in the current cluster
-- WHEN the user runs `hf nodepool table`
+- WHEN the user runs `hf nodepool list --table`
 - THEN the CLI MUST output a table with columns: ID, NAME, REPLICAS, TYPE, GEN, Available, [dynamic condition columns], Ready
 - AND status values MUST be displayed as colored dots: green=True, red=False, yellow=Unknown, `-`=not present
 - AND dynamic columns MUST appear based on which conditions exist across all nodepools

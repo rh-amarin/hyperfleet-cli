@@ -26,18 +26,18 @@ The CLI SHALL list all clusters as raw JSON.
 
 ### Requirement: Cluster Table View
 
-The CLI SHALL display clusters in a formatted table with dynamic condition columns.
+The CLI SHALL display clusters in a formatted table with dynamic condition columns when the `--table` flag is passed to `hf cluster list`.
 
 #### Scenario: Empty table
 
 - GIVEN no clusters exist
-- WHEN the user runs `hf cluster table`
+- WHEN the user runs `hf cluster list --table`
 - THEN the CLI MUST output table headers only: `NAME  GEN` with a separator line
 
 #### Scenario: Populated table with conditions
 
 - GIVEN clusters exist with various adapter conditions
-- WHEN the user runs `hf cluster table`
+- WHEN the user runs `hf cluster list --table`
 - THEN the CLI MUST output a table with fixed columns: NAME, GEN
 - AND dynamic columns for each unique condition type found across all clusters (e.g., `Available`, `ClDeploymentSuccessful`, `ClJobSuccessful`, `ClNamespaceSuccessful`, `Ready`)
 - AND the `Available` column MUST appear first among dynamic columns
@@ -51,12 +51,12 @@ The CLI SHALL display clusters in a formatted table with dynamic condition colum
 
 ### Requirement: NodePool Table View
 
-The CLI SHALL display nodepools in the current cluster as a formatted table.
+The CLI SHALL display nodepools in the current cluster as a formatted table when the `--table` flag is passed to `hf nodepool list`.
 
 #### Scenario: Populated nodepool table
 
 - GIVEN nodepools exist in the current cluster
-- WHEN the user runs `hf nodepool table`
+- WHEN the user runs `hf nodepool list --table`
 - THEN the CLI MUST output a table with fixed columns: NAME, REPLICAS, TYPE, GEN
 - AND dynamic condition columns following the same ordering pattern as the cluster table (`Available` first, `Ready` last, others alphabetical)
 - AND REPLICAS MUST show the `spec.replicas` value
@@ -106,10 +106,10 @@ The following commands MUST support the `-w` / `--watch` and `-i` / `--interval`
 
 | Command | Description |
 |---|---|
-| `hf cluster table` | Cluster list as dot table with dynamic condition columns |
+| `hf cluster list --table` | Cluster list as dot table with dynamic condition columns |
 | `hf table` | Combined clusters + nodepools dot table |
 | `hf cluster conditions -w -i <dur>` | Watch cluster conditions with configurable interval |
 | `hf cluster statuses -w -i <dur>` | Watch cluster adapter statuses with configurable interval |
 | `hf nodepool conditions -w -i <dur>` | Watch nodepool conditions with configurable interval |
 | `hf nodepool statuses -w -i <dur>` | Watch nodepool adapter statuses with configurable interval |
-| `hf nodepool table -w -i <dur>` | Nodepool table with watch support |
+| `hf nodepool list --table -w -i <dur>` | Nodepool table with watch support |

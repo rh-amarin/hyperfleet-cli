@@ -55,7 +55,6 @@ The CLI SHALL search for clusters by name and set the found cluster as the curre
 - GIVEN clusters exist in the API
 - WHEN the user runs `hf cluster search <name>`
 - THEN the CLI MUST query the API filtering by name
-- AND filter out clusters where `deleted_at` is not null
 - AND output the matching clusters as a JSON array
 - AND persist the found cluster's ID to active state via the shared `config.SetClusterID` function
 
@@ -71,8 +70,9 @@ The CLI SHALL search for clusters by name and set the found cluster as the curre
 
 - GIVEN multiple clusters match the search name
 - WHEN the user runs `hf cluster search <name>`
-- THEN the CLI MUST display a warning about multiple matches
-- AND set cluster-id to one of the found clusters
+- THEN the CLI MUST display `[WARN] Multiple clusters found matching '<name>', using first result`
+- AND set cluster-id to the first element in the returned `items` array
+- AND persist that cluster-id to active state
 
 ### Requirement: Get Cluster
 
@@ -123,7 +123,7 @@ The CLI SHALL increment a counter field in the cluster's spec or labels section,
 
 - GIVEN the user provides no arguments
 - WHEN the user runs `hf cluster patch`
-- THEN the CLI MUST display usage: `Usage: hf.cluster.patch.sh spec|labels [cluster_id]`
+- THEN the CLI MUST display usage: `Usage: hf cluster patch spec|labels [cluster_id]`
 - AND exit with code 1
 
 ### Requirement: Delete Cluster
@@ -163,12 +163,12 @@ The CLI SHALL display the generation and status conditions of a cluster.
 
 ### Requirement: Get Cluster Conditions Table
 
-The CLI SHALL display cluster conditions in a formatted table.
+The CLI SHALL display cluster conditions in a formatted table via the `--table` flag.
 
 #### Scenario: Display conditions table
 
 - GIVEN a cluster-id is set in config
-- WHEN the user runs `hf cluster conditions table`
+- WHEN the user runs `hf cluster conditions --table`
 - THEN the CLI MUST output a table with columns: TYPE, STATUS, LAST TRANSITION, REASON, MESSAGE
 - AND status values MUST be color-coded: True=green, False=red, Unknown=yellow
 

@@ -31,6 +31,15 @@ The CLI SHALL execute arbitrary SQL queries against the HyperFleet PostgreSQL da
 - AND execute the query natively (no subprocess)
 - AND output results as a formatted table
 
+#### Scenario: Query from file
+
+- GIVEN database connection config is set
+- WHEN the user runs `hf db query -f <filepath>`
+- THEN the CLI MUST read the SQL from the specified file
+- AND execute it natively against the database
+- AND output results as a formatted table
+- AND exit with code 1 and an `[ERROR]` message if the file cannot be read
+
 #### Scenario: Query returns no rows
 
 - WHEN the query returns 0 rows
@@ -42,35 +51,41 @@ The CLI SHALL execute arbitrary SQL queries against the HyperFleet PostgreSQL da
 - WHEN the user runs `hf db query "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"`
 - THEN the output MUST list the tables: `migrations`, `adapter_statuses`, `clusters`, `node_pools`
 
-### Requirement: Delete Table Rows
+### Requirement: Delete Records
 
-The CLI SHALL delete rows from a specific table with a confirmation prompt.
+The CLI SHALL delete all records from a specified table, or from all tables, with a confirmation prompt.
 
-#### Scenario: Delete from table with WHERE clause
+The `<target>` argument is required and MUST be one of: `clusters`, `nodepools`, `adapter_statuses`, or `ALL`.
+The argument values MUST be offered as shell completions.
+
+#### Scenario: Delete all records from a single table
 
 - GIVEN database connection is configured
-- WHEN the user runs `hf db delete <table> <where>`
-- THEN the CLI MUST show a count of records matching the WHERE clause
-- AND prompt the user for confirmation (requiring `y` or `yes`)
-- AND run `DELETE FROM <table> WHERE <where>` only after confirmation
+- WHEN the user runs `hf db delete clusters`
+- THEN the CLI MUST show the total row count for that table
+- AND prompt the user for confirmation (requiring `yes`)
+- AND run `DELETE FROM clusters` only after confirmation
 - AND print the count of deleted rows
+
+- WHEN the user runs `hf db delete nodepools`
+- THEN the same behavior applies for the `node_pools` table
+
+- WHEN the user runs `hf db delete adapter_statuses`
+- THEN the same behavior applies for the `adapter_statuses` table
+
+#### Scenario: Delete all records from all tables
+
+- GIVEN database connection is configured
+- WHEN the user runs `hf db delete ALL`
+- THEN the CLI MUST show the row count for each table
+- AND prompt the user for confirmation (requiring `yes`)
+- AND delete in dependency order: `adapter_statuses` first, then `node_pools`, then `clusters`
+- AND print the count of deleted rows per table
 
 #### Scenario: Confirmation denied
 
-- WHEN the user does not confirm
+- WHEN the user does not confirm (any input other than `yes`)
 - THEN the CLI MUST print "Aborted" and exit 0 without deleting anything
-
-### Requirement: Delete All Records from a Table
-
-The CLI SHALL delete ALL records from a named table with confirmation.
-
-#### Scenario: Delete all rows
-
-- GIVEN database connection is configured
-- WHEN the user runs `hf db delete-all <table>`
-- THEN the CLI MUST show the total row count for that table
-- AND prompt the user for confirmation (requiring `y` or `yes`)
-- AND run `DELETE FROM <table>` only after confirmation
 
 ### Requirement: Database Configuration Display
 

@@ -13,12 +13,12 @@ The CLI SHALL post adapter status conditions for the current cluster.
 #### Scenario: Post status with True
 
 - GIVEN a cluster-id is set in config
-- WHEN the user runs `hf cluster adapter post-status <adapter_name> True [generation]`
+- WHEN the user runs `hf cluster adapter post-status <adapter_name> True <generation>`
 - THEN the CLI MUST send POST to `/api/hyperfleet/v1/clusters/{cluster_id}/statuses`
 - AND the request payload MUST include:
   - `adapter`: the adapter name (e.g., `cl-deployment`, `cl-namespace`)
   - `conditions`: an array of 3 conditions with types `Available`, `Applied`, `Health`, all with status `True`
-  - `observed_generation`: the provided generation (default: 1)
+  - `observed_generation`: the provided generation
   - `observed_time`: current ISO8601 timestamp
   - `last_transition_time` per condition: current ISO8601 timestamp
 - AND each condition MUST have `reason: "ManualStatusPost"` and `message: "Status posted via hf adapter post-status"`
@@ -26,13 +26,13 @@ The CLI SHALL post adapter status conditions for the current cluster.
 #### Scenario: Post status with False
 
 - GIVEN a cluster-id is set in config
-- WHEN the user runs `hf cluster adapter post-status <adapter_name> False [generation]`
+- WHEN the user runs `hf cluster adapter post-status <adapter_name> False <generation>`
 - THEN all 3 condition statuses MUST be set to `False`
 
 #### Scenario: Post status with Unknown
 
 - GIVEN a cluster-id is set in config
-- WHEN the user runs `hf cluster adapter post-status <adapter_name> Unknown [generation]`
+- WHEN the user runs `hf cluster adapter post-status <adapter_name> Unknown <generation>`
 - THEN all 3 condition statuses MUST be set to `Unknown`
 - AND the API returns HTTP 204 No Content; the CLI MUST handle this gracefully (exit 0, print empty object)
 
@@ -57,7 +57,7 @@ The CLI SHALL post adapter status conditions for a nodepool.
 #### Scenario: Post nodepool adapter status
 
 - GIVEN cluster-id and nodepool-id are set in config
-- WHEN the user runs `hf nodepool adapter post-status <adapter_name> <True|False|Unknown> [generation] [nodepool_id]`
+- WHEN the user runs `hf nodepool adapter post-status <adapter_name> <True|False|Unknown> <generation> [nodepool_id]`
 - THEN the CLI MUST send POST to `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools/{nodepool_id}/statuses`
 - AND the payload MUST follow the same structure as cluster adapter status posting
 - AND the adapter name for nodepools is typically `np-configmap`
@@ -101,21 +101,22 @@ The system SHALL follow a defined convergence model for adapter statuses.
 ### hf cluster adapter post-status
 
 ```
-hf cluster adapter post-status <adapter_name> <True|False|Unknown> [generation]
+hf cluster adapter post-status <adapter_name> <True|False|Unknown> <generation>
 ```
 
 - `adapter_name` — required
 - `True|False|Unknown` — required; case-sensitive
-- `generation` — optional integer, default `1`
+- `generation` — required integer; the `generation` of the resource the adapter is reporting on
 
 Requires `cluster-id` in state (`~/.config/hf/state.yaml`). No explicit cluster-id override arg.
 
 ### hf nodepool adapter post-status
 
 ```
-hf nodepool adapter post-status <adapter_name> <True|False|Unknown> [generation] [nodepool_id]
+hf nodepool adapter post-status <adapter_name> <True|False|Unknown> <generation> [nodepool_id]
 ```
 
+- `generation` — required integer
 - `nodepool_id` — optional 4th arg; overrides the nodepool-id from state
 
 Requires both `cluster-id` and `nodepool-id` in state (or explicit `nodepool_id` arg).

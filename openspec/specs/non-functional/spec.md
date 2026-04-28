@@ -65,8 +65,8 @@ The CLI SHALL support a global `--output` flag for controlling output format on 
 - GIVEN no `--output` flag is specified
 - WHEN a command produces output
 - THEN the default MUST be:
-  - `table` for list views: `cluster list`, `cluster table`, `nodepool list`, `nodepool table`, `table`, `repos`, `conditions-table`
-  - `json` for single-resource views: `cluster get`, `nodepool get`, `cluster conditions`, `nodepool conditions`, `cluster statuses`, `nodepool statuses`
+  - `table` for list views with `--table`: `cluster list --table`, `nodepool list --table`, `table`, `repos`, `cluster conditions --table`, `nodepool conditions --table`
+  - `json` for list/get views without `--table`: `cluster list`, `nodepool list`, `cluster get`, `nodepool get`, `cluster conditions`, `nodepool conditions`, `cluster statuses`, `nodepool statuses`
   - `text` for config commands, port-forward status, and log output
 
 #### Scenario: Quiet mode for scripting

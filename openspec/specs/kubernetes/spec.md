@@ -12,7 +12,6 @@ GKE auth plugin bypass: set `HF_KUBE_TOKEN` env var to override bearer token.
 Package `internal/kube` provides:
 - `BuildConfig(kubeconfigPath string) (*rest.Config, error)` — resolves: flag → `KUBECONFIG` env → `~/.kube/config`
 - `NewClientset(kubeconfigPath string) (kubernetes.Interface, error)`
-- `CurrentContext(kubeconfigPath string) (string, error)`
 - `StartPortForward(kubeconfigPath, namespace, name, podPattern string, localPort, remotePort int) (*PortForward, error)`
 - `StopPortForward(service string) error`
 - `ListPortForwards() ([]PortForward, error)`
@@ -71,15 +70,6 @@ PID files stored at `~/.config/hf/pf-<name>.pid` — format: `<pid>\n<localPort>
 - THEN the CLI MUST display one line per PID file:
   - `  ● <name> - localhost:<port> (PID: <pid>)` with ANSI green bullet if alive, red if dead
 
-### Requirement: Kubectl Context Display
-
-The CLI SHALL display the current kubeconfig context.
-
-#### Scenario: Print current context
-
-- WHEN the user runs `hf kube context`
-- THEN the CLI MUST print the `current-context` field from the resolved kubeconfig
-
 ### Requirement: In-Cluster Curl
 
 The CLI SHALL execute curl commands from inside the Kubernetes cluster.
@@ -104,6 +94,7 @@ The CLI SHALL create debug pods from existing deployment templates.
 - AND create a pod using the same spec with liveness/readiness probes removed and `restartPolicy: Never`
 - AND wait up to 3 minutes for the pod to reach Running phase
 - AND print `[INFO] Debug pod ready: <pod-name>` and the kubectl exec command
+- AND exec into the pod with an interactive shell session that persists until the user exits
 
 ### Requirement: Pod Log Tailing
 

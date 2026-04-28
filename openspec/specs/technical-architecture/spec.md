@@ -19,15 +19,15 @@ The CLI SHALL be organized as a single Go module with internal packages followin
   hf/
   ├── cmd/                    # Cobra command definitions (one file per command group)
   │   ├── root.go             # Root command, global flags, plugin loading
-  │   ├── cluster.go          # hf cluster [create|get|list|search|patch|delete|conditions|statuses|table]
-  │   ├── nodepool.go         # hf nodepool [create|get|list|search|patch|delete|conditions|statuses|table]
+  │   ├── cluster.go          # hf cluster [create|get|list|search|patch|delete|conditions|statuses|id]
+  │   ├── nodepool.go         # hf nodepool [create|get|list|search|patch|delete|conditions|statuses|id]
   │   ├── adapter.go          # hf cluster adapter post-status, hf nodepool adapter post-status
-  │   ├── config.go           # hf config [show|set|clear|doctor|env]
-  │   ├── db.go               # hf db [query|delete|delete-all|statuses|config]
+  │   ├── config.go           # hf config [show|set|clear|env]
+  │   ├── db.go               # hf db [query|delete|statuses|config]
   │   ├── maestro.go          # hf maestro [list|get|delete|bundles|consumers|tui]
   │   ├── pubsub.go           # hf pubsub [list|publish]
   │   ├── rabbitmq.go         # hf rabbitmq [publish]
-  │   ├── kube.go             # hf kube [port-forward|context|curl|debug]
+  │   ├── kube.go             # hf kube [port-forward|curl|debug]
   │   ├── logs.go             # hf logs [<pattern>|adapter]
   │   ├── repos.go            # hf repos
   │   └── table.go            # hf table (combined overview)
@@ -65,48 +65,41 @@ The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command rout
   ├── cluster
   │   ├── create    <name> [region] [version]
   │   ├── get       [cluster_id]
-  │   ├── list
+  │   ├── list      [--table] [-w] [-i <dur>]
   │   ├── search    <name>
   │   ├── patch     spec|labels [cluster_id]
   │   ├── delete    [cluster_id]
   │   ├── id
-  │   ├── conditions      [-w] [cluster_id]
-  │   ├── conditions-table [cluster_id]
-  │   ├── statuses        [-w] [cluster_id]
-  │   ├── table
+  │   ├── conditions      [--table] [-w] [-i <dur>] [cluster_id]
+  │   ├── statuses        [-w] [-i <dur>] [cluster_id]
   │   └── adapter
-  │       └── post-status <adapter> <status> [generation]
+  │       └── post-status <adapter> <status> <generation>
   ├── nodepool
   │   ├── create    <name> [count] [instance-type]
   │   ├── get       [nodepool_id]
-  │   ├── list      [cluster_id]
+  │   ├── list      [cluster_id] [--table] [-w] [-i <dur>]
   │   ├── search    <name>
   │   ├── patch     spec|labels [nodepool_id]
   │   ├── delete    [nodepool_id]
   │   ├── id
-  │   ├── conditions      [-w] [nodepool_id]
-  │   ├── conditions-table [nodepool_id]
-  │   ├── statuses        [-w] [nodepool_id]
-  │   ├── table
+  │   ├── conditions      [--table] [-w] [-i <dur>] [nodepool_id]
+  │   ├── statuses        [-w] [-i <dur>] [nodepool_id]
   │   └── adapter
-  │       └── post-status <adapter> <status> [generation] [nodepool_id]
+  │       └── post-status <adapter> <status> <generation> [nodepool_id]
   ├── config
   │   ├── show      [env-name]
   │   ├── set       <key> <value>
-  │   ├── clear     <key|all>
-  │   ├── doctor
+  │   ├── clear     <key>
   │   └── env
   │       ├── new      [name]
   │       ├── list
   │       ├── show     <name>
   │       └── activate <name>
-  ├── table                  (combined overview)
+  ├── table                  (combined overview, supports -w/-i)
   ├── db
   │   ├── query     <sql> | -f <file>
-  │   ├── delete    <table> [id]
-  │   ├── delete-all
+  │   ├── delete    <clusters|nodepools|adapter_statuses|ALL>
   │   ├── statuses
-  │   ├── statuses-delete
   │   └── config
   ├── maestro
   │   ├── list
@@ -122,10 +115,10 @@ The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command rout
   │       └── nodepool <topic>
   ├── rabbitmq
   │   └── publish
-  │       └── cluster  <exchange> [routing-key]
+  │       ├── cluster  <exchange> [routing-key]
+  │       └── nodepool <exchange> [routing-key]
   ├── kube
   │   ├── port-forward  start|stop|status
-  │   ├── context
   │   ├── curl       [options] <url>
   │   └── debug      <deployment> [namespace]
   ├── logs           <pattern> [flags]
@@ -244,7 +237,6 @@ The CLI SHALL provide a reusable watch mode for commands that support the `-w` f
 - THEN the watch package MUST:
   - Execute the data-fetching function on a configurable interval (default 2s)
   - Clear the terminal and re-render output on each tick
-  - Highlight changes between consecutive renders (optional, based on terminal capability)
   - Respond to Ctrl+C to stop watching
   - Display a "Last updated: <timestamp>" footer
 
@@ -261,7 +253,6 @@ The CLI SHALL bundle `client-go` for all Kubernetes operations without requiring
   - Port-forward lifecycle management (start, stop, status with PID tracking)
   - Pod log streaming with label/name filtering and multi-pod fan-out (replacing stern)
   - Pod exec for in-cluster curl and debug operations
-  - Namespace listing and context management
 - AND the binary MUST NOT require `kubectl` to be installed for any core operation
 
 ### Requirement: Dependency Bundling Strategy

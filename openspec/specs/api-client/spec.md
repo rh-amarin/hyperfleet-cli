@@ -8,6 +8,25 @@ can focus on business logic rather than HTTP plumbing.
 
 ## Requirements
 
+### Requirement: Resource href Construction
+
+The API client package SHALL expose a helper for building canonical href URLs for HyperFleet resources.
+
+#### Scenario: Build resource href
+
+- GIVEN the client is initialized with `api-url` and `api-version`
+- WHEN `api.ResourceHref(resourcePath string) string` is called
+- THEN it MUST return `{api-url}/api/hyperfleet/{api-version}/{resourcePath}`
+- AND all CloudEvent payloads, list responses, and any other place that requires a resource URL MUST use this helper to guarantee consistency
+
+Examples:
+- Cluster href: `api.ResourceHref("clusters/{cluster_id}")`
+- NodePool href: `api.ResourceHref("clusters/{cluster_id}/nodepools/{nodepool_id}")`
+
+No hardcoded hostnames or path prefixes are allowed outside this helper.
+
+---
+
 ### Requirement: Client Initialization
 
 The API client SHALL be initialized from the resolved configuration store.
