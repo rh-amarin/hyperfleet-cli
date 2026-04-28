@@ -68,7 +68,15 @@ PID files stored at `~/.config/hf/pf-<name>.pid` — format: `<pid>\n<localPort>
 
 - WHEN the user runs `hf kube port-forward status`
 - THEN the CLI MUST display one line per PID file:
-  - `  ● <name> - localhost:<port> (PID: <pid>)` with ANSI green bullet if alive, red if dead
+  - For alive port forwards: `  ● <name> - localhost:<port> (PID: <pid>)` with a green bullet (●)
+  - For dead or stale port forwards: `  ● <name> - localhost:<port> (PID: <pid>) [DEAD]` with a red bullet (●)
+
+#### Scenario: Port number validation
+
+- GIVEN a custom `<localPort:remotePort>` argument is provided
+- WHEN the user runs `hf kube port-forward start <service> <localPort:remotePort>`
+- THEN both port values MUST be valid integers in the range 1–65535
+- AND if either port is invalid, the CLI MUST display `[ERROR] Invalid port '<value>'. Must be an integer between 1 and 65535.` and exit 1
 
 ### Requirement: In-Cluster Curl
 

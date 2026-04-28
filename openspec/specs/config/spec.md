@@ -54,16 +54,6 @@ THEN the command exits non-zero with the no-active-environment error
 
 ---
 
-## Requirement: Clear Configuration Value
-
-#### Scenario: Clear a single property
-
-GIVEN a config property has been set in config.yaml and an active environment is configured
-WHEN the user runs `hf config clear <section.key>`
-THEN the field MUST be reset to its default value in config.yaml
-
----
-
 ## Requirement: hf-config-env-new
 
 `hf config env new [name]` creates a new named environment profile.
@@ -159,7 +149,7 @@ Commands that require a configured target must fail when no active environment i
 #### Scenario: Command requires active env, none set
 
 GIVEN no active environment is configured
-WHEN the user runs any of: `hf config show`, `hf config set`, `hf config clear <key>`
+WHEN the user runs any of: `hf config show`, `hf config set`
 THEN the command exits non-zero
 AND prints the no-active-environment error with guidance
 

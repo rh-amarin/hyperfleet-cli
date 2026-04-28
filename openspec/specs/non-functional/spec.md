@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define non-functional requirements for the HyperFleet CLI covering shell completions, multi-format output, cross-platform builds, plugin architecture, testing strategy, and distribution.
+Define non-functional requirements for the HyperFleet CLI covering shell completions, multi-format output, cross-platform builds, testing strategy, and distribution.
 
 ## Requirements
 
@@ -74,7 +74,12 @@ The CLI SHALL support a global `--output` flag for controlling output format on 
 - GIVEN `-q` or `--quiet` is specified
 - WHEN a command produces output
 - THEN only the essential data MUST be output (no headers, no color, no decorative elements)
-- AND for create/search commands, only the resource ID MUST be output
+- AND the following per-command-type rules MUST apply:
+  - For `get` and `create` commands: output only the resource ID
+  - For `list` commands: output only resource IDs, one per line
+  - For `search` commands: output only the first matched resource ID
+  - For `conditions` and `statuses` commands: output only the condition type and status value per line (no reason, no message)
+  - For config and log commands: quiet mode is a no-op (output is always minimal)
 
 ### Requirement: Cross-Platform Build and Distribution
 
@@ -106,12 +111,16 @@ The CLI SHALL be built and distributed for multiple platforms using GoReleaser.
 
 - GIVEN the binary is built with ldflags
 - WHEN the user runs `hf version`
-- THEN the CLI MUST display:
-  - Version (semantic version from git tag)
-  - Git commit SHA
-  - Build date
-  - Go version
-  - OS/Arch
+- THEN the CLI MUST display the following fields as plain text:
+  ```
+  Version:    v1.2.3
+  Commit:     abc1234
+  Built:      2026-04-28T12:00:00Z
+  Go version: go1.22.0
+  OS/Arch:    linux/amd64
+  ```
+- AND values MUST be injected at build time via `-ldflags` (e.g., `-X main.version=$(git describe --tags)`)
+- AND `--output json` MUST be supported, outputting the same fields as a JSON object
 
 #### Scenario: Homebrew and package managers
 
@@ -119,56 +128,6 @@ The CLI SHALL be built and distributed for multiple platforms using GoReleaser.
 - WHEN distribution channels are configured
 - THEN GoReleaser SHOULD generate a Homebrew formula
 - AND the CLI SHOULD be installable via `brew install hf`
-
-### Requirement: Plugin Architecture
-
-The CLI SHALL support extending functionality through plugins without modifying the core binary.
-
-#### Scenario: Plugin discovery
-
-- GIVEN the CLI starts
-- WHEN the plugin system initializes
-- THEN the CLI MUST scan for plugins in:
-  1. `~/.config/hf/plugins/`
-  2. Directories listed in `HF_PLUGIN_PATH` environment variable
-- AND plugins MUST be executable files named `hf-<command>` (e.g., `hf-custom-report`)
-
-#### Scenario: Plugin execution
-
-- GIVEN a plugin `hf-custom-report` exists in the plugin path
-- WHEN the user runs `hf custom-report [args...]`
-- THEN Cobra MUST delegate to the plugin executable
-- AND pass all remaining arguments to the plugin
-- AND set environment variables for the plugin:
-  - `HF_CONFIG_DIR`: path to config directory
-  - `HF_API_URL`: resolved API URL
-  - `HF_API_TOKEN`: resolved API token
-  - `HF_CLUSTER_ID`: current cluster ID from state
-  - `HF_NODEPOOL_ID`: current nodepool ID from state
-  - `HF_OUTPUT_FORMAT`: current output format
-
-#### Scenario: Plugin listing
-
-- GIVEN plugins are installed
-- WHEN the user runs `hf plugin list`
-- THEN the CLI MUST list all discovered plugins with:
-  - Name (derived from filename)
-  - Path
-  - Whether it is executable
-
-#### Scenario: Plugin help integration
-
-- GIVEN a plugin `hf-custom-report` exists
-- WHEN the user runs `hf --help`
-- THEN the plugin MUST appear in the help output under an "Available Plugins" section
-- AND running `hf custom-report --help` MUST delegate to the plugin
-
-#### Scenario: Plugin conflict resolution
-
-- GIVEN a plugin name conflicts with a built-in command
-- WHEN the CLI resolves the command
-- THEN the built-in command MUST take precedence
-- AND a warning MUST be displayed: `[WARN] Plugin 'hf-<name>' is shadowed by built-in command '<name>'`
 
 ### Requirement: CI/CD Pipeline
 
@@ -216,7 +175,6 @@ The CLI SHALL maintain a comprehensive test suite.
   - API client request construction and error parsing
   - Output formatting (JSON, table, YAML rendering)
   - Resource type marshaling/unmarshaling
-  - Watch mode tick behavior
 
 #### Scenario: Integration tests
 
@@ -299,7 +257,6 @@ The CLI SHALL respond promptly for common operations.
 - GIVEN the API returns paginated results
 - WHEN a list command encounters pagination
 - THEN the CLI MUST handle pagination transparently, fetching all pages
-- AND support `--limit` to cap the total number of results returned
 
 ### Requirement: Security
 
@@ -324,3 +281,11 @@ The CLI SHALL follow security best practices.
 - WHEN the CLI connects
 - THEN TLS certificate verification MUST be enabled by default
 - AND `--insecure` flag MAY be provided to skip verification with a warning
+
+#### Scenario: Non-TTY color disabling
+
+- GIVEN the CLI writes output to a pipe or file (stdout is not a TTY)
+- WHEN any command produces output with colored elements
+- THEN ANSI color codes MUST be disabled automatically
+- AND the output MUST be plain text suitable for piping to other tools
+- AND `--force-color` flag MAY be provided to override this detection and force color output

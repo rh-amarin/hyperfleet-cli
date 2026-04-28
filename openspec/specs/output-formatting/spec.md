@@ -67,6 +67,13 @@ The output package SHALL render condition status values as colored dot character
 - THEN it MUST return the dot character without ANSI color codes
 - AND True MUST render as `True`, False as `False`, Unknown as `Unknown`
 
+#### Scenario: Non-TTY auto color disabling
+
+- GIVEN stdout is not a TTY (e.g., output is piped to a file or another command)
+- WHEN any output with color is produced
+- THEN ANSI color codes MUST be disabled automatically (equivalent to `--no-color`)
+- AND `--force-color` flag overrides this detection and forces color output regardless of TTY state
+
 ### Requirement: Dynamic Column Ordering
 
 The output package SHALL compute column order for condition-based resource tables.

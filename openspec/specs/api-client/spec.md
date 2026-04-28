@@ -25,6 +25,8 @@ Examples:
 
 No hardcoded hostnames or path prefixes are allowed outside this helper.
 
+Note: Other specs use `/api/hyperfleet/v1/` in endpoint path examples. The `v1` is illustrative only — the actual version is always substituted from the `hyperfleet.api-version` configuration value (default: `v1`). All paths are constructed through this helper or the client's base URL.
+
 ---
 
 ### Requirement: Client Initialization
@@ -107,8 +109,9 @@ The API client SHALL parse non-2xx responses as RFC 7807 Problem Details.
 - GIVEN the API returns a non-2xx response with a non-JSON body (e.g., plain text, HTML)
 - WHEN the client parses the response
 - THEN it MUST return an `APIError` with the `status` field set to the HTTP status code
-- AND `detail` set to the raw response body (truncated to 500 characters)
+- AND `detail` set to the raw response body (truncated to 500 characters) followed by `... [truncated]` if truncated
 - AND `title` set to the HTTP status text
+- AND if the response body appears to be HTML (starts with `<!` or `<html`), the `detail` MUST be prefixed with: `Received HTML response (possibly not the HyperFleet API). Verify the API URL with 'hf config show'.`
 
 #### Scenario: Network error
 
@@ -116,6 +119,13 @@ The API client SHALL parse non-2xx responses as RFC 7807 Problem Details.
 - WHEN the client attempts a request
 - THEN it MUST return a Go error (not an `APIError`)
 - AND the error message MUST include the original network error details
+
+#### Scenario: Request timeout
+
+- GIVEN the API does not respond within the 30-second timeout
+- WHEN the client times out
+- THEN it MUST return a Go error (not an `APIError`) with message: `[ERROR] Request to <URL> timed out after 30s. Check your network connection and API server.`
+- AND exit with a non-zero code
 
 ### Requirement: Verbose Request Logging
 

@@ -4,6 +4,8 @@
 
 Define error handling behavior, usage messages, and edge cases across all CLI commands to ensure consistent and predictable behavior for the CLI reimplementation.
 
+> API errors MUST follow RFC 7807 Problem Details format as defined in `api-client/spec.md` Requirement: RFC 7807 Error Parsing. This spec documents the CLI-level display behavior for those errors.
+
 ## Requirements
 
 ### Requirement: API Error Format
@@ -45,8 +47,8 @@ The CLI SHALL prevent duplicate resource creation.
 
 - GIVEN a cluster with the same name already exists
 - WHEN the user runs `hf cluster create <existing-name>`
-- THEN the CLI MUST display `[WARN] Cluster '<name>' already exists, skipping creation`
-- AND exit with code 0 without creating a duplicate
+- THEN the API MUST return the appropriate error response
+- AND the CLI MUST output it as-is and exit with code 0
 
 ### Requirement: Default Argument Behavior
 

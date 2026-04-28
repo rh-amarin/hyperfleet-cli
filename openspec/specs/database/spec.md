@@ -40,6 +40,15 @@ The CLI SHALL execute arbitrary SQL queries against the HyperFleet PostgreSQL da
 - AND output results as a formatted table
 - AND exit with code 1 and an `[ERROR]` message if the file cannot be read
 
+#### Scenario: Query result rendering
+
+- WHEN the query returns rows
+- THEN the CLI MUST render results as a formatted table with:
+  - Column headers in uppercase, in the order returned by the query
+  - `NULL` values displayed as the literal string `NULL` (not blank)
+  - Fields exceeding 80 characters truncated with a trailing `…`
+  - Aligned columns using tabwriter
+
 #### Scenario: Query returns no rows
 
 - WHEN the query returns 0 rows

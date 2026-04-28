@@ -47,8 +47,8 @@ The CLI SHALL post adapter status conditions for the current cluster.
 
 - GIVEN an invalid status value is provided (not `True`, `False`, or `Unknown`)
 - WHEN the user runs `hf cluster adapter post-status <adapter> <invalid>`
-- THEN the CLI MUST return an error before making any HTTP request
-- AND exit with non-zero code
+- THEN the CLI MUST output `[ERROR] Invalid status value '<value>'. Must be one of: True, False, Unknown.` to stderr
+- AND exit with code 1 without making any HTTP request
 
 ### Requirement: Post NodePool Adapter Status
 
@@ -120,6 +120,10 @@ hf nodepool adapter post-status <adapter_name> <True|False|Unknown> <generation>
 - `nodepool_id` — optional 4th arg; overrides the nodepool-id from state
 
 Requires both `cluster-id` and `nodepool-id` in state (or explicit `nodepool_id` arg).
+
+The request payload structure is identical to the cluster adapter status payload. Only the endpoint differs:
+- Cluster: `POST /api/hyperfleet/{version}/clusters/{cluster_id}/statuses`
+- NodePool: `POST /api/hyperfleet/{version}/clusters/{cluster_id}/nodepools/{nodepool_id}/statuses`
 
 ## API Endpoints
 

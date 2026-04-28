@@ -18,11 +18,11 @@ The CLI SHALL be organized as a single Go module with internal packages followin
   ```
   hf/
   ├── cmd/                    # Cobra command definitions (one file per command group)
-  │   ├── root.go             # Root command, global flags, plugin loading
+  │   ├── root.go             # Root command, global flags
   │   ├── cluster.go          # hf cluster [create|get|list|search|patch|delete|conditions|statuses|id]
   │   ├── nodepool.go         # hf nodepool [create|get|list|search|patch|delete|conditions|statuses|id]
   │   ├── adapter.go          # hf cluster adapter post-status, hf nodepool adapter post-status
-  │   ├── config.go           # hf config [show|set|clear|env]
+  │   ├── config.go           # hf config [show|set|env]
   │   ├── db.go               # hf db [query|delete|statuses|config]
   │   ├── maestro.go          # hf maestro [list|get|delete|bundles|consumers|tui]
   │   ├── pubsub.go           # hf pubsub [list|publish]
@@ -36,14 +36,11 @@ The CLI SHALL be organized as a single Go module with internal packages followin
   │   ├── config/             # Configuration management (split YAML model)
   │   ├── output/             # Output formatting (JSON, table, YAML, colored dots)
   │   ├── resource/           # Shared resource types and data structures
-  │   ├── watch/              # Watch mode (periodic refresh with diff)
   │   ├── kube/               # Kubernetes operations (client-go wrapper)
   │   ├── maestro/            # Maestro client (HTTP API + maestro-cli fallback)
   │   ├── pubsub/             # Pub/Sub and RabbitMQ event publishing
   │   ├── db/                 # PostgreSQL database operations
-  │   ├── plugin/             # Plugin discovery and loading
   │   └── version/            # Build version info
-  ├── plugins/                # Example plugin implementations
   ├── main.go                 # Entry point
   ├── go.mod
   └── go.sum
@@ -65,37 +62,36 @@ The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command rout
   ├── cluster
   │   ├── create    <name> [region] [version]
   │   ├── get       [cluster_id]
-  │   ├── list      [--table] [-w] [-i <dur>]
-  │   ├── search    <name>
-  │   ├── patch     spec|labels [cluster_id]
+  │   ├── list      [--table]
+  │   ├── search    [name]
+  │   ├── patch     {spec|labels} [cluster_id]
   │   ├── delete    [cluster_id]
   │   ├── id
-  │   ├── conditions      [--table] [-w] [-i <dur>] [cluster_id]
-  │   ├── statuses        [-w] [-i <dur>] [cluster_id]
+  │   ├── conditions      [--table] [cluster_id]
+  │   ├── statuses        [cluster_id]
   │   └── adapter
   │       └── post-status <adapter> <status> <generation>
   ├── nodepool
   │   ├── create    <name> [count] [instance-type]
   │   ├── get       [nodepool_id]
-  │   ├── list      [cluster_id] [--table] [-w] [-i <dur>]
-  │   ├── search    <name>
-  │   ├── patch     spec|labels [nodepool_id]
+  │   ├── list      [cluster_id] [--table]
+  │   ├── search    [name]
+  │   ├── patch     {spec|labels} [nodepool_id]
   │   ├── delete    [nodepool_id]
   │   ├── id
-  │   ├── conditions      [--table] [-w] [-i <dur>] [nodepool_id]
-  │   ├── statuses        [-w] [-i <dur>] [nodepool_id]
+  │   ├── conditions      [--table] [nodepool_id]
+  │   ├── statuses        [nodepool_id]
   │   └── adapter
   │       └── post-status <adapter> <status> <generation> [nodepool_id]
   ├── config
   │   ├── show      [env-name]
   │   ├── set       <key> <value>
-  │   ├── clear     <key>
   │   └── env
   │       ├── new      [name]
   │       ├── list
   │       ├── show     <name>
   │       └── activate <name>
-  ├── table                  (combined overview, supports -w/-i)
+  ├── table
   ├── db
   │   ├── query     <sql> | -f <file>
   │   ├── delete    <clusters|nodepools|adapter_statuses|ALL>
@@ -192,14 +188,29 @@ The CLI SHALL provide a shared output formatting package supporting multiple for
   - Respect `--no-color` flag and `NO_COLOR` environment variable to disable ANSI colors
   - In no-color mode, render status as plain text: `True`, `False`, `Unknown`, `-`
 
-#### Scenario: Status dot rendering
+Status dot rendering follows the spec defined in `output-formatting/spec.md` Requirement: Colored Dot Rendering.
 
-- GIVEN colored output is enabled
-- WHEN a condition status is rendered
-- THEN `True` MUST render as a green dot character (`●`)
-- AND `False` MUST render as a red dot character (`●`)
-- AND `Unknown` MUST render as a yellow dot character (`●`)
-- AND absent conditions MUST render as `-`
+### Requirement: Shared Utility Functions
+
+The CLI SHALL expose well-defined shared helper functions used across command implementations.
+
+#### Scenario: API lookup helpers
+
+- GIVEN the `internal/api` package exists
+- WHEN commands need to find resources by name
+- THEN the package MUST provide:
+  - `FindClusterByName(ctx context.Context, client *Client, name string) (*resource.Cluster, error)` — queries the clusters list endpoint filtering by exact name match; returns the first match or nil if not found
+  - `FindNodePoolByName(ctx context.Context, client *Client, clusterID, name string) (*resource.NodePool, error)` — queries the nodepools list endpoint for the given cluster, filtering by exact name match
+
+#### Scenario: Config state helpers
+
+- GIVEN the `internal/config` package manages active state
+- WHEN commands need to read or write the active cluster or nodepool
+- THEN the package MUST provide:
+  - `SetClusterID(id string) error` — writes `cluster-id` to `state.yaml`
+  - `GetClusterID() (string, error)` — reads `cluster-id` from `state.yaml`; returns error if not set
+  - `SetNodePoolID(id string) error` — writes `nodepool-id` to `state.yaml`
+  - `GetNodePoolID() (string, error)` — reads `nodepool-id` from `state.yaml`; returns error if not set
 
 ### Requirement: Shared Resource Types Package (internal/resource)
 
@@ -225,20 +236,6 @@ The CLI SHALL define shared Go types for all HyperFleet resources.
 - AND all types MUST have JSON struct tags matching the API field names (snake_case)
 - AND `Spec` MUST use `map[string]any` and `Labels` MUST use `map[string]string`
 - AND `ListResponse[T]` MUST use Go type parameters for type-safe list operations
-
-### Requirement: Shared Watch Package (internal/watch)
-
-The CLI SHALL provide a reusable watch mode for commands that support the `-w` flag.
-
-#### Scenario: Watch mode operation
-
-- GIVEN a command supports the `-w` flag
-- WHEN `-w` is passed
-- THEN the watch package MUST:
-  - Execute the data-fetching function on a configurable interval (default 2s)
-  - Clear the terminal and re-render output on each tick
-  - Respond to Ctrl+C to stop watching
-  - Display a "Last updated: <timestamp>" footer
 
 ### Requirement: Kubernetes Operations Package (internal/kube)
 
@@ -270,7 +267,6 @@ The CLI SHALL bundle Go libraries to replace external tool dependencies, produci
   | curl | net/http | stdlib |
   | awk/sed | text/tabwriter + string processing | stdlib |
   | lsof/ss | net.Listen / os.FindProcess | stdlib |
-  | viddy | internal/watch with ANSI terminal control | custom |
   | psql | database/sql + pgx | jackc/pgx/v5 |
   | kubectl | client-go | k8s.io/client-go |
   | gcloud pubsub | cloud.google.com/go/pubsub | Google Cloud Go SDK |

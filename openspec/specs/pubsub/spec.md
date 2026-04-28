@@ -24,6 +24,14 @@ This ensures hrefs are always consistent with the configured environment and nev
 
 The CLI SHALL list GCP Pub/Sub topics and their subscriptions.
 
+#### Scenario: Missing GCP credentials
+
+- GIVEN GCP credentials are not configured (no `GOOGLE_APPLICATION_CREDENTIALS`, no gcloud ADC, no GCE metadata)
+- WHEN the user runs `hf pubsub list` or any `hf pubsub publish` command
+- THEN the CLI MUST display: `[ERROR] GCP credentials not found. Run 'gcloud auth application-default login' or set GOOGLE_APPLICATION_CREDENTIALS`
+- AND exit with code 1
+- AND other `hf` commands MUST continue to work normally
+
 #### Scenario: List all topics
 
 - GIVEN gcp-project is configured
@@ -70,6 +78,7 @@ The CLI SHALL publish a cluster reconcile event to a GCP Pub/Sub topic.
 - AND the cluster-id MUST be read from state (no HyperFleet API fetch)
 - AND the href MUST be constructed using the configured `api-url` and `api-version`
 - AND print `[INFO] Published cluster <id> to topic <topic> (msg-id: <id>)` on success
+- AND on publish failure display `[ERROR] Failed to publish: <error>` on stderr and exit 1
 
 ### Requirement: Publish NodePool Change Event to Pub/Sub
 

@@ -43,11 +43,7 @@ The CLI SHALL display clusters in a formatted table with dynamic condition colum
 - AND the `Available` column MUST appear first among dynamic columns
 - AND the `Ready` column MUST appear last
 - AND all other condition types MUST appear alphabetically between `Available` and `Ready`
-- AND status values MUST be displayed as colored dots:
-  - Green dot = `True`
-  - Red dot = `False`
-  - Yellow dot = `Unknown`
-  - `-` = condition not present for that cluster
+- AND status values MUST be rendered as colored dots per `output-formatting/spec.md` Requirement: Colored Dot Rendering
 
 ### Requirement: NodePool Table View
 
@@ -74,42 +70,5 @@ The CLI SHALL display a combined table of all clusters and their nested nodepool
 - AND cluster rows MUST have an empty CLUSTER field
 - AND nodepool rows MUST show the parent cluster name in the CLUSTER field
 - AND both clusters and nodepools MUST share the same dynamic column set (union of all condition types)
-- AND status values MUST be displayed as colored dots
+- AND status values MUST be rendered as colored dots per `output-formatting/spec.md` Requirement: Colored Dot Rendering
 
-### Requirement: Watch Mode
-
-The CLI SHALL support a watch mode that periodically refreshes output.
-
-#### Scenario: Watch with default interval
-
-- GIVEN the user wants to monitor resources continuously
-- WHEN the user runs any watch-capable command with the `-w` flag (e.g., `hf cluster conditions -w`)
-- THEN the CLI MUST refresh output every 2 seconds (default interval)
-- AND MUST clear the terminal between refreshes using ANSI escape sequence `\033[H\033[2J`
-- AND MUST print a footer to stderr with the format `Last updated: HH:MM:SS  (Ctrl+C to stop)`
-
-#### Scenario: Watch with custom interval
-
-- GIVEN the user wants to monitor with a specific refresh rate
-- WHEN the user runs a watch-capable command with `-w -i <duration>` (e.g., `hf cluster conditions -w -i 5s`)
-- THEN the CLI MUST refresh output at the specified interval
-
-#### Scenario: Watch termination
-
-- GIVEN the CLI is running in watch mode
-- WHEN the process receives SIGTERM or the configured timeout expires
-- THEN the CLI MUST exit cleanly with no error
-
-### Requirement: Watch-Capable Commands
-
-The following commands MUST support the `-w` / `--watch` and `-i` / `--interval` flags:
-
-| Command | Description |
-|---|---|
-| `hf cluster list --table` | Cluster list as dot table with dynamic condition columns |
-| `hf table` | Combined clusters + nodepools dot table |
-| `hf cluster conditions -w -i <dur>` | Watch cluster conditions with configurable interval |
-| `hf cluster statuses -w -i <dur>` | Watch cluster adapter statuses with configurable interval |
-| `hf nodepool conditions -w -i <dur>` | Watch nodepool conditions with configurable interval |
-| `hf nodepool statuses -w -i <dur>` | Watch nodepool adapter statuses with configurable interval |
-| `hf nodepool list --table -w -i <dur>` | Nodepool table with watch support |

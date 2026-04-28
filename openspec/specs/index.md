@@ -32,7 +32,7 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 |---|--------|------|-----|-----------|
 | T1 | [Technical Architecture](technical-architecture/spec.md) | Go module structure, Cobra command tree, shared packages, dependency bundling | 10 | 19 |
 | T2 | [Configuration Model](config-model/spec.md) | Split YAML config (config.yaml + state.yaml), environment profiles, migration | 9 | 18 |
-| T3 | [Non-Functional](non-functional/spec.md) | Shell completions, output format flag, cross-compilation, plugin architecture, testing, security | 8 | 31 |
+| T3 | [Non-Functional](non-functional/spec.md) | Shell completions, output format flag, cross-compilation, testing, security | 8 | 31 |
 
 ### Summary
 
@@ -54,7 +54,7 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 | GCP Pub/Sub | **Cloud Go SDK** | Official library, no gcloud dependency |
 | GitHub | **go-github** | REST client, no gh dependency |
 | Build/Release | **GoReleaser** | Cross-compile linux/mac/windows amd64/arm64 |
-| Extensibility | **Plugin architecture** | `hf-<command>` executables in plugin path |
+| Extensibility | **None** | Core binary only; no plugin system |
 
 ## Dependency Bundling
 
@@ -64,7 +64,6 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 | curl | net/http (stdlib) | Bundled |
 | awk/sed | text/tabwriter + strings | Bundled |
 | lsof/ss | net.Listen / os.FindProcess | Bundled |
-| viddy | internal/watch (ANSI refresh) | Bundled |
 | psql | jackc/pgx/v5 | Bundled |
 | kubectl | k8s.io/client-go | Bundled |
 | gcloud | cloud.google.com/go/pubsub | Bundled |
@@ -80,8 +79,7 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 4. **Generation tracking**: Resources track generation; adapters report observed_generation
 5. **Convergence logic**: Ready becomes True when ALL required adapters report Available=True at current generation
 6. **Multi-format output**: `--output json|table|yaml` on every data-producing command
-7. **Plugin-extensible**: External `hf-<name>` executables discovered and delegated to
-8. **Zero external deps for core**: Only maestro-cli TUI and GCP credentials needed for specialized commands
+7. **Zero external deps for core**: Only maestro-cli TUI and GCP credentials needed for specialized commands
 9. **RFC 7807 errors**: API errors follow Problem Details format
 10. **Config precedence**: flags > env vars > environment profile > config.yaml > defaults
 

@@ -4,6 +4,14 @@
 
 Provide CLI commands for full CRUD lifecycle management of HyperFleet nodepools. Nodepools are always scoped to a parent cluster, requiring a `cluster-id` to be set in config. All nodepool operations interact with the HyperFleet API at `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools`.
 
+## Prerequisite: cluster-id Required
+
+All nodepool commands require `cluster-id` to be set in state. If it is not set, the CLI MUST display:
+```
+[ERROR] No cluster-id set in state. Run 'hf cluster create' or 'hf cluster search <name>' first.
+```
+AND exit with code 1 before making any API call.
+
 ## Requirements
 
 ### Requirement: Create NodePool
@@ -20,7 +28,8 @@ The CLI SHALL create one or more nodepools in the current cluster with configura
   - `name`: `<name>-N`
   - `labels`: `{"counter": "N"}`
   - `spec`: `{"counter": "N", "platform": {"type": "<instance-type>"}, "replicas": 1}`
-- AND the CLI MUST persist the LAST created nodepool's ID to active state via the shared `config.SetNodePoolID` function
+- AND the CLI MUST persist the LAST created nodepool's ID to active state via `config.SetNodePoolID`
+- AND the CLI MUST print `[INFO] NodePool context set to '<id>'` on stderr after persisting
 - AND the response MUST include `owner_references` pointing to the parent cluster
 
 #### Scenario: Create nodepool with default arguments
@@ -29,6 +38,14 @@ The CLI SHALL create one or more nodepools in the current cluster with configura
 - WHEN the user runs `hf nodepool create`
 - THEN the CLI MUST use defaults: name=`my-nodepool`, count=`1`, instance_type=`m4`
 - AND the CLI MUST NOT show a usage message — it MUST proceed with creation using defaults
+
+#### Scenario: Invalid count argument
+
+- GIVEN a count value less than 1 or not a valid integer is provided
+- WHEN the user runs `hf nodepool create <name> <invalid-count>`
+- THEN the CLI MUST display `[ERROR] count must be a positive integer (minimum 1)`
+- AND display the usage message
+- AND exit with code 1
 
 #### Scenario: Initial nodepool status conditions
 
@@ -53,13 +70,20 @@ The CLI SHALL list all nodepools in the current cluster.
 
 The CLI SHALL search for a nodepool by name within the current cluster and set it as the current context.
 
+#### Scenario: Search with no arguments
+
+- GIVEN a nodepool-id is set in config
+- WHEN the user runs `hf nodepool search` with no arguments
+- THEN the CLI MUST behave identically to `hf nodepool get` — fetching and returning the current nodepool from state
+
 #### Scenario: Search for existing nodepool
 
 - GIVEN nodepools exist in the current cluster
 - WHEN the user runs `hf nodepool search <name>`
 - THEN the CLI MUST filter nodepools by name within the cluster
-- AND output the matching nodepools as a JSON array
-- AND persist the found nodepool's ID to active state via the shared `config.SetNodePoolID` function
+- AND output the matching nodepools as a JSON array of full NodePool objects
+- AND persist the found nodepool's ID to active state via `config.SetNodePoolID`
+- AND print `[INFO] NodePool context set to '<id>'` on stderr after persisting
 
 #### Scenario: Search for non-existent nodepool
 
@@ -123,6 +147,7 @@ The CLI SHALL delete a nodepool by ID.
 - WHEN the user runs `hf nodepool delete [nodepool_id]`
 - THEN the CLI MUST send DELETE to `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools/{nodepool_id}`
 - AND the response MUST include the full nodepool object with `deleted_by`, `deleted_time`, and incremented `generation`
+- AND the CLI MUST output the deleted nodepool object subject to the `--output` flag (default: JSON)
 
 #### Scenario: Delete current nodepool
 
@@ -140,11 +165,6 @@ The CLI SHALL display the generation and status conditions of a nodepool.
 - WHEN the user runs `hf nodepool conditions`
 - THEN the CLI MUST fetch the nodepool and extract `generation` and `status.conditions` as JSON
 
-#### Scenario: Watch conditions
-
-- GIVEN cluster-id and nodepool-id are set in config
-- WHEN the user runs `hf nodepool conditions -w`
-- THEN the CLI MUST display conditions with live updates using a watch mechanism
 
 ### Requirement: Get NodePool Conditions Table
 
@@ -175,11 +195,6 @@ The CLI SHALL display adapter statuses for a nodepool.
 - THEN the CLI MUST send GET to `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools/{nodepool_id}/adapter-statuses`
 - AND output the `AdapterStatusList` response
 
-#### Scenario: Watch statuses
-
-- GIVEN cluster-id and nodepool-id are set
-- WHEN the user runs `hf nodepool statuses -w`
-- THEN the CLI MUST display statuses with live updates
 
 ### Requirement: Display NodePool Table
 

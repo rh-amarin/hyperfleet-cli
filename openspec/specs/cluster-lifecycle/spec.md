@@ -21,7 +21,8 @@ The CLI SHALL create a new HyperFleet cluster with configurable name, region, an
   - `spec`: `{"counter": "1", "region": "<region>", "version": "<version>"}`
 - AND the CLI MUST output the JSON response containing the created cluster object
 - AND the response MUST include `id`, `kind: "Cluster"`, `generation: 1`, `status.conditions`
-- AND the CLI MUST look up the created cluster by name (using the shared `api.FindClusterByName` function) and persist its ID to active state via the shared `config.SetClusterID` function
+- AND the CLI MUST persist the cluster ID from the API response to active state via `config.SetClusterID`
+- AND the CLI MUST print `[INFO] Cluster context set to '<id>'` on stderr after persisting
 
 #### Scenario: Create cluster with default arguments
 
@@ -34,9 +35,9 @@ The CLI SHALL create a new HyperFleet cluster with configurable name, region, an
 
 - GIVEN a cluster with the same name already exists
 - WHEN the user runs `hf cluster create <existing-name>`
-- THEN the CLI MUST check for existing clusters with that name first
-- AND display a warning: `[WARN] Cluster '<name>' already exists, skipping creation`
-- AND exit with code 0 without creating a duplicate
+- THEN the CLI MUST send the POST request and let the API return the appropriate error response
+- AND output the API error response as-is
+- AND exit with code 0
 
 #### Scenario: Initial cluster status conditions
 
@@ -50,13 +51,20 @@ The CLI SHALL create a new HyperFleet cluster with configurable name, region, an
 
 The CLI SHALL search for clusters by name and set the found cluster as the current context.
 
+#### Scenario: Search with no arguments
+
+- GIVEN a cluster-id is set in config
+- WHEN the user runs `hf cluster search` with no arguments
+- THEN the CLI MUST behave identically to `hf cluster get` — fetching and returning the current cluster from state
+
 #### Scenario: Search for existing cluster
 
 - GIVEN clusters exist in the API
 - WHEN the user runs `hf cluster search <name>`
 - THEN the CLI MUST query the API filtering by name
-- AND output the matching clusters as a JSON array
-- AND persist the found cluster's ID to active state via the shared `config.SetClusterID` function
+- AND output the matching clusters as a JSON array of full Cluster objects
+- AND persist the found cluster's ID to active state via `config.SetClusterID`
+- AND print `[INFO] Cluster context set to '<id>'` on stderr after persisting
 
 #### Scenario: Search for non-existent cluster
 
@@ -123,7 +131,7 @@ The CLI SHALL increment a counter field in the cluster's spec or labels section,
 
 - GIVEN the user provides no arguments
 - WHEN the user runs `hf cluster patch`
-- THEN the CLI MUST display usage: `Usage: hf cluster patch spec|labels [cluster_id]`
+- THEN the CLI MUST display usage: `Usage: hf cluster patch {spec|labels} [cluster_id]`
 - AND exit with code 1
 
 ### Requirement: Delete Cluster
@@ -136,6 +144,7 @@ The CLI SHALL delete a cluster by ID.
 - WHEN the user runs `hf cluster delete [cluster_id]`
 - THEN the CLI MUST send a DELETE request to `/api/hyperfleet/v1/clusters/{cluster_id}`
 - AND the response MUST include the full cluster object with `deleted_by`, `deleted_time`, and incremented `generation`
+- AND the CLI MUST output the deleted cluster object subject to the `--output` flag (default: JSON)
 
 #### Scenario: Delete current cluster
 
@@ -155,12 +164,6 @@ The CLI SHALL display the generation and status conditions of a cluster.
 - AND extract only `generation` and `status.conditions`
 - AND output them as JSON
 
-#### Scenario: Watch conditions
-
-- GIVEN a cluster-id is set in config
-- WHEN the user runs `hf cluster conditions -w`
-- THEN the CLI MUST display conditions with live updates using a watch mechanism (e.g., viddy)
-
 ### Requirement: Get Cluster Conditions Table
 
 The CLI SHALL display cluster conditions in a formatted table via the `--table` flag.
@@ -171,6 +174,13 @@ The CLI SHALL display cluster conditions in a formatted table via the `--table` 
 - WHEN the user runs `hf cluster conditions --table`
 - THEN the CLI MUST output a table with columns: TYPE, STATUS, LAST TRANSITION, REASON, MESSAGE
 - AND status values MUST be color-coded: True=green, False=red, Unknown=yellow
+
+#### Scenario: Conditions in quiet mode
+
+- GIVEN `-q` or `--quiet` is specified
+- WHEN the user runs `hf cluster conditions --quiet`
+- THEN the CLI MUST output only condition type and status value, one per line (e.g., `Ready False`)
+- AND MUST NOT include reason, message, or timestamps
 
 ### Requirement: Get Cluster Adapter Statuses
 
@@ -188,9 +198,3 @@ The CLI SHALL display adapter statuses for a cluster.
 - WHEN the user runs `hf cluster statuses`
 - THEN the CLI MUST send GET to `/api/hyperfleet/v1/clusters/{cluster_id}/adapter-statuses`
 - AND output the `AdapterStatusList` with items containing: adapter name, conditions (Available, Applied, Health), observed_generation, last_report_time
-
-#### Scenario: Watch statuses
-
-- GIVEN a cluster-id is set
-- WHEN the user runs `hf cluster statuses -w`
-- THEN the CLI MUST display statuses with live updates using a watch mechanism

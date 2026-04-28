@@ -72,6 +72,14 @@ The CLI SHALL use two YAML files stored in `~/.config/hf/`.
   ```
 - AND the file MUST be updated atomically (write to temp, then rename)
 
+#### Scenario: Canonical configuration defaults
+
+- GIVEN the static configuration file is missing or a key is absent
+- WHEN the CLI resolves a configuration value
+- THEN the built-in defaults defined in the `static configuration file` scenario above MUST be used
+- AND all other specs that reference configuration defaults MUST treat the values in this spec as authoritative
+- AND no other spec may define a conflicting default for the same key
+
 #### Scenario: Config directory creation
 
 - GIVEN the config directory does not exist
@@ -180,6 +188,14 @@ The CLI SHALL protect sensitive configuration values.
 - WHEN `hf config show` displays the property
 - THEN the value MUST be shown as `<set>` if non-empty or `<not set>` if empty
 - AND the actual value MUST NOT be displayed in config show output
+
+#### Scenario: Display empty string vs unset values
+
+- GIVEN a non-secret config property may be set to an empty string or be absent entirely
+- WHEN `hf config show` displays the property
+- THEN a property set to an empty string MUST display as `''` (quoted empty string)
+- AND a property whose key is absent from config MUST display as `<not set>`
+- AND in JSON output, an empty string MUST appear as `""` and an absent key MUST be omitted
 
 #### Scenario: Secrets in config file
 
