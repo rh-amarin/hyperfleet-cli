@@ -65,7 +65,7 @@ The CLI SHALL support a global `--output` flag for controlling output format on 
 - GIVEN no `--output` flag is specified
 - WHEN a command produces output
 - THEN the default MUST be:
-  - `table` for list views with `--table`: `cluster list --table`, `nodepool list --table`, `table`, `repos`, `cluster conditions --table`, `nodepool conditions --table`
+  - `table` for list views with `--table`: `cluster list --table`, `nodepool list --table`, `resources`, `repos`, `cluster conditions --table`, `nodepool conditions --table`
   - `json` for list/get views without `--table`: `cluster list`, `nodepool list`, `cluster get`, `nodepool get`, `cluster conditions`, `nodepool conditions`, `cluster statuses`, `nodepool statuses`
   - `text` for config commands, port-forward status, and log output
 
@@ -214,12 +214,6 @@ The CLI SHALL degrade gracefully when optional dependencies are unavailable.
 - THEN the CLI MUST display a clear error: `[ERROR] GCP credentials not found. Run 'gcloud auth application-default login' or set GOOGLE_APPLICATION_CREDENTIALS`
 - AND other commands MUST continue to work
 
-#### Scenario: Missing maestro-cli for TUI
-
-- GIVEN `maestro-cli` is not installed
-- WHEN the user runs `hf maestro tui`
-- THEN the CLI MUST display: `[ERROR] maestro-cli not found. Install from <url> or use 'hf maestro list/get/delete' for API-based access`
-- AND `hf maestro list`, `hf maestro get`, `hf maestro delete`, `hf maestro bundles`, `hf maestro consumers` MUST work without maestro-cli
 
 #### Scenario: Unreachable API
 
@@ -288,4 +282,4 @@ The CLI SHALL follow security best practices.
 - WHEN any command produces output with colored elements
 - THEN ANSI color codes MUST be disabled automatically
 - AND the output MUST be plain text suitable for piping to other tools
-- AND `--force-color` flag MAY be provided to override this detection and force color output
+- AND there is no `--force-color` flag; use `--no-color` to explicitly disable color on a TTY

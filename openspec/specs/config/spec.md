@@ -21,6 +21,14 @@ AND display the values defined in that environment file grouped by section
 AND secrets MUST be shown as `<set>` or `<not set>`
 AND the active environment is NOT changed
 
+#### Scenario: Show config for a named environment that is also the active environment
+
+GIVEN the named environment is also the currently active environment
+WHEN the user runs `hf config show <env-name>`
+THEN the CLI MUST display the file path prefixed with `[active] ` (e.g., `[active] ~/.config/hf/environments/<env-name>.yaml`)
+AND display the values as usual
+AND the active environment is NOT changed
+
 #### Scenario: No active environment
 
 GIVEN no active environment is configured

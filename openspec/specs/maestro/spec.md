@@ -2,19 +2,19 @@
 
 ## Purpose
 
-Provide CLI commands for managing Maestro resources, which are used by HyperFleet adapters to deploy Kubernetes manifests to managed clusters. Maestro provides both a CLI tool (`maestro-cli`) and an HTTP API for resource management.
+Provide CLI commands for managing Maestro resources, which are used by HyperFleet adapters to deploy Kubernetes manifests to managed clusters. All maestro commands use the Maestro HTTP API directly — no external `maestro-cli` tool is required.
 
 ## Requirements
 
 ### Requirement: List Maestro Resources
 
-The CLI SHALL list maestro resources via the maestro-cli tool.
+The CLI SHALL list maestro resources via the Maestro HTTP API.
 
 #### Scenario: List resources
 
 - GIVEN maestro-consumer and maestro-http-endpoint are configured
 - WHEN the user runs `hf maestro list`
-- THEN the CLI MUST invoke maestro-cli to list resources
+- THEN the CLI MUST send GET to `/api/maestro/v1/resource-bundles` filtered by consumer
 - AND output a JSON array where each item contains:
   - `id`: UUID
   - `name`: resource name (e.g., `mw-<cluster-uuid>`)
@@ -50,13 +50,14 @@ The CLI SHALL list maestro consumers via the HTTP API.
 
 ### Requirement: Get Maestro Resource
 
-The CLI SHALL retrieve a specific maestro resource by name.
+The CLI SHALL retrieve a specific maestro resource by name via the HTTP API.
 
 #### Scenario: Get by name
 
-- GIVEN maestro-consumer, maestro-http-endpoint, and maestro-grpc-endpoint are configured
+- GIVEN maestro-http-endpoint is configured
 - WHEN the user runs `hf maestro get <name>`
-- THEN the CLI MUST retrieve the specified resource via maestro-cli
+- THEN the CLI MUST send GET to `/api/maestro/v1/resource-bundles` and filter by name
+- AND output the matching resource bundle as JSON
 
 #### Scenario: Get with interactive selection
 
@@ -66,27 +67,17 @@ The CLI SHALL retrieve a specific maestro resource by name.
 
 ### Requirement: Delete Maestro Resource
 
-The CLI SHALL delete a maestro resource by name.
+The CLI SHALL delete a maestro resource by name via the HTTP API.
 
 #### Scenario: Delete by name
 
-- GIVEN maestro configuration is set
+- GIVEN maestro-http-endpoint is configured
 - WHEN the user runs `hf maestro delete <name>`
-- THEN the CLI MUST delete the specified resource via maestro-cli
+- THEN the CLI MUST send DELETE to `/api/maestro/v1/resource-bundles/<id>` after resolving the name to an ID
+- AND output the deletion result
 
 #### Scenario: Delete with interactive selection
 
 - GIVEN no name argument is provided
 - WHEN the user runs `hf maestro delete`
 - THEN the CLI MUST list available resources and present an interactive selection menu
-
-### Requirement: Maestro Terminal UI
-
-The CLI SHALL launch the maestro-cli terminal UI for interactive resource management.
-
-#### Scenario: Launch TUI
-
-- GIVEN maestro-http-endpoint is configured
-- WHEN the user runs `hf maestro tui`
-- THEN the CLI MUST launch `maestro-cli tui --api-server={endpoint}`
-- AND present a full terminal UI for resource management

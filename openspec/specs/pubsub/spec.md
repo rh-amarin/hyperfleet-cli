@@ -42,6 +42,14 @@ The CLI SHALL list GCP Pub/Sub topics and their subscriptions.
 - AND topics MUST appear at the left margin
 - AND subscriptions MUST be indented with 4 spaces
 
+#### Scenario: List with no topics
+
+- GIVEN gcp-project is configured but no topics exist in the project
+- WHEN the user runs `hf pubsub list`
+- THEN the CLI MUST print the `[INFO]` project line
+- AND print `No topics found.`
+- AND exit with code 0
+
 #### Scenario: List with filter
 
 - GIVEN gcp-project is configured

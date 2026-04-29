@@ -4,13 +4,19 @@
 
 Provide CLI commands for full CRUD lifecycle management of HyperFleet nodepools. Nodepools are always scoped to a parent cluster, requiring a `cluster-id` to be set in config. All nodepool operations interact with the HyperFleet API at `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools`.
 
-## Prerequisite: cluster-id Required
+## Prerequisites
 
-All nodepool commands require `cluster-id` to be set in state. If it is not set, the CLI MUST display:
+**cluster-id required**: All nodepool commands require `cluster-id` to be set in state. If it is not set, the CLI MUST display:
 ```
 [ERROR] No cluster-id set in state. Run 'hf cluster create' or 'hf cluster search <name>' first.
 ```
 AND exit with code 1 before making any API call.
+
+**nodepool-id required for single-resource commands**: `hf nodepool patch`, `hf nodepool delete`, `hf nodepool conditions`, and `hf nodepool statuses` additionally require `nodepool-id` to be set in state (unless an explicit ID argument is provided). If cluster-id is set but nodepool-id is not, the CLI MUST display:
+```
+[ERROR] No nodepool-id set in state. Run 'hf nodepool create' or 'hf nodepool search <name>' first.
+```
+AND exit with code 1.
 
 ## Requirements
 
@@ -62,8 +68,8 @@ The CLI SHALL list all nodepools in the current cluster.
 #### Scenario: List nodepools
 
 - GIVEN a cluster-id is set in config
-- WHEN the user runs `hf nodepool list [cluster_id]`
-- THEN the CLI MUST send GET to `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools`
+- WHEN the user runs `hf nodepool list`
+- THEN the CLI MUST send GET to `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools` using the cluster-id from state
 - AND output the response as JSON with shape `{"kind": "NodePoolList", "items": [...], "page": N, "size": N, "total": N}`
 
 ### Requirement: Search NodePool
@@ -75,6 +81,13 @@ The CLI SHALL search for a nodepool by name within the current cluster and set i
 - GIVEN a nodepool-id is set in config
 - WHEN the user runs `hf nodepool search` with no arguments
 - THEN the CLI MUST behave identically to `hf nodepool get` — fetching and returning the current nodepool from state
+
+#### Scenario: Search with no arguments and no nodepool in state
+
+- GIVEN no nodepool-id is set in state
+- WHEN the user runs `hf nodepool search` with no arguments
+- THEN the CLI MUST display `[ERROR] No nodepool-id set in state. Run 'hf nodepool create' or 'hf nodepool search <name>' first.`
+- AND exit with code 1
 
 #### Scenario: Search for existing nodepool
 
@@ -122,20 +135,34 @@ The CLI SHALL retrieve and display full details of a specific nodepool.
 
 The CLI SHALL increment a counter field in the nodepool's spec or labels section, triggering a generation bump.
 
+#### Scenario: Patch with no arguments
+
+- GIVEN the user provides no arguments
+- WHEN the user runs `hf nodepool patch`
+- THEN the CLI MUST display usage: `Usage: hf nodepool patch {spec|labels} [nodepool_id]`
+- AND exit with code 1
+
 #### Scenario: Patch spec counter
 
 - GIVEN cluster-id and nodepool-id are set in config
 - WHEN the user runs `hf nodepool patch spec`
 - THEN the CLI MUST fetch the current nodepool
-- AND increment `spec.counter`
-- AND send a PATCH to `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools/{nodepool_id}`
+- AND read the current `spec.counter` value as an integer (if absent, treat as `0`)
+- AND increment it by 1
+- AND send a PATCH to `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools/{nodepool_id}` with the incremented counter as a string
+- AND display `[INFO] Incrementing spec.counter: <old> -> <new>` where `<old>` and `<new>` are integer strings (e.g., `1 -> 2`; first increment displays `0 -> 1`)
 - AND the nodepool's generation MUST increment
 
 #### Scenario: Patch labels counter
 
 - GIVEN cluster-id and nodepool-id are set in config
 - WHEN the user runs `hf nodepool patch labels`
-- THEN the CLI MUST follow the same pattern as spec but for `labels.counter`
+- THEN the CLI MUST fetch the current nodepool
+- AND read the current `labels.counter` value as an integer (if absent, treat as `0`)
+- AND increment it by 1
+- AND send a PATCH to `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools/{nodepool_id}` with the incremented counter as a string
+- AND display `[INFO] Incrementing labels.counter: <old> -> <new>`
+- AND the nodepool's generation MUST increment
 
 ### Requirement: Delete NodePool
 

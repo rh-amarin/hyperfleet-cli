@@ -78,6 +78,13 @@ PID files stored at `~/.config/hf/pf-<name>.pid` — format: `<pid>\n<localPort>
 - THEN both port values MUST be valid integers in the range 1–65535
 - AND if either port is invalid, the CLI MUST display `[ERROR] Invalid port '<value>'. Must be an integer between 1 and 65535.` and exit 1
 
+#### Scenario: Kubeconfig not found
+
+- GIVEN the kubeconfig file is not found at the resolved path (flag → `KUBECONFIG` env → `~/.kube/config`)
+- WHEN any `hf kube` command is invoked
+- THEN the CLI MUST display `[ERROR] kubeconfig not found at <path>. Set KUBECONFIG or use --kubeconfig.`
+- AND exit with code 1
+
 ### Requirement: In-Cluster Curl
 
 The CLI SHALL execute curl commands from inside the Kubernetes cluster.

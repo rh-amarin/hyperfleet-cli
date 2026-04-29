@@ -33,6 +33,7 @@ The CLI SHALL display clusters in a formatted table with dynamic condition colum
 - GIVEN no clusters exist
 - WHEN the user runs `hf cluster list --table`
 - THEN the CLI MUST output table headers only: `NAME  GEN` with a separator line
+- AND the separator line MUST be `---` dashes matching the column width (e.g., `----  ---`)
 
 #### Scenario: Populated table with conditions
 
@@ -58,17 +59,18 @@ The CLI SHALL display nodepools in the current cluster as a formatted table when
 - AND REPLICAS MUST show the `spec.replicas` value
 - AND TYPE MUST show the `spec.platform.type` value
 
-### Requirement: Combined Overview Table
+### Requirement: Combined Resources Overview
 
 The CLI SHALL display a combined table of all clusters and their nested nodepools.
 
-#### Scenario: Display combined table
+#### Scenario: Display combined resources table
 
 - GIVEN clusters and nodepools exist
-- WHEN the user runs `hf table`
+- WHEN the user runs `hf resources`
 - THEN the CLI MUST output a table with columns: NAME, KIND, CLUSTER, GEN, then dynamic condition columns
 - AND cluster rows MUST have an empty CLUSTER field
 - AND nodepool rows MUST show the parent cluster name in the CLUSTER field
 - AND both clusters and nodepools MUST share the same dynamic column set (union of all condition types)
 - AND status values MUST be rendered as colored dots per `output-formatting/spec.md` Requirement: Colored Dot Rendering
+- AND all separator lines MUST use `---` dashes matching the column width
 

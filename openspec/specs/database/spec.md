@@ -90,6 +90,7 @@ The argument values MUST be offered as shell completions.
 - AND prompt the user for confirmation (requiring `yes`)
 - AND delete in dependency order: `adapter_statuses` first, then `node_pools`, then `clusters`
 - AND print the count of deleted rows per table
+- AND if a DELETE fails for one table, the CLI MUST display `[ERROR] Failed to delete from <table>: <error>`, continue to the next table, and report the final row counts for each table that succeeded
 
 #### Scenario: Confirmation denied
 

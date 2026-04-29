@@ -72,7 +72,7 @@ The output package SHALL render condition status values as colored dot character
 - GIVEN stdout is not a TTY (e.g., output is piped to a file or another command)
 - WHEN any output with color is produced
 - THEN ANSI color codes MUST be disabled automatically (equivalent to `--no-color`)
-- AND `--force-color` flag overrides this detection and forces color output regardless of TTY state
+- AND there is no flag to override this — use `--no-color` to explicitly disable color on a TTY
 
 ### Requirement: Dynamic Column Ordering
 

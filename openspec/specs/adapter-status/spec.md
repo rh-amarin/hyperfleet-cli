@@ -156,5 +156,5 @@ HTTP 204 is returned by the API for `Unknown` status — the CLI handles this gr
 ## Go Struct Changes
 
 - `resource.ConditionRequest` — added `LastTransitionTime string \`json:"last_transition_time,omitempty"\``
-- `resource.AdapterStatusCreateRequest` — added `CreatedTime`, `LastReportTime` (response-side); `ObservedTime` changed to `omitempty`
+- `resource.AdapterStatusCreateRequest` — added `CreatedTime`, `LastReportTime` (response-side); `ObservedTime` has `omitempty` in the Go struct for response parsing only — it MUST always be included in the request payload (the CLI always sets it to the current ISO8601 UTC timestamp)
 - `internal/api/methods.go decode[T]` — returns zero value of T on HTTP 204 instead of EOF error

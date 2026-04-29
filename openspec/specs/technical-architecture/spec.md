@@ -30,7 +30,7 @@ The CLI SHALL be organized as a single Go module with internal packages followin
   │   ├── kube.go             # hf kube [port-forward|curl|debug]
   │   ├── logs.go             # hf logs [<pattern>|adapter]
   │   ├── repos.go            # hf repos
-  │   └── table.go            # hf table (combined overview)
+  │   └── resources.go        # hf resources (combined overview of clusters and nodepools)
   ├── internal/
   │   ├── api/                # HyperFleet API client
   │   ├── config/             # Configuration management (split YAML model)
@@ -50,7 +50,7 @@ The CLI SHALL be organized as a single Go module with internal packages followin
 
 ### Requirement: Cobra Command Tree
 
-The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command routing, flag parsing, and help generation. The command tree MUST NOT include `config bootstrap`; `hf config env new` supersedes it.
+The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command routing, flag parsing, and help generation.
 
 #### Scenario: Command hierarchy
 
@@ -74,7 +74,7 @@ The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command rout
   ├── nodepool
   │   ├── create    <name> [count] [instance-type]
   │   ├── get       [nodepool_id]
-  │   ├── list      [cluster_id] [--table]
+  │   ├── list      [--table]
   │   ├── search    [name]
   │   ├── patch     {spec|labels} [nodepool_id]
   │   ├── delete    [nodepool_id]
@@ -91,7 +91,7 @@ The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command rout
   │       ├── list
   │       ├── show     <name>
   │       └── activate <name>
-  ├── table
+  ├── resources
   ├── db
   │   ├── query     <sql> | -f <file>
   │   ├── delete    <clusters|nodepools|adapter_statuses|ALL>
@@ -102,8 +102,7 @@ The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command rout
   │   ├── get       [name]
   │   ├── delete    [name]
   │   ├── bundles
-  │   ├── consumers
-  │   └── tui
+  │   └── consumers
   ├── pubsub
   │   ├── list      [filter]
   │   └── publish
@@ -123,6 +122,7 @@ The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command rout
   ├── version
   └── completion     bash|zsh|fish|powershell
   ```
+NOTE: `hf resources` is a standalone command that displays all clusters and their nodepools in a combined table. `--table` is a flag available only on `list` and `conditions` subcommands — it is NOT supported on `hf resources`.
 
 #### Scenario: Global flags
 
@@ -135,6 +135,7 @@ The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command rout
   - `--verbose` / `-v`: enable verbose/debug logging
   - `--api-url <url>`: override API URL for this invocation
   - `--api-token <token>`: override API token for this invocation
+- NOTE: There is no `--force-color` flag. Color is enabled when stdout is a TTY, disabled otherwise. Use `--no-color` to explicitly disable.
 
 ### Requirement: Shared API Client Package (internal/api)
 
@@ -273,20 +274,19 @@ The CLI SHALL bundle Go libraries to replace external tool dependencies, produci
   | gh | go-github | google/go-github/v60 |
   | stern | client-go pod log streaming | k8s.io/client-go |
 
-#### Scenario: Maestro CLI handling
+#### Scenario: Maestro HTTP API
 
-- GIVEN maestro-cli is an external tool with a TUI mode
+- GIVEN maestro-http-endpoint is configured
 - WHEN maestro commands are invoked
 - THEN `hf maestro list`, `hf maestro get`, `hf maestro delete`, `hf maestro bundles`, and `hf maestro consumers` MUST use the Maestro HTTP API directly via `net/http`
-- AND `hf maestro tui` MUST shell out to `maestro-cli` as an optional external dependency
-- AND if `maestro-cli` is not found for TUI mode, the CLI MUST display a clear error with installation instructions
+- AND the CLI MUST NOT require any external `maestro-cli` tool for any maestro command
 
 #### Scenario: Zero external dependencies for core operations
 
 - GIVEN the CLI binary is installed on a clean system
-- WHEN the user runs cluster, nodepool, adapter-status, config, table, or output commands
+- WHEN the user runs cluster, nodepool, adapter-status, config, resources, or output commands
 - THEN the CLI MUST NOT require any external tools to be installed
-- AND only `maestro-cli` (for TUI) and GCP credentials (for Pub/Sub) MAY be required for their respective specialized commands
+- AND only GCP credentials (for Pub/Sub) MAY be required for their respective specialized commands
 
 ### Requirement: Error Handling Strategy
 

@@ -57,6 +57,13 @@ The CLI SHALL search for clusters by name and set the found cluster as the curre
 - WHEN the user runs `hf cluster search` with no arguments
 - THEN the CLI MUST behave identically to `hf cluster get` — fetching and returning the current cluster from state
 
+#### Scenario: Search with no arguments and no cluster in state
+
+- GIVEN no cluster-id is set in state
+- WHEN the user runs `hf cluster search` with no arguments
+- THEN the CLI MUST display `[ERROR] No cluster-id set in state. Run 'hf cluster create' or 'hf cluster search <name>' first.`
+- AND exit with code 1
+
 #### Scenario: Search for existing cluster
 
 - GIVEN clusters exist in the API
@@ -106,6 +113,7 @@ The CLI SHALL retrieve and display full details of a specific cluster.
 - THEN the CLI MUST output the API error response (RFC 7807 format)
 - AND the error MUST contain code `HYPERFLEET-NTF-001`, status 404, title `Resource Not Found`
 - AND the CLI MUST exit with code 0
+- NOTE: Exit code 0 for API errors is intentional to maintain backwards compatibility with the original shell scripts. All API errors exit 0 and output the error JSON. See `errors-and-usage/spec.md` and `technical-architecture/spec.md` Error Handling Strategy.
 
 ### Requirement: Patch Cluster
 
@@ -116,16 +124,22 @@ The CLI SHALL increment a counter field in the cluster's spec or labels section,
 - GIVEN a cluster-id is set in config
 - WHEN the user runs `hf cluster patch spec`
 - THEN the CLI MUST fetch the current cluster
-- AND read the current `spec.counter` value
-- AND send a PATCH to `/api/hyperfleet/v1/clusters/{cluster_id}` with the incremented counter
-- AND display `[INFO] Incrementing spec.counter: <old> -> <new>`
+- AND read the current `spec.counter` value as an integer (if absent, treat as `0`)
+- AND increment it by 1
+- AND send a PATCH to `/api/hyperfleet/v1/clusters/{cluster_id}` with the incremented counter as a string (e.g., `"2"`)
+- AND display `[INFO] Incrementing spec.counter: <old> -> <new>` where `<old>` and `<new>` are integer strings (e.g., `1 -> 2`; first increment displays `0 -> 1`)
 - AND the cluster's generation MUST increment
 
 #### Scenario: Patch labels counter
 
 - GIVEN a cluster-id is set in config
 - WHEN the user runs `hf cluster patch labels`
-- THEN the CLI MUST follow the same pattern as spec but for `labels.counter`
+- THEN the CLI MUST fetch the current cluster
+- AND read the current `labels.counter` value as an integer (if absent, treat as `0`)
+- AND increment it by 1
+- AND send a PATCH to `/api/hyperfleet/v1/clusters/{cluster_id}` with the incremented counter as a string
+- AND display `[INFO] Incrementing labels.counter: <old> -> <new>`
+- AND the cluster's generation MUST increment
 
 #### Scenario: Patch with no arguments
 

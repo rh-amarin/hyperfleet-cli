@@ -132,8 +132,15 @@ The CLI SHALL support named environment profiles that override static configurat
 - GIVEN environment profiles exist in `~/.config/hf/environments/`
 - WHEN the user runs `hf config env list`
 - THEN the CLI MUST list each environment by filename (without `.yaml`)
-- AND show the count of overridden properties
-- AND mark the active environment (from `state.yaml` `active-environment`) with a distinct indicator
+- AND show the count of overridden properties as `(N overrides)`
+- AND mark the active environment (from `state.yaml` `active-environment`) with `✓` at the left margin; inactive environments MUST be prefixed with two spaces
+- AND the output MUST follow this format:
+  ```
+    dev       (3 overrides)
+  ✓ prod      (5 overrides)  ← active
+    local     (2 overrides)
+  ```
+- AND if no environments exist, the CLI MUST print `[INFO] No environments configured. Run 'hf config env new' to create one.` and exit 0
 
 #### Scenario: Activate environment
 
