@@ -50,6 +50,13 @@ The CLI SHALL post adapter status conditions for the current cluster.
 - THEN the CLI MUST output `[ERROR] Invalid status value '<value>'. Must be one of: True, False, Unknown.` to stderr
 - AND exit with code 1 without making any HTTP request
 
+#### Scenario: Output format
+
+- GIVEN `hf cluster adapter post-status` or `hf nodepool adapter post-status` completes
+- WHEN the API responds with HTTP 200 or HTTP 204
+- THEN the CLI MUST output the API response subject to the `--output` flag (default: JSON)
+- AND on HTTP 204 (returned for `Unknown` status), the CLI MUST output an empty JSON object `{}`
+
 ### Requirement: Post NodePool Adapter Status
 
 The CLI SHALL post adapter status conditions for a nodepool.

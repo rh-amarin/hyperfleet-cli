@@ -193,7 +193,6 @@ GCP authentication uses Application Default Credentials. The binary searches for
 
 ### CloudEvent builders
 
-`buildClusterEvent(clusterID, apiURL, apiVersion string) ([]byte, error)` and
-`buildNodePoolEvent(clusterID, nodepoolID, apiURL, apiVersion string) ([]byte, error)` in `cmd/pubsub.go`
-construct the canonical CloudEvent envelopes. Both are used by both `hf pubsub` and
-`hf rabbitmq` commands.
+`BuildClusterEvent(clusterID, apiURL, apiVersion string) ([]byte, error)` and
+`BuildNodePoolEvent(clusterID, nodepoolID, apiURL, apiVersion string) ([]byte, error)` MUST reside in `internal/pubsub/`
+so they can be shared by both `cmd/pubsub.go` and `cmd/rabbitmq.go` without cross-`cmd/` dependencies. Business logic MUST NOT live in `cmd/` per the architecture pattern.

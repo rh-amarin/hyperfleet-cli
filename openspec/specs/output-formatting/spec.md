@@ -103,7 +103,7 @@ The output package SHALL compute column order for condition-based resource table
 
 ### Requirement: Colored JSON Output
 
-The CLI SHALL colorize JSON output when writing to an interactive terminal.
+The CLI SHALL colorize JSON output when writing to an interactive terminal. JSON colorization respects the same `--no-color` flag, `NO_COLOR` environment variable, and non-TTY auto-disable as dot rendering — all three mechanisms suppress JSON colors.
 
 #### Scenario: Color enabled (default)
 

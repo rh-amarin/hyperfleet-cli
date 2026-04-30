@@ -40,6 +40,13 @@ The CLI SHALL execute arbitrary SQL queries against the HyperFleet PostgreSQL da
 - AND output results as a formatted table
 - AND exit with code 1 and an `[ERROR]` message if the file cannot be read
 
+#### Scenario: Query output format
+
+- GIVEN `hf db query` returns rows
+- THEN the default output format MUST be table (rendered with tabwriter, columns in query order)
+- AND `--output json` MUST output rows as a JSON array of objects keyed by column name
+- AND `--output yaml` MUST output the same data as YAML
+
 #### Scenario: Query result rendering
 
 - WHEN the query returns rows
@@ -52,7 +59,7 @@ The CLI SHALL execute arbitrary SQL queries against the HyperFleet PostgreSQL da
 #### Scenario: Query returns no rows
 
 - WHEN the query returns 0 rows
-- THEN the CLI MUST print an info message and exit 0
+- THEN the CLI MUST print `[INFO] No rows returned.` and exit 0
 
 #### Scenario: List database tables
 
@@ -108,3 +115,10 @@ The CLI SHALL display the resolved database connection parameters.
 - THEN the CLI MUST print host, port, name, user as plain values
 - AND mask the password as `<set>` or `<not set>`
 - AND require no database connection to run
+- AND output format is always plain text; `--output` flag does not apply to this command
+
+#### Scenario: Delete output format
+
+- GIVEN `hf db delete` completes
+- THEN the output MUST be plain text (row count lines per table)
+- AND `--output` flag does not apply to this command

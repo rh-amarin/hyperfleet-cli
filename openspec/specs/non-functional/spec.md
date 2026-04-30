@@ -69,17 +69,6 @@ The CLI SHALL support a global `--output` flag for controlling output format on 
   - `json` for list/get views without `--table`: `cluster list`, `nodepool list`, `cluster get`, `nodepool get`, `cluster conditions`, `nodepool conditions`, `cluster statuses`, `nodepool statuses`
   - `text` for config commands, port-forward status, and log output
 
-#### Scenario: Quiet mode for scripting
-
-- GIVEN `-q` or `--quiet` is specified
-- WHEN a command produces output
-- THEN only the essential data MUST be output (no headers, no color, no decorative elements)
-- AND the following per-command-type rules MUST apply:
-  - For `get` and `create` commands: output only the resource ID
-  - For `list` commands: output only resource IDs, one per line
-  - For `search` commands: output only the first matched resource ID
-  - For `conditions` and `statuses` commands: output only the condition type and status value per line (no reason, no message)
-  - For config and log commands: quiet mode is a no-op (output is always minimal)
 
 ### Requirement: Cross-Platform Build and Distribution
 

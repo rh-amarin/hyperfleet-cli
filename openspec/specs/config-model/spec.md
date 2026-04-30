@@ -31,7 +31,7 @@ The CLI SHALL use two YAML files stored in `~/.config/hf/`.
     consumer: "cluster1"
     http-endpoint: "http://localhost:8100"
     grpc-endpoint: "localhost:8090"
-    namespace: "maestro"
+    namespace: "maestro"  # Kubernetes namespace used for maestro pod port-forwarding
 
   port-forward:
     api-port: 8000

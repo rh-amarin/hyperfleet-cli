@@ -189,12 +189,6 @@ The CLI SHALL display cluster conditions in a formatted table via the `--table` 
 - THEN the CLI MUST output a table with columns: TYPE, STATUS, LAST TRANSITION, REASON, MESSAGE
 - AND status values MUST be color-coded: True=green, False=red, Unknown=yellow
 
-#### Scenario: Conditions in quiet mode
-
-- GIVEN `-q` or `--quiet` is specified
-- WHEN the user runs `hf cluster conditions --quiet`
-- THEN the CLI MUST output only condition type and status value, one per line (e.g., `Ready False`)
-- AND MUST NOT include reason, message, or timestamps
 
 ### Requirement: Get Cluster Adapter Statuses
 

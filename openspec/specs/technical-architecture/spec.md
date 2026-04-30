@@ -23,8 +23,8 @@ The CLI SHALL be organized as a single Go module with internal packages followin
   │   ├── nodepool.go         # hf nodepool [create|get|list|search|patch|delete|conditions|statuses|id]
   │   ├── adapter.go          # hf cluster adapter post-status, hf nodepool adapter post-status
   │   ├── config.go           # hf config [show|set|env]
-  │   ├── db.go               # hf db [query|delete|statuses|config]
-  │   ├── maestro.go          # hf maestro [list|get|delete|bundles|consumers|tui]
+  │   ├── db.go               # hf db [query|delete|config]
+  │   ├── maestro.go          # hf maestro [list|get|delete|bundles|consumers]
   │   ├── pubsub.go           # hf pubsub [list|publish]
   │   ├── rabbitmq.go         # hf rabbitmq [publish]
   │   ├── kube.go             # hf kube [port-forward|curl|debug]
@@ -37,7 +37,7 @@ The CLI SHALL be organized as a single Go module with internal packages followin
   │   ├── output/             # Output formatting (JSON, table, YAML, colored dots)
   │   ├── resource/           # Shared resource types and data structures
   │   ├── kube/               # Kubernetes operations (client-go wrapper)
-  │   ├── maestro/            # Maestro client (HTTP API + maestro-cli fallback)
+  │   ├── maestro/            # Maestro HTTP API client
   │   ├── pubsub/             # Pub/Sub and RabbitMQ event publishing
   │   ├── db/                 # PostgreSQL database operations
   │   └── version/            # Build version info
@@ -95,7 +95,6 @@ The CLI SHALL use [spf13/cobra](https://github.com/spf13/cobra) for command rout
   ├── db
   │   ├── query     <sql> | -f <file>
   │   ├── delete    <clusters|nodepools|adapter_statuses|ALL>
-  │   ├── statuses
   │   └── config
   ├── maestro
   │   ├── list

@@ -120,7 +120,7 @@ The resource package SHALL define a request type for posting adapter statuses, m
 - WHEN the request is constructed
 - THEN it MUST include required fields: `Adapter` (string), `ObservedGeneration` (int32), `ObservedTime` (string), `Conditions` ([]ConditionRequest)
 - AND optional fields: `Metadata` (AdapterStatusMetadata), `Data` (map[string]any)
-- AND `ConditionRequest` MUST include required fields: `Type` (string), `Status` (string)
+- AND `ConditionRequest` MUST include required fields: `Type` (string), `Status` (string), `LastTransitionTime` (string)
 - AND `ConditionRequest` optional fields: `Reason` (string), `Message` (string)
 
 ### Requirement: CloudEvent Type

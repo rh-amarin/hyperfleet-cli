@@ -76,7 +76,7 @@ Commands that require arguments SHALL show usage when arguments are missing.
 
 - GIVEN no arguments are provided
 - WHEN the user runs `hf cluster patch`
-- THEN the CLI MUST display: `Usage: hf cluster patch spec|labels [cluster_id]`
+- THEN the CLI MUST display: `Usage: hf cluster patch {spec|labels} [cluster_id]`
 - AND list argument descriptions
 - AND exit with code 1
 
@@ -110,13 +110,3 @@ The CLI SHALL follow consistent exit code conventions.
 - THEN the exit code MUST be 0 (current behavior does not check HTTP status)
 - AND the error response MUST be output as-is
 
-### Requirement: Known Platform Issues
-
-The CLI SHOULD document and handle known platform-specific issues.
-
-#### Scenario: macOS awk compatibility
-
-- GIVEN the CLI is running on macOS
-- WHEN `hf table` uses `asorti()` (GNU awk extension)
-- THEN the CLI MAY produce a stderr message `awk: calling undefined function asorti`
-- AND the CLI SHOULD still produce output despite the error
