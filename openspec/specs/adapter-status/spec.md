@@ -20,7 +20,6 @@ The CLI SHALL post adapter status conditions for the current cluster.
   - `conditions`: an array of 3 conditions with types `Available`, `Applied`, `Health`, all with status `True`
   - `observed_generation`: the provided generation
   - `observed_time`: current ISO8601 timestamp
-  - `last_transition_time` per condition: current ISO8601 timestamp
 - AND each condition MUST have `reason: "ManualStatusPost"` and `message: "Status posted via hf adapter post-status"`
 
 #### Scenario: Post status with False
@@ -149,9 +148,9 @@ Note: the POST path is `/statuses` (not `/adapter-statuses`). The GET path for r
   "observed_generation": <generation>,
   "observed_time": "<ISO8601 UTC>",
   "conditions": [
-    {"type": "Available", "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status", "last_transition_time": "<ISO8601 UTC>"},
-    {"type": "Applied",   "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status", "last_transition_time": "<ISO8601 UTC>"},
-    {"type": "Health",    "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status", "last_transition_time": "<ISO8601 UTC>"}
+    {"type": "Available", "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status"},
+    {"type": "Applied",   "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status"},
+    {"type": "Health",    "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status"}
   ]
 }
 ```
@@ -162,6 +161,6 @@ HTTP 204 is returned by the API for `Unknown` status — the CLI handles this gr
 
 ## Go Struct Changes
 
-- `resource.ConditionRequest` — added `LastTransitionTime string \`json:"last_transition_time,omitempty"\``
+- `resource.ConditionRequest` — fields are `Type`, `Status`, `Reason` (omitempty), `Message` (omitempty) per the OpenAPI `ConditionRequest` schema; `last_transition_time` is NOT a field on this struct
 - `resource.AdapterStatusCreateRequest` — added `CreatedTime`, `LastReportTime` (response-side); `ObservedTime` has `omitempty` in the Go struct for response parsing only — it MUST always be included in the request payload (the CLI always sets it to the current ISO8601 UTC timestamp)
 - `internal/api/methods.go decode[T]` — returns zero value of T on HTTP 204 instead of EOF error

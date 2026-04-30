@@ -39,6 +39,7 @@ The CLI SHALL use two YAML files stored in `~/.config/hf/`.
     maestro-http-port: 8100
     maestro-http-remote-port: 8000
     maestro-grpc-port: 8090
+    maestro-grpc-remote-port: 8090
 
   database:
     host: "localhost"

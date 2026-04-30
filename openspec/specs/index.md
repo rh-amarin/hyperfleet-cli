@@ -23,8 +23,7 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 | 09 | [Kubernetes](kubernetes/spec.md) | Port-forwarding, debugging, log tailing | 6 | 8 | hf.kube.{port.forward,context,curl,debug.pod}.sh, hf.logs.{sh,adapter}.sh |
 | 10 | [Repos](repos/spec.md) | GitHub repository status overview | 1 | 2 | hf.repos.sh |
 | 11 | [Errors & Usage](errors-and-usage/spec.md) | Error handling, usage messages, edge cases | 7 | 11 | Cross-cutting across all commands |
-| 12 | [Interactive Commands](interactive-commands/spec.md) | Interactive, streaming, and long-running commands | 7 | 14 | watch/interactive modes |
-| 13 | [Config Registry](config-registry/spec.md) | Configuration property registry and storage model | 6 | 15 | hf.lib.sh (shared library) |
+| 12 | [Config Registry](config-registry/spec.md) | Configuration property registry and storage model | 6 | 15 | hf.lib.sh (shared library) |
 
 ### Technical & Non-Functional Requirements
 
@@ -38,9 +37,9 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 
 | Category | Requirements | Scenarios |
 |----------|-------------|-----------|
-| Functional (01–13) | 74 | 138 |
+| Functional (01–12) | 67 | 124 |
 | Technical & NFR (T1–T3) | 27 | 68 |
-| **Total** | **101** | **206** |
+| **Total** | **94** | **192** |
 
 ## Technology Decisions
 

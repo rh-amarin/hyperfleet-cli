@@ -29,7 +29,7 @@ The CLI SHALL create one or more nodepools in the current cluster with configura
 - GIVEN a cluster-id is set in config and the API is reachable
 - WHEN the user runs `hf nodepool create <name> [count] [instance-type]`
 - THEN the CLI MUST create `count` nodepools by sending POST requests to `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools`
-- AND each nodepool MUST be named `<name>-N` where N is a sequential number (1, 2, ...)
+- AND each nodepool MUST be named `<name>-N` where N starts at 1 and increments for each additional nodepool (e.g., `my-nodepool-1`, `my-nodepool-2`, `my-nodepool-3` for count=3)
 - AND each request payload MUST include:
   - `name`: `<name>-N`
   - `labels`: `{"counter": "N"}`

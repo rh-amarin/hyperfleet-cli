@@ -60,6 +60,30 @@ The resource package SHALL define a NodePool struct matching the `NodePool` sche
 - THEN the `Spec` map MUST preserve all nested fields including `platform.type`
 - AND the `Labels` map MUST preserve all string key-value pairs
 
+### Requirement: ClusterStatus Type
+
+The resource package SHALL define a ClusterStatus struct matching the `ClusterStatus` schema in the OpenAPI spec.
+
+#### Scenario: ClusterStatus struct fields
+
+- GIVEN the `ClusterStatus` schema at `openshift-hyperfleet/hyperfleet-api-spec`
+- WHEN ClusterStatus is defined
+- THEN it MUST include: `Conditions` ([]ResourceCondition, required, minimum 2)
+- AND the mandatory condition types MUST be: `Reconciled` (replaces deprecated `Ready`) and `Available`
+- AND this object is server-computed and MUST NOT be modified directly by the CLI
+
+### Requirement: NodePoolStatus Type
+
+The resource package SHALL define a NodePoolStatus struct matching the `NodePoolStatus` schema in the OpenAPI spec.
+
+#### Scenario: NodePoolStatus struct fields
+
+- GIVEN the `NodePoolStatus` schema at `openshift-hyperfleet/hyperfleet-api-spec`
+- WHEN NodePoolStatus is defined
+- THEN it MUST include: `Conditions` ([]ResourceCondition, required, minimum 2)
+- AND the mandatory condition types MUST be: `Reconciled` (replaces deprecated `Ready`) and `Available`
+- AND this object is server-computed and MUST NOT be modified directly by the CLI
+
 ### Requirement: ResourceCondition Type
 
 The resource package SHALL define a ResourceCondition struct for cluster/nodepool status conditions, matching the `ResourceCondition` schema.
@@ -120,8 +144,9 @@ The resource package SHALL define a request type for posting adapter statuses, m
 - WHEN the request is constructed
 - THEN it MUST include required fields: `Adapter` (string), `ObservedGeneration` (int32), `ObservedTime` (string), `Conditions` ([]ConditionRequest)
 - AND optional fields: `Metadata` (AdapterStatusMetadata), `Data` (map[string]any)
-- AND `ConditionRequest` MUST include required fields: `Type` (string), `Status` (string), `LastTransitionTime` (string)
+- AND `ConditionRequest` MUST include required fields: `Type` (string), `Status` (string)
 - AND `ConditionRequest` optional fields: `Reason` (string), `Message` (string)
+- NOTE: `last_transition_time` is NOT part of `ConditionRequest` per the OpenAPI schema — it is absent from the request payload entirely
 
 ### Requirement: CloudEvent Type
 

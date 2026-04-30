@@ -122,6 +122,8 @@ AND exit with code 1
 
 `hf cluster id` and `hf nodepool id` display the currently active resource IDs from state.
 
+NOTE on severity: `hf cluster id` and `hf nodepool id` use `[WARN]` + exit 0 when no ID is set because they are purely informational — the absence of a stored ID is not an error condition for these commands. All other commands that *require* a cluster-id or nodepool-id to function use `[ERROR]` + exit 1.
+
 #### Scenario: Display cluster ID
 
 GIVEN a cluster-id is set in state.yaml
