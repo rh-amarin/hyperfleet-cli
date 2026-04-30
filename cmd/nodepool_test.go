@@ -22,7 +22,7 @@ func nodepoolJSON(id, name string, generation int32, deletedTime string) []byte 
 		Generation:  generation,
 		Labels:      map[string]string{"counter": "1"},
 		Spec:        map[string]any{"counter": "1", "platform": map[string]any{"type": "m4"}, "replicas": float64(1)},
-		Status:      resource.NodePoolStatus{Conditions: []resource.ResourceCondition{{Type: "Ready", Status: "False", Reason: "MissingRequiredAdapters"}, {Type: "Available", Status: "False", Reason: "AdaptersNotAtSameGeneration"}}},
+		Status:      resource.NodePoolStatus{Conditions: []resource.ResourceCondition{{Type: "Reconciled", Status: "False", Reason: "MissingRequiredAdapters"}, {Type: "Available", Status: "False", Reason: "AdaptersNotAtSameGeneration"}}},
 		DeletedTime: deletedTime,
 		OwnerReferences: resource.ObjectReference{ID: "c-001", Kind: "Cluster", Href: "/api/hyperfleet/v1/clusters/c-001"},
 	}
@@ -402,7 +402,7 @@ func TestNodePoolConditions_OutputsGenerationAndConditions(t *testing.T) {
 	np := resource.NodePool{
 		ID: "np-001", Generation: 4,
 		Status: resource.NodePoolStatus{Conditions: []resource.ResourceCondition{
-			{Type: "Ready", Status: "False", Reason: "MissingRequiredAdapters"},
+			{Type: "Reconciled", Status: "False", Reason: "MissingRequiredAdapters"},
 		}},
 	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -431,7 +431,7 @@ func TestNodePoolConditionsTable_RendersRows(t *testing.T) {
 	np := resource.NodePool{
 		ID: "np-001", Generation: 1,
 		Status: resource.NodePoolStatus{Conditions: []resource.ResourceCondition{
-			{Type: "Ready", Status: "False", Reason: "MissingRequiredAdapters", LastTransitionTime: "2026-04-25T00:00:00Z"},
+			{Type: "Reconciled", Status: "False", Reason: "MissingRequiredAdapters", LastTransitionTime: "2026-04-25T00:00:00Z"},
 			{Type: "Available", Status: "True", Reason: "AllGood", LastTransitionTime: "2026-04-25T00:00:00Z"},
 		}},
 	}
@@ -448,7 +448,7 @@ func TestNodePoolConditionsTable_RendersRows(t *testing.T) {
 	if !strings.Contains(stdout, "TYPE") || !strings.Contains(stdout, "STATUS") {
 		t.Errorf("expected table headers, got:\n%s", stdout)
 	}
-	if !strings.Contains(stdout, "Ready") || !strings.Contains(stdout, "Available") {
+	if !strings.Contains(stdout, "Reconciled") || !strings.Contains(stdout, "Available") {
 		t.Errorf("expected condition rows, got:\n%s", stdout)
 	}
 }
@@ -509,7 +509,7 @@ func TestNodePoolTable_RendersWithDynamicColumns(t *testing.T) {
 			Spec: map[string]any{"platform": map[string]any{"type": "m4"}, "replicas": float64(1)},
 			Status: resource.NodePoolStatus{Conditions: []resource.ResourceCondition{
 				{Type: "Available", Status: "True"},
-				{Type: "Ready", Status: "True"},
+				{Type: "Reconciled", Status: "True"},
 			}},
 		},
 		{
@@ -517,7 +517,7 @@ func TestNodePoolTable_RendersWithDynamicColumns(t *testing.T) {
 			Spec: map[string]any{"platform": map[string]any{"type": "m4"}, "replicas": float64(1)},
 			Status: resource.NodePoolStatus{Conditions: []resource.ResourceCondition{
 				{Type: "Available", Status: "False"},
-				{Type: "Ready", Status: "False"},
+				{Type: "Reconciled", Status: "False"},
 			}},
 		},
 	}
@@ -532,16 +532,16 @@ func TestNodePoolTable_RendersWithDynamicColumns(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// Headers (PrintTable uppercases all headers)
-	for _, h := range []string{"ID", "NAME", "REPLICAS", "TYPE", "GEN", "AVAILABLE", "READY"} {
+	for _, h := range []string{"ID", "NAME", "REPLICAS", "TYPE", "GEN", "AVAILABLE", "RECONCILED"} {
 		if !strings.Contains(stdout, h) {
 			t.Errorf("expected header %q in output, got:\n%s", h, stdout)
 		}
 	}
 	// Available comes before Ready in dynamic columns
 	availIdx := strings.Index(stdout, "AVAILABLE")
-	readyIdx := strings.Index(stdout, "READY")
-	if availIdx == -1 || readyIdx == -1 || availIdx >= readyIdx {
-		t.Errorf("expected Available before Ready in headers, got:\n%s", stdout)
+	reconciledIdx := strings.Index(stdout, "RECONCILED")
+	if availIdx == -1 || reconciledIdx == -1 || availIdx >= reconciledIdx {
+		t.Errorf("expected Available before Reconciled in headers, got:\n%s", stdout)
 	}
 	// Row data
 	if !strings.Contains(stdout, "workers-1") || !strings.Contains(stdout, "workers-2") {

@@ -18,14 +18,14 @@ func TestClusterTable_RendersWithDynamicColumns(t *testing.T) {
 			ID: "c-001", Name: "prod", Generation: 3,
 			Status: resource.ClusterStatus{Conditions: []resource.ResourceCondition{
 				{Type: "Available", Status: "True"},
-				{Type: "Ready", Status: "True"},
+				{Type: "Reconciled", Status: "True"},
 			}},
 		},
 		{
 			ID: "c-002", Name: "staging", Generation: 1,
 			Status: resource.ClusterStatus{Conditions: []resource.ResourceCondition{
 				{Type: "Available", Status: "False"},
-				{Type: "Ready", Status: "False"},
+				{Type: "Reconciled", Status: "False"},
 			}},
 		},
 	}
@@ -41,7 +41,7 @@ func TestClusterTable_RendersWithDynamicColumns(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	for _, h := range []string{"NAME", "GEN", "AVAILABLE", "READY"} {
+	for _, h := range []string{"NAME", "GEN", "AVAILABLE", "RECONCILED"} {
 		if !strings.Contains(stdout, h) {
 			t.Errorf("expected header %q, got:\n%s", h, stdout)
 		}
@@ -49,8 +49,8 @@ func TestClusterTable_RendersWithDynamicColumns(t *testing.T) {
 
 	// Available must appear before Ready
 	availIdx := strings.Index(stdout, "AVAILABLE")
-	readyIdx := strings.Index(stdout, "READY")
-	if availIdx == -1 || readyIdx == -1 || availIdx >= readyIdx {
+	reconciledIdx := strings.Index(stdout, "RECONCILED")
+	if availIdx == -1 || reconciledIdx == -1 || availIdx >= reconciledIdx {
 		t.Errorf("expected AVAILABLE before READY, got:\n%s", stdout)
 	}
 
@@ -80,7 +80,7 @@ func TestTable_RendersClusterAndNodePoolRows(t *testing.T) {
 		ID: "c-001", Name: "prod", Generation: 2,
 		Status: resource.ClusterStatus{Conditions: []resource.ResourceCondition{
 			{Type: "Available", Status: "True"},
-			{Type: "Ready", Status: "True"},
+			{Type: "Reconciled", Status: "True"},
 		}},
 	}
 	nps := []resource.NodePool{
@@ -88,14 +88,14 @@ func TestTable_RendersClusterAndNodePoolRows(t *testing.T) {
 			ID: "np-001", Name: "workers-1", Generation: 1,
 			Status: resource.NodePoolStatus{Conditions: []resource.ResourceCondition{
 				{Type: "Available", Status: "False"},
-				{Type: "Ready", Status: "False"},
+				{Type: "Reconciled", Status: "False"},
 			}},
 		},
 		{
 			ID: "np-002", Name: "workers-2", Generation: 1,
 			Status: resource.NodePoolStatus{Conditions: []resource.ResourceCondition{
 				{Type: "Available", Status: "True"},
-				{Type: "Ready", Status: "True"},
+				{Type: "Reconciled", Status: "True"},
 			}},
 		},
 	}
@@ -137,8 +137,8 @@ func TestTable_RendersClusterAndNodePoolRows(t *testing.T) {
 
 	// Available before Ready
 	availIdx := strings.Index(stdout, "AVAILABLE")
-	readyIdx := strings.Index(stdout, "READY")
-	if availIdx == -1 || readyIdx == -1 || availIdx >= readyIdx {
+	reconciledIdx := strings.Index(stdout, "RECONCILED")
+	if availIdx == -1 || reconciledIdx == -1 || availIdx >= reconciledIdx {
 		t.Errorf("expected AVAILABLE before READY, got:\n%s", stdout)
 	}
 }
@@ -148,7 +148,7 @@ func TestTable_EmptyCluster_NoNodePoolRows(t *testing.T) {
 		ID: "c-001", Name: "empty-cluster", Generation: 1,
 		Status: resource.ClusterStatus{Conditions: []resource.ResourceCondition{
 			{Type: "Available", Status: "False"},
-			{Type: "Ready", Status: "False"},
+			{Type: "Reconciled", Status: "False"},
 		}},
 	}
 
@@ -182,7 +182,7 @@ func TestTable_AdapterConditionsAlphabetical(t *testing.T) {
 			{Type: "Zebra", Status: "True"},
 			{Type: "Available", Status: "True"},
 			{Type: "Alpha", Status: "True"},
-			{Type: "Ready", Status: "True"},
+			{Type: "Reconciled", Status: "True"},
 		}},
 	}
 
@@ -206,12 +206,12 @@ func TestTable_AdapterConditionsAlphabetical(t *testing.T) {
 	availIdx := strings.Index(header, "AVAILABLE")
 	alphaIdx := strings.Index(header, "ALPHA")
 	zebraIdx := strings.Index(header, "ZEBRA")
-	readyIdx := strings.Index(header, "READY")
+	reconciledIdx := strings.Index(header, "RECONCILED")
 
-	if availIdx == -1 || alphaIdx == -1 || zebraIdx == -1 || readyIdx == -1 {
+	if availIdx == -1 || alphaIdx == -1 || zebraIdx == -1 || reconciledIdx == -1 {
 		t.Fatalf("missing column in header: %s", header)
 	}
-	if !(availIdx < alphaIdx && alphaIdx < zebraIdx && zebraIdx < readyIdx) {
+	if !(availIdx < alphaIdx && alphaIdx < zebraIdx && zebraIdx < reconciledIdx) {
 		t.Errorf("wrong column order in header: %s", header)
 	}
 }

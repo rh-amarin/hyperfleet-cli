@@ -71,6 +71,13 @@ PID files stored at `~/.config/hf/pf-<name>.pid` — format: `<pid>\n<localPort>
   - For alive port forwards: `  ● <name> - localhost:<port> (PID: <pid>)` with a green bullet (●)
   - For dead or stale port forwards: `  ● <name> - localhost:<port> (PID: <pid>) [DEAD]` with a red bullet (●)
 
+#### Scenario: Pod not running
+
+- GIVEN the target service pod exists but is not in Running phase (e.g., Pending or CrashLoopBackOff)
+- WHEN the user runs `hf kube port-forward start [service]`
+- THEN the CLI MUST display `[WARN] <service>: pod not ready (phase: <phase>). Port-forward may not succeed.`
+- AND attempt the port-forward anyway
+
 #### Scenario: Port number validation
 
 - GIVEN a custom `<localPort:remotePort>` argument is provided

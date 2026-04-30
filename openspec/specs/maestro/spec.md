@@ -60,6 +60,13 @@ The CLI SHALL retrieve a specific maestro resource by name via the HTTP API.
 - THEN the CLI MUST send GET to `/api/maestro/v1/resource-bundles` and filter by name
 - AND output the matching resource bundle subject to the `--output` flag (default: JSON)
 
+#### Scenario: Get — name not found
+
+- GIVEN no resource bundle matches the provided name
+- WHEN the user runs `hf maestro get <name>`
+- THEN the CLI MUST display `[WARN] No resource bundle found matching '<name>'`
+- AND exit with code 0
+
 #### Scenario: Get with interactive selection
 
 - GIVEN no name argument is provided

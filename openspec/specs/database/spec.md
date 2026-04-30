@@ -74,6 +74,13 @@ The CLI SHALL delete all records from a specified table, or from all tables, wit
 The `<target>` argument is required and MUST be one of: `clusters`, `nodepools`, `adapter_statuses`, or `ALL`.
 The argument values MUST be offered as shell completions.
 
+#### Scenario: Unknown delete target
+
+- GIVEN the user provides an unrecognized target name
+- WHEN the user runs `hf db delete <unknown>`
+- THEN the CLI MUST display `[ERROR] Unknown target '<unknown>'. Valid targets are: clusters, nodepools, adapter_statuses, ALL.`
+- AND exit with code 1
+
 #### Scenario: Delete all records from a single table
 
 - GIVEN database connection is configured

@@ -25,7 +25,7 @@ The CLI SHALL be organized as a single Go module with internal packages followin
   │   ├── config.go           # hf config [show|set|env]
   │   ├── db.go               # hf db [query|delete|config]
   │   ├── maestro.go          # hf maestro [list|get|delete|bundles|consumers]
-  │   ├── pubsub.go           # hf pubsub [list|publish]
+  │   ├── pubsub.go           # hf pubsub [list|publish cluster|publish nodepool]
   │   ├── rabbitmq.go         # hf rabbitmq [publish]
   │   ├── kube.go             # hf kube [port-forward|curl|debug]
   │   ├── logs.go             # hf logs [<pattern>|adapter]
@@ -183,7 +183,7 @@ The CLI SHALL provide a shared output formatting package supporting multiple for
 - WHEN conditions vary across resources
 - THEN the table renderer MUST:
   - Collect all unique condition types across all items
-  - Order columns: fixed columns first, then `Available`, then alphabetical adapter conditions, then `Ready` last
+  - Order columns: fixed columns first, then `Available`, then alphabetical adapter conditions, then `Reconciled` last
   - Render status values as colored dots: green `●`=True, red `●`=False, yellow `●`=Unknown, `-`=absent
   - Respect `--no-color` flag and `NO_COLOR` environment variable to disable ANSI colors
   - In no-color mode, render status as plain text: `True`, `False`, `Unknown`, `-`

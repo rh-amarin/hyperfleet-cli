@@ -44,7 +44,7 @@ The CLI SHALL create a new HyperFleet cluster with configurable name, region, an
 - GIVEN a cluster was just created
 - WHEN the API responds with the created cluster
 - THEN the cluster MUST have initial conditions:
-  - `Ready: False` with reason `MissingRequiredAdapters`
+  - `Reconciled: False` with reason `MissingRequiredAdapters`
   - `Available: False` with reason `AdaptersNotAtSameGeneration`
 
 ### Requirement: Search Cluster

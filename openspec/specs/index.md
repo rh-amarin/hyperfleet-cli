@@ -12,34 +12,35 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 
 | # | Domain | Spec | Req | Scenarios | Scripts Covered |
 |---|--------|------|-----|-----------|-----------------|
-| 01 | [Configuration](config/spec.md) | Config management, env profiles, diagnostics | 8 | 13 | hf.config.sh, hf.cluster.id.sh, hf.nodepool.id.sh |
+| 01 | [Configuration](config/spec.md) | Config management, env profiles, diagnostics | 6 | 17 | hf.config.sh, hf.cluster.id.sh, hf.nodepool.id.sh |
 | 02 | [Cluster Lifecycle](cluster-lifecycle/spec.md) | Cluster CRUD operations | 8 | 21 | hf.cluster.{create,search,get,patch,delete,conditions,conditions.table,statuses}.sh |
-| 03 | [NodePool Lifecycle](nodepool-lifecycle/spec.md) | NodePool CRUD operations | 10 | 18 | hf.nodepool.{create,list,search,get,patch,delete,conditions,conditions.table,statuses,table}.sh |
-| 04 | [Adapter Status](adapter-status/spec.md) | Adapter status posting and convergence model | 3 | 9 | hf.cluster.adapter.post.status.sh, hf.nodepool.adapter.post.status.sh |
-| 05 | [Tables and Lists](tables-and-lists/spec.md) | Aggregated views and formatted tables | 4 | 7 | hf.cluster.{list,table}.sh, hf.nodepool.table.sh, hf.resources.sh |
-| 06 | [Database](database/spec.md) | Direct PostgreSQL operations | 4 | 7 | hf.db.{query,delete,delete.all,config}.sh |
-| 07 | [Maestro](maestro/spec.md) | Maestro resource management via HTTP API | 5 | 7 | hf.maestro.{list,bundles,consumers,get,delete}.sh |
-| 08 | [Pub/Sub & Messaging](pubsub/spec.md) | Event publishing to GCP Pub/Sub and RabbitMQ | 4 | 5 | hf.pubsub.{list,publish.*}.sh, hf.rabbitmq.publish.*.sh |
-| 09 | [Kubernetes](kubernetes/spec.md) | Port-forwarding, debugging, log tailing | 6 | 8 | hf.kube.{port.forward,context,curl,debug.pod}.sh, hf.logs.{sh,adapter}.sh |
-| 10 | [Repos](repos/spec.md) | GitHub repository status overview | 1 | 2 | hf.repos.sh |
-| 11 | [Errors & Usage](errors-and-usage/spec.md) | Error handling, usage messages, edge cases | 7 | 11 | Cross-cutting across all commands |
-| 12 | [Config Registry](config-registry/spec.md) | Configuration property registry and storage model | 6 | 15 | hf.lib.sh (shared library) |
+| 03 | [NodePool Lifecycle](nodepool-lifecycle/spec.md) | NodePool CRUD operations | 10 | 23 | hf.nodepool.{create,list,search,get,patch,delete,conditions,conditions.table,statuses,table}.sh |
+| 04 | [Adapter Status](adapter-status/spec.md) | Adapter status posting and convergence model | 3 | 11 | hf.cluster.adapter.post.status.sh, hf.nodepool.adapter.post.status.sh |
+| 05 | [Tables and Lists](tables-and-lists/spec.md) | Aggregated views and formatted tables | 4 | 6 | hf.cluster.{list,table}.sh, hf.nodepool.table.sh, hf.resources.sh |
+| 06 | [Database](database/spec.md) | Direct PostgreSQL operations | 3 | 12 | hf.db.{query,delete,delete.all,config}.sh |
+| 07 | [Maestro](maestro/spec.md) | Maestro resource management via HTTP API | 5 | 8 | hf.maestro.{list,bundles,consumers,get,delete}.sh |
+| 08 | [Pub/Sub & Messaging](pubsub/spec.md) | Event publishing to GCP Pub/Sub and RabbitMQ | 5 | 10 | hf.pubsub.{list,publish.*}.sh, hf.rabbitmq.publish.*.sh |
+| 09 | [Kubernetes](kubernetes/spec.md) | Port-forwarding, debugging, log tailing | 5 | 10 | hf.kube.{port.forward,context,curl,debug.pod}.sh, hf.logs.{sh,adapter}.sh |
+| 10 | [Repos](repos/spec.md) | GitHub repository status overview | 1 | 3 | hf.repos.sh |
+| 11 | [Errors & Usage](errors-and-usage/spec.md) | Error handling, usage messages, edge cases | 6 | 11 | Cross-cutting across all commands |
+| 12 | [Config Registry](config-registry/spec.md) | Configuration property registry and storage model | 2 | 4 | hf.lib.sh (shared library) |
 
 ### Technical & Non-Functional Requirements
 
 | # | Domain | Spec | Req | Scenarios |
 |---|--------|------|-----|-----------|
 | T1 | [Technical Architecture](technical-architecture/spec.md) | Go module structure, Cobra command tree, shared packages, dependency bundling | 10 | 19 |
-| T2 | [Configuration Model](config-model/spec.md) | Split YAML config (config.yaml + state.yaml), environment profiles, migration | 9 | 18 |
-| T3 | [Non-Functional](non-functional/spec.md) | Shell completions, output format flag, cross-compilation, testing, security | 8 | 31 |
+| T2 | [Configuration Model](config-model/spec.md) | Split YAML config (config.yaml + state.yaml), environment profiles, migration | 7 | 16 |
+| T3 | [Non-Functional](non-functional/spec.md) | Shell completions, output format flag, cross-compilation, testing, security | 9 | 26 |
+| T4 | [Output Formatting](output-formatting/spec.md) | Multi-format output dispatch, colored dot rendering, dynamic column ordering, JSON colorization | 5 | 18 |
 
 ### Summary
 
 | Category | Requirements | Scenarios |
 |----------|-------------|-----------|
-| Functional (01–12) | 67 | 124 |
-| Technical & NFR (T1–T3) | 27 | 68 |
-| **Total** | **94** | **192** |
+| Functional (01–12) | 58 | 136 |
+| Technical & NFR (T1–T4) | 31 | 79 |
+| **Total** | **89** | **215** |
 
 ## Technology Decisions
 
@@ -76,7 +77,7 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 2. **Shared internal functions**: Commands reuse `internal/` packages (e.g., `api.FindClusterByName`, `config.SetClusterID`) rather than invoking each other as subprocesses
 3. **Defaults over usage**: Create commands with no args use defaults, not usage display
 4. **Generation tracking**: Resources track generation; adapters report observed_generation
-5. **Convergence logic**: Ready becomes True when ALL required adapters report Available=True at current generation
+5. **Convergence logic**: Reconciled becomes True when ALL required adapters report Available=True at current generation
 6. **Multi-format output**: `--output json|table|yaml` on every data-producing command
 7. **Zero external deps for core**: Only GCP credentials needed for Pub/Sub commands; all other commands are fully self-contained
 9. **RFC 7807 errors**: API errors follow Problem Details format

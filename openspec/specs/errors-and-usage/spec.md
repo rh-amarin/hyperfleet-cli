@@ -80,6 +80,15 @@ Commands that require arguments SHALL show usage when arguments are missing.
 - AND list argument descriptions
 - AND exit with code 1
 
+#### Scenario: NodePool patch with no arguments
+
+- GIVEN no arguments are provided
+- WHEN the user runs `hf nodepool patch`
+- THEN the CLI MUST display: `Usage: hf nodepool patch {spec|labels} [nodepool_id]`
+- AND list argument descriptions
+- AND exit with code 1
+- NOTE: `spec` patches the `spec.counter` field (a counter integer stored as a string); the patch payload is valid JSON containing at least a `counter` property. No spec file is required.
+
 #### Scenario: Adapter post-status with no arguments
 
 - GIVEN no arguments are provided

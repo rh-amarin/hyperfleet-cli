@@ -151,6 +151,13 @@ The CLI SHALL support named environment profiles that override static configurat
 - AND subsequent config reads MUST merge the environment overrides on top of the base config
 - AND the CLI MUST NOT modify `config.yaml` — overrides are applied at runtime
 
+#### Scenario: Activate non-existent environment
+
+- GIVEN no environment named `<name>` exists at `~/.config/hf/environments/<name>.yaml`
+- WHEN the user runs `hf config env activate <name>`
+- THEN the CLI MUST print `[ERROR] environment '<name>' not found`
+- AND exit with code 1
+
 ### Requirement: Environment Variable Overrides
 
 The CLI SHALL support environment variable overrides for key configuration properties.

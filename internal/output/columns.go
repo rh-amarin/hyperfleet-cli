@@ -8,7 +8,7 @@ type Condition struct {
 }
 
 // DynamicColumns computes the ordered list of condition-type column names from a set of
-// per-resource condition lists. Ordering: Available first, alphabetical middle, Ready last.
+// per-resource condition lists. Ordering: Available first, alphabetical middle, Reconciled last.
 func DynamicColumns(conditions [][]Condition) []string {
 	seen := make(map[string]struct{})
 	for _, perResource := range conditions {
@@ -21,15 +21,15 @@ func DynamicColumns(conditions [][]Condition) []string {
 	}
 
 	hasAvailable := false
-	hasReady := false
+	hasReconciled := false
 	var middle []string
 
 	for t := range seen {
 		switch t {
 		case "Available":
 			hasAvailable = true
-		case "Ready":
-			hasReady = true
+		case "Reconciled":
+			hasReconciled = true
 		default:
 			middle = append(middle, t)
 		}
@@ -41,8 +41,8 @@ func DynamicColumns(conditions [][]Condition) []string {
 		result = append(result, "Available")
 	}
 	result = append(result, middle...)
-	if hasReady {
-		result = append(result, "Ready")
+	if hasReconciled {
+		result = append(result, "Reconciled")
 	}
 	return result
 }

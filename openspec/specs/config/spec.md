@@ -33,7 +33,7 @@ AND the active environment is NOT changed
 
 GIVEN no active environment is configured
 WHEN the user runs `hf config show`
-THEN the command exits non-zero
+THEN the command exits with code 1
 AND prints:
 ```
 error: no active environment

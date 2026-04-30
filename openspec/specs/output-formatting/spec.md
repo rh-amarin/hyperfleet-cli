@@ -31,6 +31,7 @@ The output package SHALL dispatch rendering based on the `--output` flag value.
 - GIVEN `--output yaml` is set
 - WHEN a command calls `Printer.Print(v)` with any Go value
 - THEN the output MUST be rendered as YAML
+- AND struct field names MUST be serialized as `snake_case` keys matching the API field names (e.g., `created_time`, `observed_generation`) — the same JSON tags are reused for YAML via `gopkg.in/yaml.v3`
 
 ### Requirement: Colored Dot Rendering
 
@@ -86,7 +87,7 @@ The output package SHALL compute column order for condition-based resource table
   1. Fixed columns first (e.g., ID, NAME, GEN — provided by the caller)
   2. `Available` column (if present in any resource's conditions)
   3. All other condition types sorted alphabetically
-  4. `Ready` column last (if present in any resource's conditions)
+  4. `Reconciled` column last (if present in any resource's conditions)
 
 #### Scenario: Collect unique conditions across resources
 

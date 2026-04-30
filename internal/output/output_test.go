@@ -66,7 +66,7 @@ func TestDotRendering_NoColor(t *testing.T) {
 
 func TestDynamicColumnOrdering_Mixed(t *testing.T) {
 	conditions := [][]Condition{
-		{{Type: "Ready"}, {Type: "Synced"}, {Type: "Available"}},
+		{{Type: "Reconciled"}, {Type: "Synced"}, {Type: "Available"}},
 		{{Type: "Degraded"}, {Type: "Available"}},
 	}
 	cols := DynamicColumns(conditions)
@@ -77,8 +77,8 @@ func TestDynamicColumnOrdering_Mixed(t *testing.T) {
 	if cols[0] != "Available" {
 		t.Errorf("first column should be Available, got %q", cols[0])
 	}
-	if cols[len(cols)-1] != "Ready" {
-		t.Errorf("last column should be Ready, got %q", cols[len(cols)-1])
+	if cols[len(cols)-1] != "Reconciled" {
+		t.Errorf("last column should be Reconciled, got %q", cols[len(cols)-1])
 	}
 	// Middle columns should be alphabetically sorted.
 	// Degraded < Synced alphabetically.
@@ -97,9 +97,9 @@ func TestDynamicColumns_NoConditions(t *testing.T) {
 	}
 }
 
-func TestDynamicColumns_OnlyReadyAvailable(t *testing.T) {
+func TestDynamicColumns_OnlyReconciledAvailable(t *testing.T) {
 	conditions := [][]Condition{
-		{{Type: "Ready"}, {Type: "Available"}},
+		{{Type: "Reconciled"}, {Type: "Available"}},
 	}
 	cols := DynamicColumns(conditions)
 	if len(cols) != 2 {
@@ -108,8 +108,8 @@ func TestDynamicColumns_OnlyReadyAvailable(t *testing.T) {
 	if cols[0] != "Available" {
 		t.Errorf("cols[0] = %q, want Available", cols[0])
 	}
-	if cols[1] != "Ready" {
-		t.Errorf("cols[1] = %q, want Ready", cols[1])
+	if cols[1] != "Reconciled" {
+		t.Errorf("cols[1] = %q, want Reconciled", cols[1])
 	}
 }
 

@@ -45,6 +45,13 @@ The CLI SHALL create one or more nodepools in the current cluster with configura
 - THEN the CLI MUST use defaults: name=`my-nodepool`, count=`1`, instance_type=`m4`
 - AND the CLI MUST NOT show a usage message — it MUST proceed with creation using defaults
 
+#### Scenario: Create nodepool when cluster no longer exists
+
+- GIVEN cluster-id is set in state but the cluster has been externally deleted from the API
+- WHEN the user runs `hf nodepool create`
+- THEN the CLI MUST send the POST request using the stored cluster-id
+- AND the API will return an error (404 or similar); the CLI MUST output it as-is and exit with code 0 per the RFC 7807 error pattern
+
 #### Scenario: Invalid count argument
 
 - GIVEN a count value less than 1 or not a valid integer is provided
@@ -58,7 +65,7 @@ The CLI SHALL create one or more nodepools in the current cluster with configura
 - GIVEN a nodepool was just created
 - WHEN the API responds with the created nodepool
 - THEN the nodepool MUST have initial conditions:
-  - `Ready: False` with reason `MissingRequiredAdapters`
+  - `Reconciled: False` with reason `MissingRequiredAdapters`
   - `Available: False` with reason `AdaptersNotAtSameGeneration`
 
 ### Requirement: List NodePools
@@ -202,13 +209,13 @@ The CLI SHALL display nodepool conditions in a formatted table via the `--table`
 - GIVEN a nodepool exists with no adapter statuses
 - WHEN the user runs `hf nodepool conditions --table`
 - THEN the CLI MUST output a table with columns: TYPE, STATUS, LAST TRANSITION, REASON, MESSAGE
-- AND Ready and Available MUST show `False`
+- AND Reconciled and Available MUST show `False`
 
 #### Scenario: Display conditions table after all adapters report
 
 - GIVEN all required adapters have reported `Available=True` at the current generation
 - WHEN the user runs `hf nodepool conditions --table`
-- THEN Ready and Available MUST show `True` (green)
+- THEN Reconciled and Available MUST show `True` (green)
 - AND per-adapter conditions (e.g., `NpConfigmapSuccessful`) MUST appear as additional rows
 
 ### Requirement: Get NodePool Adapter Statuses
@@ -231,6 +238,7 @@ The CLI SHALL display nodepools in the current cluster as a formatted table when
 
 - GIVEN nodepools exist in the current cluster
 - WHEN the user runs `hf nodepool list --table`
-- THEN the CLI MUST output a table with columns: ID, NAME, REPLICAS, TYPE, GEN, Available, [dynamic condition columns], Ready
+- THEN the CLI MUST output a table with fixed columns: NAME, REPLICAS, TYPE, GEN
+- AND dynamic condition columns following the same ordering: `Available` first, alphabetical middle, `Reconciled` last
 - AND status values MUST be displayed as colored dots: green=True, red=False, yellow=Unknown, `-`=not present
 - AND dynamic columns MUST appear based on which conditions exist across all nodepools

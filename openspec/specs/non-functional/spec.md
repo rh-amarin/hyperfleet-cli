@@ -147,7 +147,7 @@ The CLI SHALL follow consistent conventions for all output to stdout and stderr.
 | CLI usage error | stderr | `Error: <msg>` (usage suppressed) | 1 |
 | `[WARN]` message | stderr | `[WARN] <msg>` | 0 |
 | `[INFO]` message | stderr | `[INFO] <msg>` | 0 |
-| `[ERROR]` message | stderr | `[ERROR] <msg>` | varies |
+| `[ERROR]` message | stderr | `[ERROR] <msg>` | 1 (unless otherwise specified per command) |
 
 `SilenceUsage: true` on the root command suppresses the usage block for all subcommands on runtime errors (Cobra v1.10+ propagation via `!cmd.SilenceUsage && !root.SilenceUsage`).
 
@@ -221,12 +221,6 @@ The CLI SHALL degrade gracefully when optional dependencies are unavailable.
 ### Requirement: Performance
 
 The CLI SHALL respond promptly for common operations.
-
-#### Scenario: Command startup time
-
-- GIVEN the CLI binary is loaded
-- WHEN any command is executed
-- THEN the startup time (before first network call) MUST be under 100ms
 
 #### Scenario: Parallel data fetching
 

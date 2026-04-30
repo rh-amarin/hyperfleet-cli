@@ -54,7 +54,7 @@ func clusterJSON(id, name string, generation int32, deletedTime string) []byte {
 		Generation:  generation,
 		Labels:      map[string]string{"counter": "1"},
 		Spec:        map[string]any{"counter": "1", "region": "us-east-1", "version": "4.15.0"},
-		Status:      resource.ClusterStatus{Conditions: []resource.ResourceCondition{{Type: "Ready", Status: "False", Reason: "MissingRequiredAdapters"}, {Type: "Available", Status: "False", Reason: "AdaptersNotAtSameGeneration"}}},
+		Status:      resource.ClusterStatus{Conditions: []resource.ResourceCondition{{Type: "Reconciled", Status: "False", Reason: "MissingRequiredAdapters"}, {Type: "Available", Status: "False", Reason: "AdaptersNotAtSameGeneration"}}},
 		CreatedBy:   "system@hyperfleet.local",
 		CreatedTime: "2026-04-25T00:00:00Z",
 		UpdatedBy:   "system@hyperfleet.local",
@@ -426,7 +426,7 @@ func TestClusterConditions_OutputsGenerationAndConditions(t *testing.T) {
 	cl := resource.Cluster{
 		ID: "c-001", Generation: 3,
 		Status: resource.ClusterStatus{Conditions: []resource.ResourceCondition{
-			{Type: "Ready", Status: "False", Reason: "MissingRequiredAdapters"},
+			{Type: "Reconciled", Status: "False", Reason: "MissingRequiredAdapters"},
 		}},
 	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -462,7 +462,7 @@ func TestClusterConditionsTable_RendersRows(t *testing.T) {
 	cl := resource.Cluster{
 		ID: "c-001", Generation: 2,
 		Status: resource.ClusterStatus{Conditions: []resource.ResourceCondition{
-			{Type: "Ready", Status: "True", Reason: "AllGood", LastTransitionTime: "2026-04-25T00:00:00Z"},
+			{Type: "Reconciled", Status: "True", Reason: "AllGood", LastTransitionTime: "2026-04-25T00:00:00Z"},
 			{Type: "Available", Status: "False", Reason: "Waiting", LastTransitionTime: "2026-04-25T00:00:00Z"},
 		}},
 	}
@@ -481,7 +481,7 @@ func TestClusterConditionsTable_RendersRows(t *testing.T) {
 		t.Errorf("expected table headers, got:\n%s", stdout)
 	}
 	// Rows
-	if !strings.Contains(stdout, "Ready") || !strings.Contains(stdout, "True") {
+	if !strings.Contains(stdout, "Reconciled") || !strings.Contains(stdout, "True") {
 		t.Errorf("expected Ready/True row, got:\n%s", stdout)
 	}
 	if !strings.Contains(stdout, "Available") || !strings.Contains(stdout, "False") {

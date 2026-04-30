@@ -54,7 +54,9 @@ The CLI SHALL post adapter status conditions for the current cluster.
 - GIVEN `hf cluster adapter post-status` or `hf nodepool adapter post-status` completes
 - WHEN the API responds with HTTP 200 or HTTP 204
 - THEN the CLI MUST output the API response subject to the `--output` flag (default: JSON)
+- AND on HTTP 200, the CLI MUST output the full `AdapterStatus` JSON returned by the API
 - AND on HTTP 204 (returned for `Unknown` status), the CLI MUST output an empty JSON object `{}`
+- AND exit with code 0 in both cases
 
 ### Requirement: Post NodePool Adapter Status
 
@@ -73,7 +75,7 @@ The CLI SHALL post adapter status conditions for a nodepool.
 
 - GIVEN a nodepool's only required adapter is `np-configmap`
 - WHEN `np-configmap` reports `Available=True` at the nodepool's current generation
-- THEN the nodepool's `Ready` condition MUST flip to `True`
+- THEN the nodepool's `Reconciled` condition MUST flip to `True`
 - AND the `Available` condition MUST flip to `True`
 
 ### Requirement: Adapter Status Model
@@ -84,20 +86,20 @@ The system SHALL follow a defined convergence model for adapter statuses.
 
 - GIVEN a cluster with required adapters: `cl-deployment`, `cl-invalid-resource`, `cl-job`, `cl-maestro`, `cl-namespace`, `cl-precondition-error`
 - WHEN ALL required adapters report `Available=True` at the cluster's current generation
-- THEN the cluster's `Ready` condition MUST become `True`
+- THEN the cluster's `Reconciled` condition MUST become `True`
 - AND each adapter MUST generate a per-adapter condition named `<AdapterName>Successful` (e.g., `ClDeploymentSuccessful`)
 
 #### Scenario: Nodepool convergence
 
 - GIVEN a nodepool with required adapter: `np-configmap`
 - WHEN ALL required adapters report `Available=True` at the nodepool's current generation
-- THEN the nodepool's `Ready` condition MUST become `True`
+- THEN the nodepool's `Reconciled` condition MUST become `True`
 
 #### Scenario: Partial adapter reporting
 
 - GIVEN some but not all required adapters have reported
 - WHEN the user queries conditions
-- THEN `Ready` MUST remain `False` with reason `MissingRequiredAdapters`
+- THEN `Reconciled` MUST remain `False` with reason `MissingRequiredAdapters`
 - AND the message MUST list which adapters are missing
 
 ---

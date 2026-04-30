@@ -62,6 +62,13 @@ The CLI SHALL list GCP Pub/Sub topics and their subscriptions.
 
 The CLI SHALL publish a cluster reconcile event to a GCP Pub/Sub topic.
 
+#### Scenario: Publish cluster event — no cluster-id in state
+
+- GIVEN no cluster-id is set in state
+- WHEN the user runs `hf pubsub publish cluster <topic>`
+- THEN the CLI MUST display `[ERROR] No cluster-id set in state. Run 'hf cluster create' or 'hf cluster search <name>' first.`
+- AND exit with code 1
+
 #### Scenario: Publish cluster event
 
 - GIVEN gcp-project and cluster-id are configured
@@ -91,6 +98,13 @@ The CLI SHALL publish a cluster reconcile event to a GCP Pub/Sub topic.
 ### Requirement: Publish NodePool Change Event to Pub/Sub
 
 The CLI SHALL publish a nodepool reconcile event to a GCP Pub/Sub topic.
+
+#### Scenario: Publish nodepool event — missing state
+
+- GIVEN no cluster-id or no nodepool-id is set in state
+- WHEN the user runs `hf pubsub publish nodepool <topic>`
+- THEN the CLI MUST display the appropriate missing-state error (`[ERROR] No cluster-id ...` or `[ERROR] No nodepool-id ...`)
+- AND exit with code 1
 
 #### Scenario: Publish nodepool event
 
