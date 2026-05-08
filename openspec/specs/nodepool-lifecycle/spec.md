@@ -38,6 +38,42 @@ The CLI SHALL create one or more nodepools in the current cluster with configura
 - AND the CLI MUST print `[INFO] NodePool context set to '<id>'` on stderr after persisting
 - AND the response MUST include `owner_references` pointing to the parent cluster
 
+**Example** — `hf nodepool create workers 2 n2-standard-4` (first of two POST requests):
+
+Request payload:
+```json
+{
+  "kind": "NodePool",
+  "name": "workers-1",
+  "labels": {"counter": "1"},
+  "spec": {"counter": "1", "platform": {"type": "n2-standard-4"}, "replicas": 1}
+}
+```
+
+Response (first nodepool):
+```json
+{
+  "id": "019dc049-e76c-7be1-b201-0db50e2c8ecb",
+  "kind": "NodePool",
+  "generation": 1,
+  "name": "workers-1",
+  "owner_references": {
+    "href": "/api/hyperfleet/v1/clusters/019dc049-43a8-7a42-b44a-8d7f89e9e10f",
+    "id": "019dc049-43a8-7a42-b44a-8d7f89e9e10f",
+    "kind": "Cluster"
+  },
+  "spec": {"counter": "1", "platform": {"type": "n2-standard-4"}, "replicas": 1},
+  "status": {
+    "conditions": [
+      {"type": "Available",  "status": "False", "reason": "AdaptersNotAtSameGeneration", "observed_generation": 1},
+      {"type": "Reconciled", "status": "False", "reason": "MissingRequiredAdapters",     "observed_generation": 1}
+    ]
+  }
+}
+```
+
+Stderr after the last nodepool: `[INFO] NodePool context set to '019dc049-e79e-72a9-94f8-0056a11193cd'`
+
 #### Scenario: Create nodepool with default arguments
 
 - GIVEN no arguments are provided
@@ -199,6 +235,31 @@ The CLI SHALL display the generation and status conditions of a nodepool.
 - WHEN the user runs `hf nodepool conditions`
 - THEN the CLI MUST fetch the nodepool and extract `generation` and `status.conditions` as JSON
 
+**Example** — `hf nodepool conditions` after one patch (generation 2, no adapters yet):
+```json
+{
+  "generation": 2,
+  "status": {
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "False",
+        "reason": "AdaptersNotAtSameGeneration",
+        "message": "Required adapters do not report a consistent Available state",
+        "observed_generation": 2
+      },
+      {
+        "type": "Reconciled",
+        "status": "False",
+        "reason": "MissingRequiredAdapters",
+        "message": "Required adapters not reporting Available=True: [np-configmap]. Currently reporting: []",
+        "observed_generation": 2
+      }
+    ]
+  }
+}
+```
+
 
 ### Requirement: Get NodePool Conditions Table
 
@@ -211,12 +272,29 @@ The CLI SHALL display nodepool conditions in a formatted table via the `--table`
 - THEN the CLI MUST output a table with columns: TYPE, STATUS, LAST TRANSITION, REASON, MESSAGE
 - AND Reconciled and Available MUST show `False`
 
+**Example** — `hf nodepool conditions --table` before any adapters report:
+```
+TYPE        STATUS  LAST TRANSITION      REASON                       MESSAGE
+---         ---     ---                  ---                          ---
+Available   False   2026-04-24T16:05:00Z AdaptersNotAtSameGeneration  Required adapters do not report a consistent Available state
+Reconciled  False   2026-04-24T16:05:00Z MissingRequiredAdapters      Required adapters not reporting Available=True: [np-configmap]. Currently reporting: []
+```
+
 #### Scenario: Display conditions table after all adapters report
 
 - GIVEN all required adapters have reported `Available=True` at the current generation
 - WHEN the user runs `hf nodepool conditions --table`
 - THEN Reconciled and Available MUST show `True` (green)
 - AND per-adapter conditions (e.g., `NpConfigmapSuccessful`) MUST appear as additional rows
+
+**Example** — `hf nodepool conditions --table` after `np-configmap` reports `Available=True` at generation 2:
+```
+TYPE                   STATUS  LAST TRANSITION      REASON           MESSAGE
+---                    ---     ---                  ---              ---
+Available              True    2026-04-24T16:06:00Z AllAdapters...   All required adapters reported Available=True at generation 2
+Reconciled             True    2026-04-24T16:06:00Z AllAdapters...   All required adapters report Available=True at generation 2
+NpConfigmapSuccessful  True    2026-04-24T16:06:00Z ManualStatusPost  Status posted via hf.nodepool.adapter.post.status.sh
+```
 
 ### Requirement: Get NodePool Adapter Statuses
 
@@ -229,6 +307,29 @@ The CLI SHALL display adapter statuses for a nodepool.
 - THEN the CLI MUST send GET to `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools/{nodepool_id}/statuses`
 - AND output the `AdapterStatusList` response with items containing: adapter name, conditions (Available, Applied, Health, Finalized), observed_generation, last_report_time
 
+**Example** — `hf nodepool statuses` after `np-configmap` reports at generation 2:
+```json
+{
+  "items": [
+    {
+      "adapter": "np-configmap",
+      "observed_generation": 2,
+      "last_report_time": "2026-04-24T16:06:00Z",
+      "conditions": [
+        {"type": "Available", "status": "True", "reason": "ManualStatusPost"},
+        {"type": "Applied",   "status": "True", "reason": "ManualStatusPost"},
+        {"type": "Health",    "status": "True", "reason": "ManualStatusPost"},
+        {"type": "Finalized", "status": "True", "reason": "ManualStatusPost"}
+      ]
+    }
+  ],
+  "kind": "AdapterStatusList",
+  "page": 1,
+  "size": 1,
+  "total": 1
+}
+```
+
 #### Scenario: Get statuses table
 
 - GIVEN adapters have reported statuses for the nodepool
@@ -238,6 +339,12 @@ The CLI SHALL display adapter statuses for a nodepool.
 - AND GEN MUST show the `observed_generation` value for that adapter
 - AND Available and Finalized columns MUST be color-coded dots: green=True, red=False, yellow=Unknown, `-`=not present
 
+**Example** — `hf nodepool statuses --table` for the same adapter above (colors shown in parentheses):
+```
+ADAPTER      GEN  Available  Finalized
+---          ---  ---        ---
+np-configmap  2   ●(green)   ●(green)
+```
 
 ### Requirement: Display NodePool Table
 
@@ -247,7 +354,17 @@ The CLI SHALL display nodepools in the current cluster as a formatted table when
 
 - GIVEN nodepools exist in the current cluster
 - WHEN the user runs `hf nodepool list --table`
-- THEN the CLI MUST output a table with fixed columns: NAME, REPLICAS, TYPE, GEN
-- AND dynamic condition columns following the same ordering: `Available` first, alphabetical middle, `Reconciled` last
-- AND status values MUST be displayed as colored dots: green=True, red=False, yellow=Unknown, `-`=not present
-- AND dynamic columns MUST appear based on which conditions exist across all nodepools
+- THEN the CLI MUST fetch adapter statuses for each nodepool and output a table with:
+  - Fixed columns: `ID`, `NAME`, `REPLICAS`, `TYPE`, `GEN`
+  - Dynamic condition columns (excluding `*Successful` types)
+  - Dynamic adapter columns (one per unique adapter name)
+- AND status values MUST be displayed as colored dots with inline generation: `● N`
+- AND the deletion marker (`❌`) MUST appear on GEN for nodepools with `deleted_time` set
+
+**Example** — `hf nodepool list --table` with two nodepools: `workers-1` (gen 2, converged) and `workers-2` (gen 1, not yet converged). Colors shown in parentheses, `● N` = dot + generation number:
+```
+ID                                    NAME      REPLICAS  TYPE           GEN  Available  Reconciled  np-configmap
+---                                   ---       ---       ---            ---  ---        ---         ---
+019dc049-e79e-72a9-94f8-0056a11193cd  workers-2  1        n2-standard-4  1    ● 1(red)   ● 1(red)    -
+019dc049-e76c-7be1-b201-0db50e2c8ecb  workers-1  1        n2-standard-4  2    ● 2(green) ● 2(green)  ● 2(green)
+```

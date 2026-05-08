@@ -22,11 +22,46 @@ The CLI SHALL post adapter status conditions for the current cluster.
   - `observed_time`: current ISO8601 timestamp
 - AND each condition MUST have `reason: "ManualStatusPost"` and `message: "Status posted via hf adapter post-status"`
 
+**Example** — `hf cluster adapter post-status cl-deployment True 3`:
+
+Request payload:
+```json
+{
+  "adapter": "cl-deployment",
+  "observed_generation": 3,
+  "observed_time": "2026-04-24T16:19:06Z",
+  "conditions": [
+    {"type": "Available", "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.adapter.status.sh"},
+    {"type": "Applied",   "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.adapter.status.sh"},
+    {"type": "Health",    "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.adapter.status.sh"},
+    {"type": "Finalized", "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.adapter.status.sh"}
+  ]
+}
+```
+
+Response (HTTP 200):
+```json
+{
+  "adapter": "cl-deployment",
+  "observed_generation": 3,
+  "observed_time": "2026-04-24T16:19:06Z",
+  "last_report_time": "2026-04-24T16:19:06Z",
+  "conditions": [
+    {"type": "Available", "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.adapter.status.sh"},
+    {"type": "Applied",   "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.adapter.status.sh"},
+    {"type": "Health",    "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.adapter.status.sh"},
+    {"type": "Finalized", "status": "True", "reason": "ManualStatusPost", "message": "Status posted via hf.adapter.status.sh"}
+  ]
+}
+```
+
 #### Scenario: Post status with False
 
 - GIVEN a cluster-id is set in config
 - WHEN the user runs `hf cluster adapter post-status <adapter_name> False <generation>`
 - THEN all 4 condition statuses MUST be set to `False`
+
+**Example** — `hf cluster adapter post-status cl-job False 3`: same payload shape with all `"status": "False"`.
 
 #### Scenario: Post status with Unknown
 
@@ -41,6 +76,18 @@ The CLI SHALL post adapter status conditions for the current cluster.
 - WHEN the user runs `hf cluster adapter post-status`
 - THEN the CLI MUST display usage information
 - AND exit with code 1
+
+**Example** output (stderr + stdout):
+```
+Usage: hf.cluster.adapter.post.status.sh <adapter_name> <available> [generation]
+
+Arguments:
+  adapter_name  Name of the adapter (e.g., validator, dns, provisioner)
+  available     Status: True, False, or Unknown
+  generation    Observed generation (default: 1)
+
+Example: hf.adapter.status.sh validator True 1
+```
 
 #### Scenario: Invalid status value
 
