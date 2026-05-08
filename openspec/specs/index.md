@@ -24,6 +24,7 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 | 10 | [Repos](repos/spec.md) | GitHub repository status overview | 1 | 3 | hf.repos.sh |
 | 11 | [Errors & Usage](errors-and-usage/spec.md) | Error handling, usage messages, edge cases | 6 | 11 | Cross-cutting across all commands |
 | 12 | [Config Registry](config-registry/spec.md) | Configuration property registry and storage model | 2 | 4 | hf.lib.sh (shared library) |
+| 13 | [Workflow](workflow/spec.md) | End-to-end lifecycle workflow commands | 2 | 4 | hf.workflow.sh, hf.workflow.api-only.sh |
 
 ### Technical & Non-Functional Requirements
 
@@ -38,9 +39,9 @@ Organized to match the [output index](https://github.com/rh-amarin/hyperfleet-cl
 
 | Category | Requirements | Scenarios |
 |----------|-------------|-----------|
-| Functional (01–12) | 58 | 136 |
+| Functional (01–13) | 60 | 140 |
 | Technical & NFR (T1–T4) | 31 | 79 |
-| **Total** | **89** | **215** |
+| **Total** | **91** | **219** |
 
 ## Technology Decisions
 

@@ -226,8 +226,17 @@ The CLI SHALL display adapter statuses for a nodepool.
 
 - GIVEN cluster-id and nodepool-id are set in config
 - WHEN the user runs `hf nodepool statuses`
-- THEN the CLI MUST send GET to `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools/{nodepool_id}/adapter-statuses`
-- AND output the `AdapterStatusList` response
+- THEN the CLI MUST send GET to `/api/hyperfleet/v1/clusters/{cluster_id}/nodepools/{nodepool_id}/statuses`
+- AND output the `AdapterStatusList` response with items containing: adapter name, conditions (Available, Applied, Health, Finalized), observed_generation, last_report_time
+
+#### Scenario: Get statuses table
+
+- GIVEN adapters have reported statuses for the nodepool
+- WHEN the user runs `hf nodepool statuses --table`
+- THEN the CLI MUST output a formatted table with columns: ADAPTER, GEN, Available, Finalized
+- AND each row MUST represent one adapter entry from the statuses list
+- AND GEN MUST show the `observed_generation` value for that adapter
+- AND Available and Finalized columns MUST be color-coded dots: green=True, red=False, yellow=Unknown, `-`=not present
 
 
 ### Requirement: Display NodePool Table

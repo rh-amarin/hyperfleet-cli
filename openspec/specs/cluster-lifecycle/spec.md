@@ -35,9 +35,9 @@ The CLI SHALL create a new HyperFleet cluster with configurable name, region, an
 
 - GIVEN a cluster with the same name already exists
 - WHEN the user runs `hf cluster create <existing-name>`
-- THEN the CLI MUST send the POST request and let the API return the appropriate error response
-- AND output the API error response as-is
-- AND exit with code 0
+- THEN the CLI MUST first query `GET /api/hyperfleet/v1/clusters?search=name='<name>'` to check for an existing cluster
+- AND if a cluster with that name is found, the CLI MUST print `[WARN] Cluster '<name>' already exists, skipping creation` and exit with code 0 without sending a POST
+- AND if no existing cluster is found, proceed with the POST request normally
 
 #### Scenario: Initial cluster status conditions
 
@@ -204,5 +204,14 @@ The CLI SHALL display adapter statuses for a cluster.
 
 - GIVEN adapters have reported statuses for the cluster
 - WHEN the user runs `hf cluster statuses`
-- THEN the CLI MUST send GET to `/api/hyperfleet/v1/clusters/{cluster_id}/adapter-statuses`
-- AND output the `AdapterStatusList` with items containing: adapter name, conditions (Available, Applied, Health), observed_generation, last_report_time
+- THEN the CLI MUST send GET to `/api/hyperfleet/v1/clusters/{cluster_id}/statuses`
+- AND output the `AdapterStatusList` with items containing: adapter name, conditions (Available, Applied, Health, Finalized), observed_generation, last_report_time
+
+#### Scenario: Get statuses table
+
+- GIVEN adapters have reported statuses for the cluster
+- WHEN the user runs `hf cluster statuses --table`
+- THEN the CLI MUST output a formatted table with columns: ADAPTER, GEN, Available, Finalized
+- AND each row MUST represent one adapter entry from the statuses list
+- AND GEN MUST show the `observed_generation` value for that adapter
+- AND Available and Finalized columns MUST be color-coded dots: green=True, red=False, yellow=Unknown, `-`=not present

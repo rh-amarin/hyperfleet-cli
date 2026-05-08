@@ -17,7 +17,7 @@ The CLI SHALL post adapter status conditions for the current cluster.
 - THEN the CLI MUST send POST to `/api/hyperfleet/v1/clusters/{cluster_id}/statuses`
 - AND the request payload MUST include:
   - `adapter`: the adapter name (e.g., `cl-deployment`, `cl-namespace`)
-  - `conditions`: an array of 3 conditions with types `Available`, `Applied`, `Health`, all with status `True`
+  - `conditions`: an array of 4 conditions with types `Available`, `Applied`, `Health`, `Finalized`, all with status `True`
   - `observed_generation`: the provided generation
   - `observed_time`: current ISO8601 timestamp
 - AND each condition MUST have `reason: "ManualStatusPost"` and `message: "Status posted via hf adapter post-status"`
@@ -26,13 +26,13 @@ The CLI SHALL post adapter status conditions for the current cluster.
 
 - GIVEN a cluster-id is set in config
 - WHEN the user runs `hf cluster adapter post-status <adapter_name> False <generation>`
-- THEN all 3 condition statuses MUST be set to `False`
+- THEN all 4 condition statuses MUST be set to `False`
 
 #### Scenario: Post status with Unknown
 
 - GIVEN a cluster-id is set in config
 - WHEN the user runs `hf cluster adapter post-status <adapter_name> Unknown <generation>`
-- THEN all 3 condition statuses MUST be set to `Unknown`
+- THEN all 4 condition statuses MUST be set to `Unknown`
 - AND the API returns HTTP 204 No Content; the CLI MUST handle this gracefully (exit 0, print empty object)
 
 #### Scenario: Missing required arguments
@@ -138,9 +138,11 @@ The request payload structure is identical to the cluster adapter status payload
 | Target | Method | Path |
 |---|---|---|
 | Cluster | POST | `/api/hyperfleet/{version}/clusters/{cluster_id}/statuses` |
+| Cluster | GET | `/api/hyperfleet/{version}/clusters/{cluster_id}/statuses` |
 | NodePool | POST | `/api/hyperfleet/{version}/clusters/{cluster_id}/nodepools/{nodepool_id}/statuses` |
+| NodePool | GET | `/api/hyperfleet/{version}/clusters/{cluster_id}/nodepools/{nodepool_id}/statuses` |
 
-Note: the POST path is `/statuses` (not `/adapter-statuses`). The GET path for reading all adapter statuses remains `/adapter-statuses` as used by `hf cluster statuses`.
+Note: both POST and GET use the `/statuses` path. There is no `/adapter-statuses` endpoint.
 
 ## Request Payload
 
@@ -150,9 +152,10 @@ Note: the POST path is `/statuses` (not `/adapter-statuses`). The GET path for r
   "observed_generation": <generation>,
   "observed_time": "<ISO8601 UTC>",
   "conditions": [
-    {"type": "Available", "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status"},
-    {"type": "Applied",   "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status"},
-    {"type": "Health",    "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status"}
+    {"type": "Available",  "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status"},
+    {"type": "Applied",    "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status"},
+    {"type": "Health",     "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status"},
+    {"type": "Finalized",  "status": "<status>", "reason": "ManualStatusPost", "message": "Status posted via hf adapter post-status"}
   ]
 }
 ```
