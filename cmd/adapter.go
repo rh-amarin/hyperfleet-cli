@@ -30,6 +30,7 @@ func buildAdapterPostPayload(adapter, status string, generation int32) resource.
 			{Type: "Available", Status: status, Reason: "ManualStatusPost", Message: msg, LastTransitionTime: now},
 			{Type: "Applied", Status: status, Reason: "ManualStatusPost", Message: msg, LastTransitionTime: now},
 			{Type: "Health", Status: status, Reason: "ManualStatusPost", Message: msg, LastTransitionTime: now},
+			{Type: "Finalized", Status: status, Reason: "ManualStatusPost", Message: msg, LastTransitionTime: now},
 		},
 	}
 }
