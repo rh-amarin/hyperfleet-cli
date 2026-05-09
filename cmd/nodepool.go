@@ -506,8 +506,10 @@ var nodepoolTableCmd = &cobra.Command{
 				}
 
 				condMap := make(map[string]string)
+				genMap := make(map[string]int32)
 				for _, cond := range np.Status.Conditions {
 					condMap[cond.Type] = cond.Status
+					genMap[cond.Type] = cond.ObservedGeneration
 				}
 
 				row := []string{
@@ -518,7 +520,7 @@ var nodepoolTableCmd = &cobra.Command{
 					fmt.Sprintf("%d", np.Generation),
 				}
 				for _, col := range dynCols {
-					row = append(row, p.Dot(condMap[col]))
+					row = append(row, p.DotWithGen(condMap[col], genMap[col]))
 				}
 				rows = append(rows, row)
 			}

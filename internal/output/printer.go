@@ -56,6 +56,11 @@ func (p *Printer) Dot(status string) string {
 	return dot(status, p.noColor || os.Getenv("NO_COLOR") != "")
 }
 
+// DotWithGen renders a colored dot followed by the observed generation number.
+func (p *Printer) DotWithGen(status string, gen int32) string {
+	return dotWithGen(status, gen, p.noColor || os.Getenv("NO_COLOR") != "")
+}
+
 func Warn(msg string) {
 	fmt.Fprintf(os.Stderr, "[WARN] %s\n", msg)
 }

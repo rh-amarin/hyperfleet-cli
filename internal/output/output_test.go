@@ -266,6 +266,87 @@ func TestErrorf_WritesToStderr(t *testing.T) {
 	}
 }
 
+func TestDynamicColumns_ExcludesSuccessfulTypes(t *testing.T) {
+	conditions := [][]Condition{
+		{
+			{Type: "Available"},
+			{Type: "ClDeploymentSuccessful"},
+			{Type: "NpConfigmapSuccessful"},
+			{Type: "Reconciled"},
+		},
+		{
+			{Type: "Available"},
+			{Type: "ClJobSuccessful"},
+		},
+	}
+	cols := DynamicColumns(conditions)
+
+	for _, col := range cols {
+		if strings.HasSuffix(col, "Successful") {
+			t.Errorf("column %q ending in Successful should be excluded, got cols: %v", col, cols)
+		}
+	}
+	// Available and Reconciled survive
+	if len(cols) != 2 {
+		t.Errorf("expected 2 columns (Available, Reconciled), got %d: %v", len(cols), cols)
+	}
+	if cols[0] != "Available" {
+		t.Errorf("cols[0] = %q, want Available", cols[0])
+	}
+	if cols[1] != "Reconciled" {
+		t.Errorf("cols[1] = %q, want Reconciled", cols[1])
+	}
+}
+
+func TestDotWithGen_Color(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+
+	cases := []struct {
+		status string
+		gen    int32
+		want   string
+	}{
+		{"True", 3, colorGreen + dotChar + colorReset + " 3"},
+		{"False", 1, colorRed + dotChar + colorReset + " 1"},
+		{"Unknown", 5, colorYellow + dotChar + colorReset + " 5"},
+		{"", 0, "-"},
+	}
+	for _, tc := range cases {
+		got := dotWithGen(tc.status, tc.gen, false)
+		if got != tc.want {
+			t.Errorf("dotWithGen(%q, %d, false) = %q, want %q", tc.status, tc.gen, got, tc.want)
+		}
+	}
+}
+
+func TestDotWithGen_NoColor(t *testing.T) {
+	cases := []struct {
+		status string
+		gen    int32
+		want   string
+	}{
+		{"True", 2, "True 2"},
+		{"False", 1, "False 1"},
+		{"Unknown", 3, "Unknown 3"},
+		{"", 0, "-"},
+	}
+	for _, tc := range cases {
+		got := dotWithGen(tc.status, tc.gen, true)
+		if got != tc.want {
+			t.Errorf("dotWithGen(%q, %d, true) = %q, want %q", tc.status, tc.gen, got, tc.want)
+		}
+	}
+}
+
+func TestPrinterDotWithGen_RespectsNoColor(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	p := NewPrinter("json", true)
+	got := p.DotWithGen("True", 4)
+	if got != "True 4" {
+		t.Errorf("DotWithGen(True, 4) with noColor=true = %q, want %q", got, "True 4")
+	}
+}
+
 func TestNewPrinter_Defaults(t *testing.T) {
 	p := NewPrinter("json", false)
 	if p.format != "json" {
