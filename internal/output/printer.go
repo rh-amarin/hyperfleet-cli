@@ -61,6 +61,18 @@ func (p *Printer) DotWithGen(status string, gen int32) string {
 	return dotWithGen(status, gen, p.noColor || os.Getenv("NO_COLOR") != "")
 }
 
+// GenCell renders the generation number, appending a red ❌ if the resource is deleted.
+func (p *Printer) GenCell(gen int32, deleted bool) string {
+	s := fmt.Sprintf("%d", gen)
+	if !deleted {
+		return s
+	}
+	if p.noColor || os.Getenv("NO_COLOR") != "" {
+		return s + " ❌"
+	}
+	return s + " " + colorRed + "❌" + colorReset
+}
+
 func Warn(msg string) {
 	fmt.Fprintf(os.Stderr, "[WARN] %s\n", msg)
 }

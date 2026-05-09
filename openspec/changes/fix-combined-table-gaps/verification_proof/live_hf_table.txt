@@ -1,0 +1,5 @@
+ID                                      NAME             GEN  LASTKNOWNRECONCILED  READY   RECONCILED  CL-DEPLOYMENT  CL-INVALID-RESOURCE  CL-JOB  CL-MAESTRO  CL-NAMESPACE  CL-PRECONDITION-ERROR  NP-CONFIGMAP
+019e0b6a-76af-71a5-a26f-f0c0c901599b    verify-fix-test  1    True 1               True 1  True 1      True 1         False 1              True 1  True 1      True 1        False 1                -
+  019e0b6a-9817-7505-b7bc-265466f29e34    verify-np-1    1    True 1               True 1  True 1      -              -                    -       -           -             -                      True 1
+019e0976-df2f-7b18-a24a-6e519318a863    my-cluster       1    True 1               True 1  True 1      True 1         False 1              True 1  True 1      True 1        False 1                -
+  019e0977-72b4-7d91-b747-fa192eea9fa5    my-nodepool-1  1    True 1               True 1  True 1      -              -                    -       -           -             -                      True 1
