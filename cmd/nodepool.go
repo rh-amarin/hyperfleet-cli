@@ -397,7 +397,7 @@ var nodepoolConditionsTableCmd = &cobra.Command{
 		for _, cond := range np.Status.Conditions {
 			rows = append(rows, []string{
 				cond.Type,
-				p.Dot(cond.Status),
+				p.Dot(cond.Status, ""),
 				cond.LastTransitionTime,
 				cond.Reason,
 				cond.Message,
@@ -510,15 +510,16 @@ var nodepoolTableCmd = &cobra.Command{
 					condMap[cond.Type] = cond.Status
 				}
 
+				npGen := fmt.Sprintf("%d", np.Generation)
 				row := []string{
 					np.ID,
 					np.Name,
 					replicas,
 					instanceType,
-					fmt.Sprintf("%d", np.Generation),
+					npGen,
 				}
 				for _, col := range dynCols {
-					row = append(row, p.Dot(condMap[col]))
+					row = append(row, p.Dot(condMap[col], npGen))
 				}
 				rows = append(rows, row)
 			}

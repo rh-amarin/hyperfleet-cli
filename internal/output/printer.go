@@ -51,9 +51,10 @@ func (p *Printer) printYAML(v any) error {
 	return enc.Encode(v)
 }
 
-// Dot renders a condition status dot, respecting p.noColor and the NO_COLOR env var.
-func (p *Printer) Dot(status string) string {
-	return dot(status, p.noColor || os.Getenv("NO_COLOR") != "")
+// Dot renders a condition status dot with an optional generation number,
+// respecting p.noColor and the NO_COLOR env var.
+func (p *Printer) Dot(status, observedGen string) string {
+	return dot(status, observedGen, p.noColor || os.Getenv("NO_COLOR") != "")
 }
 
 func Warn(msg string) {

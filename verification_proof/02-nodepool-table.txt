@@ -1,0 +1,2 @@
+ID                                    NAME           REPLICAS  TYPE  GEN  LASTKNOWNRECONCILED  READY   RECONCILED
+019e0977-72b4-7d91-b747-fa192eea9fa5  my-nodepool-1  1         m4    1    True 1               True 1  True 1

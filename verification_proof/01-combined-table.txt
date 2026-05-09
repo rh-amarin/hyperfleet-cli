@@ -1,0 +1,5 @@
+NAME           KIND      CLUSTER     GEN  LASTKNOWNRECONCILED  READY   RECONCILED
+my-cluster     Cluster               1    True 1               True 1  True 1
+my-nodepool-1  NodePool  my-cluster  1    True 1               True 1  True 1
+NAME        GEN  LASTKNOWNRECONCILED  READY   RECONCILED
+my-cluster  1    True 1               True 1  True 1

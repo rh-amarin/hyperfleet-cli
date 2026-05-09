@@ -39,9 +39,30 @@ func TestDotRendering_Color(t *testing.T) {
 		{"absent", "-"},
 	}
 	for _, tc := range cases {
-		got := dot(tc.status, false)
+		got := dot(tc.status, "", false)
 		if got != tc.want {
-			t.Errorf("dot(%q, false) = %q, want %q", tc.status, got, tc.want)
+			t.Errorf("dot(%q, \"\", false) = %q, want %q", tc.status, got, tc.want)
+		}
+	}
+}
+
+func TestDotRendering_ColorWithGen(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+
+	cases := []struct {
+		status string
+		gen    string
+		want   string
+	}{
+		{"True", "3", colorGreen + dotChar + " 3" + colorReset},
+		{"False", "1", colorRed + dotChar + " 1" + colorReset},
+		{"Unknown", "2", colorYellow + dotChar + " 2" + colorReset},
+		{"", "5", "-"},
+	}
+	for _, tc := range cases {
+		got := dot(tc.status, tc.gen, false)
+		if got != tc.want {
+			t.Errorf("dot(%q, %q, false) = %q, want %q", tc.status, tc.gen, got, tc.want)
 		}
 	}
 }
@@ -57,9 +78,28 @@ func TestDotRendering_NoColor(t *testing.T) {
 		{"", "-"},
 	}
 	for _, tc := range cases {
-		got := dot(tc.status, true)
+		got := dot(tc.status, "", true)
 		if got != tc.want {
-			t.Errorf("dot(%q, true) = %q, want %q", tc.status, got, tc.want)
+			t.Errorf("dot(%q, \"\", true) = %q, want %q", tc.status, got, tc.want)
+		}
+	}
+}
+
+func TestDotRendering_NoColorWithGen(t *testing.T) {
+	cases := []struct {
+		status string
+		gen    string
+		want   string
+	}{
+		{"True", "3", "True 3"},
+		{"False", "1", "False 1"},
+		{"Unknown", "2", "Unknown 2"},
+		{"", "5", "-"},
+	}
+	for _, tc := range cases {
+		got := dot(tc.status, tc.gen, true)
+		if got != tc.want {
+			t.Errorf("dot(%q, %q, true) = %q, want %q", tc.status, tc.gen, got, tc.want)
 		}
 	}
 }
@@ -117,9 +157,19 @@ func TestPrinterDot_RespectsNoColorFlag(t *testing.T) {
 	t.Setenv("NO_COLOR", "") // ensure env var not set
 
 	p := NewPrinter("json", true) // noColor=true via flag
-	got := p.Dot("True")
+	got := p.Dot("True", "")
 	if got != "True" {
-		t.Errorf("Dot(True) with noColor=true = %q, want %q", got, "True")
+		t.Errorf("Dot(True, \"\") with noColor=true = %q, want %q", got, "True")
+	}
+}
+
+func TestPrinterDot_WithGen(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+
+	p := NewPrinter("json", true) // noColor=true via flag
+	got := p.Dot("True", "3")
+	if got != "True 3" {
+		t.Errorf("Dot(True, \"3\") with noColor=true = %q, want %q", got, "True 3")
 	}
 }
 
@@ -188,9 +238,9 @@ func TestDot_PackageLevel_NoColorEnvVar(t *testing.T) {
 		{"", "-"},
 	}
 	for _, tc := range cases {
-		got := Dot(tc.status)
+		got := Dot(tc.status, "")
 		if got != tc.want {
-			t.Errorf("Dot(%q) with NO_COLOR=1 = %q, want %q", tc.status, got, tc.want)
+			t.Errorf("Dot(%q, \"\") with NO_COLOR=1 = %q, want %q", tc.status, got, tc.want)
 		}
 	}
 }
@@ -198,14 +248,47 @@ func TestDot_PackageLevel_NoColorEnvVar(t *testing.T) {
 func TestDot_PackageLevel_ColorMode(t *testing.T) {
 	t.Setenv("NO_COLOR", "")
 
-	if got := Dot("True"); !strings.Contains(got, dotChar) {
-		t.Errorf("Dot(True) should contain dot char, got %q", got)
+	if got := Dot("True", ""); !strings.Contains(got, dotChar) {
+		t.Errorf("Dot(True, \"\") should contain dot char, got %q", got)
 	}
-	if got := Dot("False"); !strings.Contains(got, dotChar) {
-		t.Errorf("Dot(False) should contain dot char, got %q", got)
+	if got := Dot("False", ""); !strings.Contains(got, dotChar) {
+		t.Errorf("Dot(False, \"\") should contain dot char, got %q", got)
 	}
-	if got := Dot(""); got != "-" {
-		t.Errorf("Dot('') = %q, want -", got)
+	if got := Dot("", ""); got != "-" {
+		t.Errorf("Dot('', '') = %q, want -", got)
+	}
+}
+
+func TestDot_PackageLevel_WithGen(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+
+	got := Dot("True", "5")
+	if !strings.Contains(got, dotChar) || !strings.Contains(got, "5") {
+		t.Errorf("Dot(True, \"5\") should contain dot and gen, got %q", got)
+	}
+	got = Dot("", "5")
+	if got != "-" {
+		t.Errorf("Dot('', '5') = %q, want -", got)
+	}
+}
+
+func TestDynamicColumns_FiltersSuccessful(t *testing.T) {
+	conditions := [][]Condition{
+		{
+			{Type: "Available"},
+			{Type: "ClDeploymentSuccessful"},
+			{Type: "NpConfigmapSuccessful"},
+			{Type: "Reconciled"},
+		},
+	}
+	cols := DynamicColumns(conditions)
+	for _, col := range cols {
+		if strings.HasSuffix(col, "Successful") {
+			t.Errorf("DynamicColumns should exclude Successful types, but got %q", col)
+		}
+	}
+	if len(cols) != 2 {
+		t.Errorf("expected 2 cols (Available, Reconciled), got %d: %v", len(cols), cols)
 	}
 }
 

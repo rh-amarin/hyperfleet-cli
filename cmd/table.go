@@ -57,12 +57,13 @@ var clusterTableCmd = &cobra.Command{
 				for _, cond := range cl.Status.Conditions {
 					condMap[cond.Type] = cond.Status
 				}
+				gen := fmt.Sprintf("%d", cl.Generation)
 				row := []string{
 					cl.Name,
-					fmt.Sprintf("%d", cl.Generation),
+					gen,
 				}
 				for _, col := range dynCols {
-					row = append(row, p.Dot(condMap[col]))
+					row = append(row, p.Dot(condMap[col], gen))
 				}
 				rows = append(rows, row)
 			}
@@ -146,14 +147,15 @@ func renderCombinedTable(c *api.Client, p *out.Printer) error {
 		for _, cond := range cl.Status.Conditions {
 			condMap[cond.Type] = cond.Status
 		}
+		clGen := fmt.Sprintf("%d", cl.Generation)
 		row := []string{
 			cl.Name,
 			"Cluster",
 			"",
-			fmt.Sprintf("%d", cl.Generation),
+			clGen,
 		}
 		for _, col := range dynCols {
-			row = append(row, p.Dot(condMap[col]))
+			row = append(row, p.Dot(condMap[col], clGen))
 		}
 		rows = append(rows, row)
 
@@ -167,14 +169,15 @@ func renderCombinedTable(c *api.Client, p *out.Printer) error {
 			for _, cond := range np.Status.Conditions {
 				npCondMap[cond.Type] = cond.Status
 			}
+			npGen := fmt.Sprintf("%d", np.Generation)
 			npRow := []string{
 				np.Name,
 				"NodePool",
 				cl.Name,
-				fmt.Sprintf("%d", np.Generation),
+				npGen,
 			}
 			for _, col := range dynCols {
-				npRow = append(npRow, p.Dot(npCondMap[col]))
+				npRow = append(npRow, p.Dot(npCondMap[col], npGen))
 			}
 			rows = append(rows, npRow)
 		}

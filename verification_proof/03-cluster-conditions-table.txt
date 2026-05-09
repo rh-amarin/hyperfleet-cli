@@ -1,0 +1,8 @@
+TYPE                    STATUS  LAST TRANSITION       REASON                    MESSAGE
+Ready                   True    2026-05-09T05:52:41Z  ReadyAllReconciled        All required adapters reported Available=True or Finalized=True at the current generation
+Reconciled              True    2026-05-09T05:52:41Z  ReadyAllReconciled        All required adapters reported Available=True or Finalized=True at the current generation
+LastKnownReconciled     True    2026-05-09T05:52:41Z  AllAdaptersReconciled     All required adapters report Available=True for the tracked generation
+ClNamespaceSuccessful   True    2026-05-08T21:20:46Z  NamespaceReady            Namespace is active and ready
+ClMaestroSuccessful     True    2026-05-09T05:52:46Z  AllResourcesAvailable     All manifests (namespace, configmap) are available on spoke cluster
+ClDeploymentSuccessful  True    2026-05-08T21:21:21Z  MinimumReplicasAvailable  Deployment has minimum availability.
+ClJobSuccessful         True    2026-05-08T21:21:11Z  ValidationPassed          Environment validated successfully (default simulation)

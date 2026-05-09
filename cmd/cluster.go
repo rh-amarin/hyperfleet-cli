@@ -391,7 +391,7 @@ var clusterConditionsTableCmd = &cobra.Command{
 		for _, cond := range cluster.Status.Conditions {
 			rows = append(rows, []string{
 				cond.Type,
-				p.Dot(cond.Status),
+				p.Dot(cond.Status, ""),
 				cond.LastTransitionTime,
 				cond.Reason,
 				cond.Message,
