@@ -135,10 +135,31 @@ var nodepoolListCmd = &cobra.Command{
 // ── search ────────────────────────────────────────────────────────────────────
 
 var nodepoolSearchCmd = &cobra.Command{
-	Use:   "search <name>",
-	Short: "Search nodepools by name and set as current",
-	Args:  cobra.ExactArgs(1),
+	Use:          "search [name]",
+	Short:        "Search nodepools by name and set as current",
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			npID := cfgStore.State().NodePoolID
+			if npID == "" {
+				out.Errorf("No nodepool-id set in state. Run 'hf nodepool create' or 'hf nodepool search <name>' first.")
+				return fmt.Errorf("no nodepool-id set in state")
+			}
+			clusterID, err := config.ClusterID(cfgStore, "")
+			if err != nil {
+				return err
+			}
+			c := newClient()
+			np, err := api.Get[resource.NodePool](c, context.Background(), "clusters/"+clusterID+"/nodepools/"+npID)
+			if err != nil {
+				if apiErr, ok := api.IsAPIError(err); ok {
+					return printer().Print(apiErr)
+				}
+				return err
+			}
+			return printer().Print(np)
+		}
+
 		name := args[0]
 		c := newClient()
 		ctx := context.Background()
@@ -159,7 +180,7 @@ var nodepoolSearchCmd = &cobra.Command{
 		}
 
 		if len(matches) > 1 {
-			out.Warn(fmt.Sprintf("Multiple nodepools found matching '%s', using first match", name))
+			out.Warn(fmt.Sprintf("Multiple nodepools found matching '%s', using first result", name))
 		}
 
 		if err := config.SetNodePoolID(cfgStore, matches[0].ID); err != nil {
@@ -313,9 +334,10 @@ var nodepoolIDCmd = &cobra.Command{
 	Use:   "id",
 	Short: "Print the configured nodepool-id",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		id, err := config.NodePoolID(cfgStore, "")
-		if err != nil {
-			return err
+		id := cfgStore.State().NodePoolID
+		if id == "" {
+			out.Warn("No nodepool-id set in state")
+			return nil
 		}
 		fmt.Println(id)
 		return nil

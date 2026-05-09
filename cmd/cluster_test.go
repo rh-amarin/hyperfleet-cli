@@ -285,6 +285,76 @@ func TestClusterGet_NotFound_RFC7807(t *testing.T) {
 
 // ── search ─────────────────────────────────────────────────────────────────────
 
+func TestClusterSearch_NoArgs_WithStateID_BehavesLikeGet(t *testing.T) {
+	cl := resource.Cluster{ID: "c-state", Name: "from-state", Generation: 2}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/c-state") {
+			json.NewEncoder(w).Encode(cl)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmdWithCluster(t, srv, "c-state", "cluster", "search")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var got resource.Cluster
+	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+		t.Fatalf("output is not valid JSON: %v\nout: %s", err, stdout)
+	}
+	if got.ID != "c-state" {
+		t.Errorf("id = %q, want c-state", got.ID)
+	}
+}
+
+func TestClusterSearch_NoArgs_NoState_ErrorExit1(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	_, stderr, err := runCmd(t, srv, "cluster", "search")
+	if err == nil {
+		t.Fatal("expected non-nil error when no cluster-id in state and no args")
+	}
+	if !strings.Contains(stderr, "[ERROR]") || !strings.Contains(stderr, "No cluster-id set in state") {
+		t.Errorf("expected [ERROR] No cluster-id set in state, got: %s", stderr)
+	}
+}
+
+func TestClusterID_NoIDSet_WarnAndExit0(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	_, stderr, err := runCmd(t, srv, "cluster", "id")
+	if err != nil {
+		t.Fatalf("expected exit 0 when no cluster-id set, got: %v", err)
+	}
+	if !strings.Contains(stderr, "[WARN]") || !strings.Contains(stderr, "No cluster-id set in state") {
+		t.Errorf("expected [WARN] No cluster-id set in state in stderr, got: %s", stderr)
+	}
+}
+
+func TestClusterID_IDSet_PrintsID(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmdWithCluster(t, srv, "c-abc123", "cluster", "id")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.TrimSpace(stdout) != "c-abc123" {
+		t.Errorf("stdout = %q, want %q", strings.TrimSpace(stdout), "c-abc123")
+	}
+}
+
 func TestClusterSearch_SetsClusterID(t *testing.T) {
 	c := resource.Cluster{ID: "c-found", Name: "target"}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
