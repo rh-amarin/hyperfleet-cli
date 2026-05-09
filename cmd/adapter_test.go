@@ -77,8 +77,8 @@ func TestClusterAdapterPostStatus_PayloadShape(t *testing.T) {
 	if body.ObservedGeneration != 2 {
 		t.Errorf("observed_generation = %d, want 2", body.ObservedGeneration)
 	}
-	if len(body.Conditions) != 3 {
-		t.Fatalf("conditions len = %d, want 3", len(body.Conditions))
+	if len(body.Conditions) != 4 {
+		t.Fatalf("conditions len = %d, want 4", len(body.Conditions))
 	}
 	for _, c := range body.Conditions {
 		if c.Status != "False" {
@@ -207,8 +207,8 @@ func TestNodePoolAdapterPostStatus_PayloadShape(t *testing.T) {
 	if body.Adapter != "np-configmap" {
 		t.Errorf("adapter = %q, want np-configmap", body.Adapter)
 	}
-	if len(body.Conditions) != 3 {
-		t.Fatalf("conditions len = %d, want 3", len(body.Conditions))
+	if len(body.Conditions) != 4 {
+		t.Fatalf("conditions len = %d, want 4", len(body.Conditions))
 	}
 	for _, c := range body.Conditions {
 		if c.Status != "True" {

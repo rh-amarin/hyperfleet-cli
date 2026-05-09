@@ -441,7 +441,7 @@ var nodepoolStatusesCmd = &cobra.Command{
 
 		fetch := func() error {
 			list, err := api.Get[resource.ListResponse[resource.AdapterStatus]](
-				c, context.Background(), "clusters/"+clusterID+"/nodepools/"+nodepoolID+"/adapter-statuses",
+				c, context.Background(), "clusters/"+clusterID+"/nodepools/"+nodepoolID+"/statuses",
 			)
 			if err != nil {
 				if apiErr, ok := api.IsAPIError(err); ok && apiErr.Status == 404 {
