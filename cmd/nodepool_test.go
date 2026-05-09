@@ -212,6 +212,76 @@ func TestNodePoolList_OutputsJSON(t *testing.T) {
 
 // ── search ─────────────────────────────────────────────────────────────────────
 
+func TestNodePoolSearch_NoArgs_WithStateID_BehavesLikeGet(t *testing.T) {
+	np := resource.NodePool{ID: "np-state", Name: "from-state", Generation: 3}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/np-state") {
+			json.NewEncoder(w).Encode(np)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmdWithClusterAndNodePool(t, srv, "c-001", "np-state", "nodepool", "search")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var got resource.NodePool
+	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+		t.Fatalf("output is not valid JSON: %v\nout: %s", err, stdout)
+	}
+	if got.ID != "np-state" {
+		t.Errorf("id = %q, want np-state", got.ID)
+	}
+}
+
+func TestNodePoolSearch_NoArgs_NoState_ErrorExit1(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	_, stderr, err := runCmdWithCluster(t, srv, "c-001", "nodepool", "search")
+	if err == nil {
+		t.Fatal("expected non-nil error when no nodepool-id in state and no args")
+	}
+	if !strings.Contains(stderr, "[ERROR]") || !strings.Contains(stderr, "No nodepool-id set in state") {
+		t.Errorf("expected [ERROR] No nodepool-id set in state, got: %s", stderr)
+	}
+}
+
+func TestNodePoolID_NoIDSet_WarnAndExit0(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	_, stderr, err := runCmdWithCluster(t, srv, "c-001", "nodepool", "id")
+	if err != nil {
+		t.Fatalf("expected exit 0 when no nodepool-id set, got: %v", err)
+	}
+	if !strings.Contains(stderr, "[WARN]") || !strings.Contains(stderr, "No nodepool-id set in state") {
+		t.Errorf("expected [WARN] No nodepool-id set in state in stderr, got: %s", stderr)
+	}
+}
+
+func TestNodePoolID_IDSet_PrintsID(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmdWithClusterAndNodePool(t, srv, "c-001", "np-xyz789", "nodepool", "id")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.TrimSpace(stdout) != "np-xyz789" {
+		t.Errorf("stdout = %q, want %q", strings.TrimSpace(stdout), "np-xyz789")
+	}
+}
+
 func TestNodePoolSearch_SetsNodePoolID(t *testing.T) {
 	np := resource.NodePool{ID: "np-found", Name: "workers-1"}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -1,0 +1,50 @@
+Live verification against http://34.175.170.44:8000
+Date: Sat May  9 06:26:47 UTC 2026
+
+=== cluster id (no state) → [WARN] exit 0 ===
+[WARN] No cluster-id set in state
+Exit: 0
+
+=== cluster search (no args, no state) → [ERROR] exit 1 ===
+[ERROR] No cluster-id set in state. Run 'hf cluster create' or 'hf cluster search <name>' first.
+Error: no cluster-id set in state
+Exit: 1
+
+=== cluster search (no args, with state) → behaves like get ===
+{
+  "id": "019e0b6a-76af-71a5-a26f-f0c0c901599b",
+  "kind": "Cluster",
+  "href": "/api/hyperfleet/v1/clusters/019e0b6a-76af-71a5-a26f-f0c0c901599b",
+  "name": "verify-fix-test",
+  "generation": 1,
+  "labels": {
+    "counter": "1",
+Exit: 0
+
+=== cluster id (with state) → prints ID exit 0 ===
+019e0b6a-76af-71a5-a26f-f0c0c901599b
+Exit: 0
+
+=== nodepool id (no nodepool state) → [WARN] exit 0 ===
+[WARN] No nodepool-id set in state
+Exit: 0
+
+=== nodepool search (no args, no nodepool state) → [ERROR] exit 1 ===
+[ERROR] No nodepool-id set in state. Run 'hf nodepool create' or 'hf nodepool search <name>' first.
+Error: no nodepool-id set in state
+Exit: 1
+
+=== nodepool search (no args, with state) → behaves like get ===
+{
+  "id": "019e0b6a-9817-7505-b7bc-265466f29e34",
+  "kind": "NodePool",
+  "href": "/api/hyperfleet/v1/clusters/019e0b6a-76af-71a5-a26f-f0c0c901599b/nodepools/019e0b6a-9817-7505-b7bc-265466f29e34",
+  "name": "verify-np-1",
+  "generation": 1,
+  "labels": {
+    "counter": "1"
+Exit: 0
+
+=== nodepool id (with state) → prints ID exit 0 ===
+019e0b6a-9817-7505-b7bc-265466f29e34
+Exit: 0

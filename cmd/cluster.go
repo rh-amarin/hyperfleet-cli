@@ -179,10 +179,27 @@ var clusterListCmd = &cobra.Command{
 // ── search ────────────────────────────────────────────────────────────────────
 
 var clusterSearchCmd = &cobra.Command{
-	Use:   "search <name>",
-	Short: "Search clusters by name and set as current",
-	Args:  cobra.ExactArgs(1),
+	Use:          "search [name]",
+	Short:        "Search clusters by name and set as current",
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			id := cfgStore.State().ClusterID
+			if id == "" {
+				out.Errorf("No cluster-id set in state. Run 'hf cluster create' or 'hf cluster search <name>' first.")
+				return fmt.Errorf("no cluster-id set in state")
+			}
+			c := newClient()
+			cluster, err := api.Get[resource.Cluster](c, context.Background(), "clusters/"+id)
+			if err != nil {
+				if apiErr, ok := api.IsAPIError(err); ok {
+					return printer().Print(apiErr)
+				}
+				return err
+			}
+			return printer().Print(cluster)
+		}
+
 		name := args[0]
 		c := newClient()
 		ctx := context.Background()
@@ -198,7 +215,7 @@ var clusterSearchCmd = &cobra.Command{
 		}
 
 		if len(matches) > 1 {
-			out.Warn(fmt.Sprintf("Multiple clusters found matching '%s', using first match", name))
+			out.Warn(fmt.Sprintf("Multiple clusters found matching '%s', using first result", name))
 		}
 
 		if err := config.SetClusterID(cfgStore, matches[0].ID, matches[0].Name); err != nil {
@@ -315,9 +332,10 @@ var clusterIDCmd = &cobra.Command{
 	Use:   "id",
 	Short: "Print the configured cluster-id",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		id, err := config.ClusterID(cfgStore, "")
-		if err != nil {
-			return err
+		id := cfgStore.State().ClusterID
+		if id == "" {
+			out.Warn("No cluster-id set in state")
+			return nil
 		}
 		fmt.Println(id)
 		return nil
