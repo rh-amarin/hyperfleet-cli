@@ -175,6 +175,77 @@ func TestTable_EmptyCluster_NoNodePoolRows(t *testing.T) {
 	}
 }
 
+func TestTable_ExcludesSuccessfulColumns(t *testing.T) {
+	cluster := resource.Cluster{
+		ID: "c-001", Name: "cl", Generation: 2,
+		Status: resource.ClusterStatus{Conditions: []resource.ResourceCondition{
+			{Type: "Available", Status: "True", ObservedGeneration: 2},
+			{Type: "ClDeploymentSuccessful", Status: "True", ObservedGeneration: 2},
+			{Type: "NpConfigmapSuccessful", Status: "True", ObservedGeneration: 2},
+			{Type: "Reconciled", Status: "True", ObservedGeneration: 2},
+		}},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.Contains(r.URL.Path, "/nodepools") {
+			fmt.Fprint(w, `{"items":[],"kind":"NodePoolList","page":1,"size":0,"total":0}`)
+		} else {
+			w.Write(clusterListJSON([]resource.Cluster{cluster}))
+		}
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmd(t, srv, "--no-color", "table")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	header := strings.SplitN(stdout, "\n", 2)[0]
+	if strings.Contains(header, "SUCCESSFUL") {
+		t.Errorf("expected no *Successful columns in header, got:\n%s", header)
+	}
+	if !strings.Contains(header, "AVAILABLE") {
+		t.Errorf("expected AVAILABLE column, got:\n%s", header)
+	}
+	if !strings.Contains(header, "RECONCILED") {
+		t.Errorf("expected RECONCILED column, got:\n%s", header)
+	}
+}
+
+func TestTable_DotRendersWithGenerationSuffix(t *testing.T) {
+	cluster := resource.Cluster{
+		ID: "c-001", Name: "cl", Generation: 3,
+		Status: resource.ClusterStatus{Conditions: []resource.ResourceCondition{
+			{Type: "Available", Status: "True", ObservedGeneration: 3},
+			{Type: "Reconciled", Status: "False", ObservedGeneration: 3},
+		}},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.Contains(r.URL.Path, "/nodepools") {
+			fmt.Fprint(w, `{"items":[],"kind":"NodePoolList","page":1,"size":0,"total":0}`)
+		} else {
+			w.Write(clusterListJSON([]resource.Cluster{cluster}))
+		}
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmd(t, srv, "--no-color", "table")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// With --no-color the dot is rendered as text + gen suffix e.g. "True 3"
+	if !strings.Contains(stdout, "True 3") {
+		t.Errorf("expected dot cell 'True 3' in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "False 3") {
+		t.Errorf("expected dot cell 'False 3' in output, got:\n%s", stdout)
+	}
+}
+
 func TestTable_AdapterConditionsAlphabetical(t *testing.T) {
 	cluster := resource.Cluster{
 		ID: "c-001", Name: "cl", Generation: 1,

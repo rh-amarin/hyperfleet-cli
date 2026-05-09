@@ -1,6 +1,9 @@
 package output
 
-import "sort"
+import (
+	"sort"
+	"strings"
+)
 
 // Condition is a named condition used by DynamicColumns to determine table column order.
 type Condition struct {
@@ -13,6 +16,9 @@ func DynamicColumns(conditions [][]Condition) []string {
 	seen := make(map[string]struct{})
 	for _, perResource := range conditions {
 		for _, c := range perResource {
+			if strings.HasSuffix(c.Type, "Successful") {
+				continue
+			}
 			seen[c.Type] = struct{}{}
 		}
 	}

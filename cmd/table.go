@@ -54,15 +54,17 @@ var clusterTableCmd = &cobra.Command{
 			rows := make([][]string, 0, len(list.Items))
 			for _, cl := range list.Items {
 				condMap := make(map[string]string)
+				genMap := make(map[string]int32)
 				for _, cond := range cl.Status.Conditions {
 					condMap[cond.Type] = cond.Status
+					genMap[cond.Type] = cond.ObservedGeneration
 				}
 				row := []string{
 					cl.Name,
 					fmt.Sprintf("%d", cl.Generation),
 				}
 				for _, col := range dynCols {
-					row = append(row, p.Dot(condMap[col]))
+					row = append(row, p.DotWithGen(condMap[col], genMap[col]))
 				}
 				rows = append(rows, row)
 			}
@@ -143,8 +145,10 @@ func renderCombinedTable(c *api.Client, p *out.Printer) error {
 
 	for _, cl := range clusterList.Items {
 		condMap := make(map[string]string)
+		genMap := make(map[string]int32)
 		for _, cond := range cl.Status.Conditions {
 			condMap[cond.Type] = cond.Status
+			genMap[cond.Type] = cond.ObservedGeneration
 		}
 		row := []string{
 			cl.Name,
@@ -153,7 +157,7 @@ func renderCombinedTable(c *api.Client, p *out.Printer) error {
 			fmt.Sprintf("%d", cl.Generation),
 		}
 		for _, col := range dynCols {
-			row = append(row, p.Dot(condMap[col]))
+			row = append(row, p.DotWithGen(condMap[col], genMap[col]))
 		}
 		rows = append(rows, row)
 
@@ -164,8 +168,10 @@ func renderCombinedTable(c *api.Client, p *out.Printer) error {
 			}
 			np := entry.np
 			npCondMap := make(map[string]string)
+			npGenMap := make(map[string]int32)
 			for _, cond := range np.Status.Conditions {
 				npCondMap[cond.Type] = cond.Status
+				npGenMap[cond.Type] = cond.ObservedGeneration
 			}
 			npRow := []string{
 				np.Name,
@@ -174,7 +180,7 @@ func renderCombinedTable(c *api.Client, p *out.Printer) error {
 				fmt.Sprintf("%d", np.Generation),
 			}
 			for _, col := range dynCols {
-				npRow = append(npRow, p.Dot(npCondMap[col]))
+				npRow = append(npRow, p.DotWithGen(npCondMap[col], npGenMap[col]))
 			}
 			rows = append(rows, npRow)
 		}

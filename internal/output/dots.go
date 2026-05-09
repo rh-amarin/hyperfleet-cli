@@ -1,6 +1,9 @@
 package output
 
-import "os"
+import (
+	"fmt"
+	"os"
+)
 
 const (
 	colorGreen  = "\033[32m"
@@ -15,6 +18,19 @@ const (
 // Dot renders a condition status as a colored dot, respecting the NO_COLOR env var.
 func Dot(status string) string {
 	return dot(status, os.Getenv("NO_COLOR") != "")
+}
+
+// dotWithGen renders a colored dot (or text) followed by the generation number.
+// Absent status still returns "-" with no generation suffix.
+func dotWithGen(status string, gen int32, noColor bool) string {
+	if status == "" {
+		return "-"
+	}
+	d := dot(status, noColor)
+	if d == "-" {
+		return "-"
+	}
+	return fmt.Sprintf("%s %d", d, gen)
 }
 
 func dot(status string, noColor bool) string {
