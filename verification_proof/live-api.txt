@@ -1,0 +1,44 @@
+=== hf cluster list --table ===
+ID                                    NAME             GEN  LASTKNOWNRECONCILED  READY   RECONCILED  CL-DEPLOYMENT  CL-INVALID-RESOURCE  CL-JOB  CL-MAESTRO  CL-NAMESPACE  CL-PRECONDITION-ERROR
+019e0b6a-76af-71a5-a26f-f0c0c901599b  verify-fix-test  1    True 1               True 1  True 1      True 1         False 1              True 1  True 1      True 1        False 1
+019e0976-df2f-7b18-a24a-6e519318a863  my-cluster       1    True 1               True 1  True 1      True 1         False 1              True 1  True 1      True 1        False 1
+
+=== Using cluster ID: 019e0b6a-76af-71a5-a26f-f0c0c901599b ===
+
+=== hf cluster conditions --table ===
+TYPE                    STATUS  LAST TRANSITION       REASON                    MESSAGE
+Ready                   True    2026-05-09T08:27:26Z  ReadyAllReconciled        All required adapters reported Available=True or Finalized=True at the current generation
+Reconciled              True    2026-05-09T08:27:26Z  ReadyAllReconciled        All required adapters reported Available=True or Finalized=True at the current generation
+LastKnownReconciled     True    2026-05-09T08:27:26Z  AllAdaptersReconciled     All required adapters report Available=True for the tracked generation
+ClNamespaceSuccessful   True    2026-05-09T06:26:31Z  NamespaceReady            Namespace is active and ready
+ClMaestroSuccessful     True    2026-05-09T08:27:31Z  AllResourcesAvailable     All manifests (namespace, configmap) are available on spoke cluster
+ClDeploymentSuccessful  True    2026-05-09T06:27:11Z  MinimumReplicasAvailable  Deployment has minimum availability.
+ClJobSuccessful         True    2026-05-09T06:26:56Z  ValidationPassed          Environment validated successfully (default simulation)
+
+=== hf cluster statuses --table ===
+ADAPTER                GEN  AVAILABLE  FINALIZED
+cl-precondition-error  1    False      -
+cl-deployment          1    True       -
+cl-job                 1    True       -
+cl-maestro             1    True       -
+cl-invalid-resource    1    False      -
+cl-namespace           1    True       -
+
+=== Setting cluster-id in state ===
+=== hf nodepool list --table ===
+ID                                    NAME         REPLICAS  TYPE  GEN  LASTKNOWNRECONCILED  READY   RECONCILED  NP-CONFIGMAP
+019e0b6a-9817-7505-b7bc-265466f29e34  verify-np-1  1         m4    1    True 1               True 1  True 1      True 1
+
+=== Using nodepool ID: 019e0b6a-9817-7505-b7bc-265466f29e34 ===
+
+=== hf nodepool conditions --table ===
+TYPE                   STATUS  LAST TRANSITION       REASON                 MESSAGE
+Ready                  True    2026-05-09T06:26:38Z  ReadyAllReconciled     All required adapters reported Available=True or Finalized=True at the current generation
+Reconciled             True    2026-05-09T06:26:38Z  ReadyAllReconciled     All required adapters reported Available=True or Finalized=True at the current generation
+LastKnownReconciled    True    2026-05-09T06:26:38Z  AllAdaptersReconciled  All required adapters report Available=True for the tracked generation
+NpConfigmapSuccessful  True    2026-05-09T06:26:38Z  ConfigMapReady         ConfigMap is available and contains data
+
+=== hf nodepool statuses --table ===
+ADAPTER       GEN  AVAILABLE  FINALIZED
+np-configmap  1    True       -
+

@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/rh-amarin/hyperfleet-cli/internal/resource"
 )
 
 func TestJSONOutput(t *testing.T) {
@@ -357,5 +359,112 @@ func TestNewPrinter_Defaults(t *testing.T) {
 	}
 	if p.writer == nil {
 		t.Error("writer should not be nil")
+	}
+}
+
+func TestGenCell_Active(t *testing.T) {
+	p := &Printer{noColor: true}
+	got := p.GenCell(3, false)
+	if got != "3" {
+		t.Errorf("GenCell(3, false) = %q, want %q", got, "3")
+	}
+}
+
+func TestGenCell_Deleted_NoColor(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	p := &Printer{noColor: true}
+	got := p.GenCell(4, true)
+	if got != "4 ❌" {
+		t.Errorf("GenCell deleted noColor = %q, want %q", got, "4 ❌")
+	}
+}
+
+func TestGenCell_Deleted_Color(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	p := &Printer{noColor: false}
+	got := p.GenCell(4, true)
+	if !strings.Contains(got, "4") || !strings.Contains(got, "❌") {
+		t.Errorf("GenCell deleted color = %q, should contain '4' and '❌'", got)
+	}
+	if !strings.Contains(got, colorRed) {
+		t.Errorf("GenCell deleted color = %q, should contain red color code", got)
+	}
+}
+
+func TestAdapterNames_Dedup(t *testing.T) {
+	allStatuses := [][]resource.AdapterStatus{
+		{
+			{Adapter: "cl-deployment"},
+			{Adapter: "cl-namespace"},
+		},
+		{
+			{Adapter: "cl-deployment"},
+			{Adapter: "cl-job"},
+		},
+	}
+	names := AdapterNames(allStatuses)
+	if len(names) != 3 {
+		t.Fatalf("expected 3 unique names, got %d: %v", len(names), names)
+	}
+	expected := []string{"cl-deployment", "cl-job", "cl-namespace"}
+	for i, n := range names {
+		if n != expected[i] {
+			t.Errorf("names[%d] = %q, want %q", i, n, expected[i])
+		}
+	}
+}
+
+func TestAdapterDot_Active_Found(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	p := &Printer{noColor: false}
+	statuses := []resource.AdapterStatus{
+		{
+			Adapter:            "cl-deployment",
+			ObservedGeneration: 3,
+			Conditions: []resource.AdapterCondition{
+				{Type: "Available", Status: "True"},
+				{Type: "Finalized", Status: "False"},
+			},
+		},
+	}
+	got := p.AdapterDot(statuses, "cl-deployment", false)
+	if !strings.Contains(got, "3") || !strings.Contains(got, dotChar) {
+		t.Errorf("AdapterDot active found = %q, want dot with gen 3", got)
+	}
+	if !strings.Contains(got, colorGreen) {
+		t.Errorf("AdapterDot active Available=True should be green, got %q", got)
+	}
+}
+
+func TestAdapterDot_Deleted_Found(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	p := &Printer{noColor: false}
+	statuses := []resource.AdapterStatus{
+		{
+			Adapter:            "cl-deployment",
+			ObservedGeneration: 3,
+			Conditions: []resource.AdapterCondition{
+				{Type: "Available", Status: "False"},
+				{Type: "Finalized", Status: "True"},
+			},
+		},
+	}
+	got := p.AdapterDot(statuses, "cl-deployment", true)
+	if !strings.Contains(got, "3") || !strings.Contains(got, dotChar) {
+		t.Errorf("AdapterDot deleted found = %q, want dot with gen 3", got)
+	}
+	if !strings.Contains(got, colorGreen) {
+		t.Errorf("AdapterDot deleted Finalized=True should be green, got %q", got)
+	}
+}
+
+func TestAdapterDot_NotFound(t *testing.T) {
+	p := &Printer{noColor: true}
+	statuses := []resource.AdapterStatus{
+		{Adapter: "other-adapter"},
+	}
+	got := p.AdapterDot(statuses, "missing-adapter", false)
+	if got != "-" {
+		t.Errorf("AdapterDot not found = %q, want -", got)
 	}
 }

@@ -3,6 +3,8 @@ package output
 import (
 	"fmt"
 	"os"
+
+	"github.com/rh-amarin/hyperfleet-cli/internal/resource"
 )
 
 const (
@@ -56,4 +58,28 @@ func dot(status string, noColor bool) string {
 	default:
 		return "-"
 	}
+}
+
+// AdapterDot returns a dot+generation cell for a named adapter in a status list.
+// When deleted is true, the Finalized condition is used; otherwise Available is used.
+func (p *Printer) AdapterDot(statuses []resource.AdapterStatus, adapterName string, deleted bool) string {
+	return adapterDot(statuses, adapterName, deleted, p.noColor || os.Getenv("NO_COLOR") != "")
+}
+
+func adapterDot(statuses []resource.AdapterStatus, adapterName string, deleted bool, noColor bool) string {
+	condType := "Available"
+	if deleted {
+		condType = "Finalized"
+	}
+	for _, s := range statuses {
+		if s.Adapter == adapterName {
+			for _, c := range s.Conditions {
+				if c.Type == condType {
+					return dotWithGen(c.Status, s.ObservedGeneration, noColor)
+				}
+			}
+			return "-"
+		}
+	}
+	return "-"
 }

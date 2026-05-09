@@ -1,0 +1,127 @@
+=== hf cluster list --help ===
+List all clusters
+
+Usage:
+  hf cluster list [flags]
+
+Flags:
+  -h, --help    help for list
+      --table   Display as formatted table
+
+Global Flags:
+      --api-token string   override API token
+      --api-url string     override API URL
+      --config string      config directory (default ~/.config/hf)
+      --no-color           disable colored output
+  -o, --output string      output format: json, table, yaml
+  -v, --verbose            verbose output
+
+=== hf cluster conditions --help ===
+Show cluster conditions
+
+Usage:
+  hf cluster conditions [cluster_id] [flags]
+  hf cluster conditions [command]
+
+Available Commands:
+  table       Show cluster conditions as a formatted table
+
+Flags:
+  -h, --help                help for conditions
+  -i, --interval duration   refresh interval for watch mode (default 2s)
+      --table               Display as formatted table
+  -w, --watch               watch mode: refresh on interval
+
+Global Flags:
+      --api-token string   override API token
+      --api-url string     override API URL
+      --config string      config directory (default ~/.config/hf)
+      --no-color           disable colored output
+  -o, --output string      output format: json, table, yaml
+  -v, --verbose            verbose output
+
+Use "hf cluster conditions [command] --help" for more information about a command.
+
+=== hf cluster statuses --help ===
+Show cluster adapter statuses
+
+Usage:
+  hf cluster statuses [cluster_id] [flags]
+
+Flags:
+  -h, --help                help for statuses
+  -i, --interval duration   refresh interval for watch mode (default 2s)
+      --table               Display as formatted table
+  -w, --watch               watch mode: refresh on interval
+
+Global Flags:
+      --api-token string   override API token
+      --api-url string     override API URL
+      --config string      config directory (default ~/.config/hf)
+      --no-color           disable colored output
+  -o, --output string      output format: json, table, yaml
+  -v, --verbose            verbose output
+
+=== hf nodepool list --help ===
+List all nodepools in the current cluster
+
+Usage:
+  hf nodepool list [cluster_id] [flags]
+
+Flags:
+  -h, --help    help for list
+      --table   Display as formatted table
+
+Global Flags:
+      --api-token string   override API token
+      --api-url string     override API URL
+      --config string      config directory (default ~/.config/hf)
+      --no-color           disable colored output
+  -o, --output string      output format: json, table, yaml
+  -v, --verbose            verbose output
+
+=== hf nodepool conditions --help ===
+Show nodepool conditions
+
+Usage:
+  hf nodepool conditions [nodepool_id] [flags]
+  hf nodepool conditions [command]
+
+Available Commands:
+  table       Show nodepool conditions as a formatted table
+
+Flags:
+  -h, --help                help for conditions
+  -i, --interval duration   refresh interval for watch mode (default 2s)
+      --table               Display as formatted table
+  -w, --watch               watch mode: refresh on interval
+
+Global Flags:
+      --api-token string   override API token
+      --api-url string     override API URL
+      --config string      config directory (default ~/.config/hf)
+      --no-color           disable colored output
+  -o, --output string      output format: json, table, yaml
+  -v, --verbose            verbose output
+
+Use "hf nodepool conditions [command] --help" for more information about a command.
+
+=== hf nodepool statuses --help ===
+Show nodepool adapter statuses
+
+Usage:
+  hf nodepool statuses [nodepool_id] [flags]
+
+Flags:
+  -h, --help                help for statuses
+  -i, --interval duration   refresh interval for watch mode (default 2s)
+      --table               Display as formatted table
+  -w, --watch               watch mode: refresh on interval
+
+Global Flags:
+      --api-token string   override API token
+      --api-url string     override API URL
+      --config string      config directory (default ~/.config/hf)
+      --no-color           disable colored output
+  -o, --output string      output format: json, table, yaml
+  -v, --verbose            verbose output
