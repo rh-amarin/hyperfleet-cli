@@ -179,10 +179,27 @@ var clusterListCmd = &cobra.Command{
 // ── search ────────────────────────────────────────────────────────────────────
 
 var clusterSearchCmd = &cobra.Command{
-	Use:   "search <name>",
+	Use:   "search [name]",
 	Short: "Search clusters by name and set as current",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			if id := cfgStore.State().ClusterID; id != "" {
+				c := newClient()
+				cluster, err := api.Get[resource.Cluster](c, context.Background(), "clusters/"+id)
+				if err != nil {
+					if apiErr, ok := api.IsAPIError(err); ok {
+						return printer().Print(apiErr)
+					}
+					return err
+				}
+				return printer().Print(cluster)
+			}
+			out.Errorf("No cluster-id set in state. Run 'hf cluster create' or 'hf cluster search <name>' first.")
+			cmd.SilenceErrors = true
+			return fmt.Errorf("no cluster-id in state")
+		}
+
 		name := args[0]
 		c := newClient()
 		ctx := context.Background()
@@ -315,9 +332,10 @@ var clusterIDCmd = &cobra.Command{
 	Use:   "id",
 	Short: "Print the configured cluster-id",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		id, err := config.ClusterID(cfgStore, "")
-		if err != nil {
-			return err
+		id := cfgStore.State().ClusterID
+		if id == "" {
+			out.Warn("No cluster-id set in state. Run 'hf cluster create' or 'hf cluster search <name>' first.")
+			return nil
 		}
 		fmt.Println(id)
 		return nil
