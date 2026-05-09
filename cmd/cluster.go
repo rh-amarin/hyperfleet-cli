@@ -32,6 +32,7 @@ func init() {
 
 	// list
 	clusterCmd.AddCommand(clusterListCmd)
+	clusterListCmd.Flags().Bool("table", false, "Display as formatted table")
 
 	// search
 	clusterCmd.AddCommand(clusterSearchCmd)
@@ -50,11 +51,13 @@ func init() {
 	clusterConditionsCmd.AddCommand(clusterConditionsTableCmd)
 	clusterConditionsCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh on interval")
 	clusterConditionsCmd.Flags().DurationP("interval", "i", 2*time.Second, "refresh interval for watch mode")
+	clusterConditionsCmd.Flags().Bool("table", false, "Display as formatted table")
 
 	// statuses
 	clusterCmd.AddCommand(clusterStatusesCmd)
 	clusterStatusesCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh on interval")
 	clusterStatusesCmd.Flags().DurationP("interval", "i", 2*time.Second, "refresh interval for watch mode")
+	clusterStatusesCmd.Flags().Bool("table", false, "Display as formatted table")
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -167,12 +170,77 @@ var clusterListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all clusters",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		tableMode, _ := cmd.Flags().GetBool("table")
 		c := newClient()
-		list, err := api.Get[resource.ListResponse[resource.Cluster]](c, context.Background(), "clusters")
+		ctx := context.Background()
+
+		list, err := api.Get[resource.ListResponse[resource.Cluster]](c, ctx, "clusters")
 		if err != nil {
 			return err
 		}
-		return printer().Print(list)
+
+		if !tableMode {
+			return printer().Print(list)
+		}
+
+		p := printer()
+
+		// Fetch per-cluster adapter statuses.
+		allStatuses := make([][]resource.AdapterStatus, len(list.Items))
+		for i, cl := range list.Items {
+			sl, err := api.Get[resource.ListResponse[resource.AdapterStatus]](c, ctx, "clusters/"+cl.ID+"/statuses")
+			if err != nil {
+				if apiErr, ok := api.IsAPIError(err); ok && apiErr.Status == 404 {
+					allStatuses[i] = nil
+					continue
+				}
+				return err
+			}
+			allStatuses[i] = sl.Items
+		}
+
+		// Build dynamic condition columns.
+		allConds := make([][]out.Condition, len(list.Items))
+		for i, cl := range list.Items {
+			var conds []out.Condition
+			for _, cond := range cl.Status.Conditions {
+				conds = append(conds, out.Condition{Type: cond.Type})
+			}
+			allConds[i] = conds
+		}
+		condCols := out.DynamicColumns(allConds)
+
+		// Build dynamic adapter columns.
+		adapterCols := out.AdapterNames(allStatuses)
+
+		headers := append(append([]string{"ID", "NAME", "GEN"}, condCols...), adapterCols...)
+
+		rows := make([][]string, 0, len(list.Items))
+		for i, cl := range list.Items {
+			deleted := cl.DeletedTime != ""
+
+			condMap := make(map[string]string)
+			genMap := make(map[string]int32)
+			for _, cond := range cl.Status.Conditions {
+				condMap[cond.Type] = cond.Status
+				genMap[cond.Type] = cond.ObservedGeneration
+			}
+
+			row := []string{
+				cl.ID,
+				cl.Name,
+				p.GenCell(cl.Generation, cl.DeletedTime != ""),
+			}
+			for _, col := range condCols {
+				row = append(row, p.DotWithGen(condMap[col], genMap[col]))
+			}
+			for _, adapter := range adapterCols {
+				row = append(row, p.AdapterDot(allStatuses[i], adapter, deleted))
+			}
+			rows = append(rows, row)
+		}
+
+		return p.PrintTable(headers, rows)
 	},
 }
 
@@ -357,10 +425,19 @@ var clusterConditionsCmd = &cobra.Command{
 			return err
 		}
 
+		tableMode, _ := cmd.Flags().GetBool("table")
 		watchMode, _ := cmd.Flags().GetBool("watch")
 		interval, _ := cmd.Flags().GetDuration("interval")
 		p := printer()
 		c := newClient()
+
+		if tableMode {
+			cluster, err := api.Get[resource.Cluster](c, context.Background(), "clusters/"+clusterID)
+			if err != nil {
+				return err
+			}
+			return renderConditionsTable(p, cluster.Status.Conditions)
+		}
 
 		fetch := func() error {
 			cluster, err := api.Get[resource.Cluster](c, context.Background(), "clusters/"+clusterID)
@@ -403,20 +480,47 @@ var clusterConditionsTableCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		headers := []string{"TYPE", "STATUS", "LAST TRANSITION", "REASON", "MESSAGE"}
-		rows := make([][]string, 0, len(cluster.Status.Conditions))
-		for _, cond := range cluster.Status.Conditions {
-			rows = append(rows, []string{
-				cond.Type,
-				p.Dot(cond.Status),
-				cond.LastTransitionTime,
-				cond.Reason,
-				cond.Message,
-			})
-		}
-		return p.PrintTable(headers, rows)
+		return renderConditionsTable(p, cluster.Status.Conditions)
 	},
+}
+
+func renderConditionsTable(p *out.Printer, conditions []resource.ResourceCondition) error {
+	headers := []string{"TYPE", "STATUS", "LAST TRANSITION", "REASON", "MESSAGE"}
+	rows := make([][]string, 0, len(conditions))
+	for _, cond := range conditions {
+		rows = append(rows, []string{
+			cond.Type,
+			p.Dot(cond.Status),
+			cond.LastTransitionTime,
+			cond.Reason,
+			cond.Message,
+		})
+	}
+	return p.PrintTable(headers, rows)
+}
+
+func renderStatusesTable(p *out.Printer, statuses []resource.AdapterStatus) error {
+	headers := []string{"ADAPTER", "GEN", "Available", "Finalized"}
+	rows := make([][]string, 0, len(statuses))
+	for _, s := range statuses {
+		available := "-"
+		finalized := "-"
+		for _, c := range s.Conditions {
+			switch c.Type {
+			case "Available":
+				available = p.Dot(c.Status)
+			case "Finalized":
+				finalized = p.Dot(c.Status)
+			}
+		}
+		rows = append(rows, []string{
+			s.Adapter,
+			fmt.Sprintf("%d", s.ObservedGeneration),
+			available,
+			finalized,
+		})
+	}
+	return p.PrintTable(headers, rows)
 }
 
 // ── statuses ──────────────────────────────────────────────────────────────────
@@ -434,6 +538,7 @@ var clusterStatusesCmd = &cobra.Command{
 			return err
 		}
 
+		tableMode, _ := cmd.Flags().GetBool("table")
 		watchMode, _ := cmd.Flags().GetBool("watch")
 		interval, _ := cmd.Flags().GetDuration("interval")
 		p := printer()
@@ -445,6 +550,19 @@ var clusterStatusesCmd = &cobra.Command{
 			Page:  1,
 			Size:  0,
 			Total: 0,
+		}
+
+		if tableMode {
+			list, err := api.Get[resource.ListResponse[resource.AdapterStatus]](
+				c, context.Background(), "clusters/"+clusterID+"/statuses",
+			)
+			if err != nil {
+				if apiErr, ok := api.IsAPIError(err); ok && apiErr.Status == 404 {
+					return renderStatusesTable(p, nil)
+				}
+				return err
+			}
+			return renderStatusesTable(p, list.Items)
 		}
 
 		fetch := func() error {

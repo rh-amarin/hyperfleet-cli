@@ -3,6 +3,8 @@ package output
 import (
 	"sort"
 	"strings"
+
+	"github.com/rh-amarin/hyperfleet-cli/internal/resource"
 )
 
 // Condition is a named condition used by DynamicColumns to determine table column order.
@@ -51,4 +53,21 @@ func DynamicColumns(conditions [][]Condition) []string {
 		result = append(result, "Reconciled")
 	}
 	return result
+}
+
+// AdapterNames returns a sorted, deduplicated list of adapter names found across
+// all per-resource status slices.
+func AdapterNames(allStatuses [][]resource.AdapterStatus) []string {
+	seen := make(map[string]struct{})
+	for _, statuses := range allStatuses {
+		for _, s := range statuses {
+			seen[s.Adapter] = struct{}{}
+		}
+	}
+	names := make([]string, 0, len(seen))
+	for n := range seen {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	return names
 }

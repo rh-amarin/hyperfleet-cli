@@ -634,3 +634,177 @@ func TestClusterDelete_OutputsDeletedCluster(t *testing.T) {
 		t.Errorf("generation = %d, want 4", got.Generation)
 	}
 }
+
+// ── --table flags ──────────────────────────────────────────────────────────────
+
+func TestClusterList_Table(t *testing.T) {
+	cl := resource.Cluster{
+		ID:         "c-001",
+		Kind:       "Cluster",
+		Name:       "alpha",
+		Generation: 2,
+		Status: resource.ClusterStatus{Conditions: []resource.ResourceCondition{
+			{Type: "Available", Status: "False", ObservedGeneration: 2},
+			{Type: "Reconciled", Status: "False", ObservedGeneration: 2},
+		}},
+	}
+	adapterStatus := resource.AdapterStatus{
+		Adapter:            "cl-deployment",
+		ObservedGeneration: 2,
+		Conditions: []resource.AdapterCondition{
+			{Type: "Available", Status: "True"},
+			{Type: "Finalized", Status: "True"},
+		},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/statuses"):
+			w.Write(adapterStatusListJSON([]resource.AdapterStatus{adapterStatus}))
+		default:
+			w.Write(clusterListJSON([]resource.Cluster{cl}))
+		}
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmd(t, srv, "--no-color", "cluster", "list", "--table")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, want := range []string{"ID", "NAME", "GEN", "AVAILABLE", "RECONCILED", "CL-DEPLOYMENT"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("expected %q in table output, got:\n%s", want, stdout)
+		}
+	}
+	if !strings.Contains(stdout, "alpha") {
+		t.Errorf("expected cluster name 'alpha' in output, got:\n%s", stdout)
+	}
+}
+
+func TestClusterList_TableNoAdapters(t *testing.T) {
+	cl := resource.Cluster{
+		ID:         "c-001",
+		Kind:       "Cluster",
+		Name:       "beta",
+		Generation: 1,
+		Status: resource.ClusterStatus{Conditions: []resource.ResourceCondition{
+			{Type: "Available", Status: "False", ObservedGeneration: 1},
+		}},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasSuffix(r.URL.Path, "/statuses") {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, `{"status":404,"code":"HYPERFLEET-NTF-001","title":"Not Found","detail":"no statuses"}`)
+			return
+		}
+		w.Write(clusterListJSON([]resource.Cluster{cl}))
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmd(t, srv, "--no-color", "cluster", "list", "--table")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(stdout, "ID") || !strings.Contains(stdout, "GEN") {
+		t.Errorf("expected table headers, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "beta") {
+		t.Errorf("expected cluster name in output, got:\n%s", stdout)
+	}
+}
+
+func TestClusterList_TableJSON_NoRegression(t *testing.T) {
+	cl := resource.Cluster{ID: "c-001", Kind: "Cluster", Name: "alpha", Generation: 1}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(clusterListJSON([]resource.Cluster{cl}))
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmd(t, srv, "cluster", "list", "--table=false")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var got map[string]any
+	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+		t.Fatalf("cluster list without --table should output JSON, got:\n%s", stdout)
+	}
+}
+
+func TestClusterConditions_Table(t *testing.T) {
+	cl := resource.Cluster{
+		ID:         "c-001",
+		Kind:       "Cluster",
+		Name:       "alpha",
+		Generation: 3,
+		Status: resource.ClusterStatus{Conditions: []resource.ResourceCondition{
+			{Type: "Available", Status: "False", Reason: "AdaptersNotAtSameGeneration", Message: "adapters not ready", LastTransitionTime: "2026-05-09T00:00:00Z"},
+			{Type: "Reconciled", Status: "True", Reason: "AllAdapters", Message: "all good", LastTransitionTime: "2026-05-09T00:01:00Z"},
+		}},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(clusterJSON(cl.ID, cl.Name, cl.Generation, ""))
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmd(t, srv, "--no-color", "cluster", "conditions", "c-001", "--table")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, want := range []string{"TYPE", "STATUS", "LAST TRANSITION", "REASON", "MESSAGE"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("expected column %q in conditions table, got:\n%s", want, stdout)
+		}
+	}
+	if !strings.Contains(stdout, "Available") || !strings.Contains(stdout, "Reconciled") {
+		t.Errorf("expected condition types in output, got:\n%s", stdout)
+	}
+}
+
+func TestClusterStatuses_Table(t *testing.T) {
+	adapters := []resource.AdapterStatus{
+		{
+			Adapter:            "cl-deployment",
+			ObservedGeneration: 3,
+			Conditions: []resource.AdapterCondition{
+				{Type: "Available", Status: "True"},
+				{Type: "Finalized", Status: "True"},
+			},
+		},
+		{
+			Adapter:            "cl-job",
+			ObservedGeneration: 3,
+			Conditions: []resource.AdapterCondition{
+				{Type: "Available", Status: "False"},
+				{Type: "Finalized", Status: "False"},
+			},
+		},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(adapterStatusListJSON(adapters))
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmd(t, srv, "--no-color", "cluster", "statuses", "c-001", "--table")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, want := range []string{"ADAPTER", "GEN", "AVAILABLE", "FINALIZED"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("expected column %q in statuses table, got:\n%s", want, stdout)
+		}
+	}
+	if !strings.Contains(stdout, "cl-deployment") || !strings.Contains(stdout, "cl-job") {
+		t.Errorf("expected adapter names in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "3") {
+		t.Errorf("expected generation '3' in output, got:\n%s", stdout)
+	}
+}

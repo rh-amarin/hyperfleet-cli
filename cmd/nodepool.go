@@ -27,6 +27,7 @@ var nodepoolCmd = &cobra.Command{
 func init() {
 	nodepoolCmd.AddCommand(nodepoolCreateCmd)
 	nodepoolCmd.AddCommand(nodepoolListCmd)
+	nodepoolListCmd.Flags().Bool("table", false, "Display as formatted table")
 	nodepoolCmd.AddCommand(nodepoolSearchCmd)
 	nodepoolCmd.AddCommand(nodepoolGetCmd)
 	nodepoolCmd.AddCommand(nodepoolPatchCmd)
@@ -37,10 +38,12 @@ func init() {
 	nodepoolConditionsCmd.AddCommand(nodepoolConditionsTableCmd)
 	nodepoolConditionsCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh on interval")
 	nodepoolConditionsCmd.Flags().DurationP("interval", "i", 2*time.Second, "refresh interval for watch mode")
+	nodepoolConditionsCmd.Flags().Bool("table", false, "Display as formatted table")
 
 	nodepoolCmd.AddCommand(nodepoolStatusesCmd)
 	nodepoolStatusesCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh on interval")
 	nodepoolStatusesCmd.Flags().DurationP("interval", "i", 2*time.Second, "refresh interval for watch mode")
+	nodepoolStatusesCmd.Flags().Bool("table", false, "Display as formatted table")
 
 	nodepoolCmd.AddCommand(nodepoolTableCmd)
 	nodepoolTableCmd.Flags().BoolP("watch", "w", false, "watch mode: refresh on interval")
@@ -123,12 +126,90 @@ var nodepoolListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		tableMode, _ := cmd.Flags().GetBool("table")
 		c := newClient()
-		list, err := api.Get[resource.ListResponse[resource.NodePool]](c, context.Background(), "clusters/"+clusterID+"/nodepools")
+		ctx := context.Background()
+
+		list, err := api.Get[resource.ListResponse[resource.NodePool]](c, ctx, "clusters/"+clusterID+"/nodepools")
 		if err != nil {
 			return err
 		}
-		return printer().Print(list)
+
+		if !tableMode {
+			return printer().Print(list)
+		}
+
+		p := printer()
+
+		// Fetch per-nodepool adapter statuses.
+		allStatuses := make([][]resource.AdapterStatus, len(list.Items))
+		for i, np := range list.Items {
+			sl, err := api.Get[resource.ListResponse[resource.AdapterStatus]](
+				c, ctx, "clusters/"+clusterID+"/nodepools/"+np.ID+"/statuses",
+			)
+			if err != nil {
+				if apiErr, ok := api.IsAPIError(err); ok && apiErr.Status == 404 {
+					allStatuses[i] = nil
+					continue
+				}
+				return err
+			}
+			allStatuses[i] = sl.Items
+		}
+
+		// Build dynamic condition columns.
+		allConds := make([][]out.Condition, len(list.Items))
+		for i, np := range list.Items {
+			var conds []out.Condition
+			for _, cond := range np.Status.Conditions {
+				conds = append(conds, out.Condition{Type: cond.Type})
+			}
+			allConds[i] = conds
+		}
+		condCols := out.DynamicColumns(allConds)
+
+		// Build dynamic adapter columns.
+		adapterCols := out.AdapterNames(allStatuses)
+
+		headers := append(append([]string{"ID", "NAME", "REPLICAS", "TYPE", "GEN"}, condCols...), adapterCols...)
+
+		rows := make([][]string, 0, len(list.Items))
+		for i, np := range list.Items {
+			deleted := np.DeletedTime != ""
+
+			replicas := fmt.Sprintf("%v", np.Spec["replicas"])
+			instanceType := "-"
+			if platform, ok := np.Spec["platform"].(map[string]any); ok {
+				if t, ok := platform["type"].(string); ok {
+					instanceType = t
+				}
+			}
+
+			condMap := make(map[string]string)
+			genMap := make(map[string]int32)
+			for _, cond := range np.Status.Conditions {
+				condMap[cond.Type] = cond.Status
+				genMap[cond.Type] = cond.ObservedGeneration
+			}
+
+			row := []string{
+				np.ID,
+				np.Name,
+				replicas,
+				instanceType,
+				p.GenCell(np.Generation, np.DeletedTime != ""),
+			}
+			for _, col := range condCols {
+				row = append(row, p.DotWithGen(condMap[col], genMap[col]))
+			}
+			for _, adapter := range adapterCols {
+				row = append(row, p.AdapterDot(allStatuses[i], adapter, deleted))
+			}
+			rows = append(rows, row)
+		}
+
+		return p.PrintTable(headers, rows)
 	},
 }
 
@@ -363,10 +444,19 @@ var nodepoolConditionsCmd = &cobra.Command{
 			return err
 		}
 
+		tableMode, _ := cmd.Flags().GetBool("table")
 		watchMode, _ := cmd.Flags().GetBool("watch")
 		interval, _ := cmd.Flags().GetDuration("interval")
 		p := printer()
 		c := newClient()
+
+		if tableMode {
+			np, err := api.Get[resource.NodePool](c, context.Background(), "clusters/"+clusterID+"/nodepools/"+nodepoolID)
+			if err != nil {
+				return err
+			}
+			return renderConditionsTable(p, np.Status.Conditions)
+		}
 
 		fetch := func() error {
 			np, err := api.Get[resource.NodePool](c, context.Background(), "clusters/"+clusterID+"/nodepools/"+nodepoolID)
@@ -413,19 +503,7 @@ var nodepoolConditionsTableCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		headers := []string{"TYPE", "STATUS", "LAST TRANSITION", "REASON", "MESSAGE"}
-		rows := make([][]string, 0, len(np.Status.Conditions))
-		for _, cond := range np.Status.Conditions {
-			rows = append(rows, []string{
-				cond.Type,
-				p.Dot(cond.Status),
-				cond.LastTransitionTime,
-				cond.Reason,
-				cond.Message,
-			})
-		}
-		return p.PrintTable(headers, rows)
+		return renderConditionsTable(p, np.Status.Conditions)
 	},
 }
 
@@ -448,6 +526,7 @@ var nodepoolStatusesCmd = &cobra.Command{
 			return err
 		}
 
+		tableMode, _ := cmd.Flags().GetBool("table")
 		watchMode, _ := cmd.Flags().GetBool("watch")
 		interval, _ := cmd.Flags().GetDuration("interval")
 		p := printer()
@@ -459,6 +538,19 @@ var nodepoolStatusesCmd = &cobra.Command{
 			Page:  1,
 			Size:  0,
 			Total: 0,
+		}
+
+		if tableMode {
+			list, err := api.Get[resource.ListResponse[resource.AdapterStatus]](
+				c, context.Background(), "clusters/"+clusterID+"/nodepools/"+nodepoolID+"/statuses",
+			)
+			if err != nil {
+				if apiErr, ok := api.IsAPIError(err); ok && apiErr.Status == 404 {
+					return renderStatusesTable(p, nil)
+				}
+				return err
+			}
+			return renderStatusesTable(p, list.Items)
 		}
 
 		fetch := func() error {

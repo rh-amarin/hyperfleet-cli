@@ -570,7 +570,148 @@ func TestNodePoolStatuses_404_TreatedAsEmptyList(t *testing.T) {
 	}
 }
 
-// ── table ──────────────────────────────────────────────────────────────────────
+// ── --table flag tests ─────────────────────────────────────────────────────────
+
+func TestNodePoolList_Table(t *testing.T) {
+	np := resource.NodePool{
+		ID:         "np-001",
+		Kind:       "NodePool",
+		Name:       "workers-1",
+		Generation: 2,
+		Spec:       map[string]any{"platform": map[string]any{"type": "m4"}, "replicas": float64(1)},
+		Status: resource.NodePoolStatus{Conditions: []resource.ResourceCondition{
+			{Type: "Available", Status: "False", ObservedGeneration: 2},
+			{Type: "Reconciled", Status: "False", ObservedGeneration: 2},
+		}},
+	}
+	adapterStatus := resource.AdapterStatus{
+		Adapter:            "np-deployment",
+		ObservedGeneration: 2,
+		Conditions: []resource.AdapterCondition{
+			{Type: "Available", Status: "True"},
+			{Type: "Finalized", Status: "True"},
+		},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/statuses"):
+			w.Write(adapterStatusListJSON([]resource.AdapterStatus{adapterStatus}))
+		default:
+			w.Write(nodepoolListJSON([]resource.NodePool{np}))
+		}
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmdWithCluster(t, srv, "c-001", "--no-color", "nodepool", "list", "--table")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, want := range []string{"ID", "NAME", "REPLICAS", "TYPE", "GEN", "AVAILABLE", "RECONCILED", "NP-DEPLOYMENT"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("expected %q in table output, got:\n%s", want, stdout)
+		}
+	}
+	if !strings.Contains(stdout, "workers-1") {
+		t.Errorf("expected nodepool name 'workers-1' in output, got:\n%s", stdout)
+	}
+}
+
+func TestNodePoolList_TableJSON_NoRegression(t *testing.T) {
+	np := resource.NodePool{ID: "np-001", Kind: "NodePool", Name: "workers-1", Generation: 1}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(nodepoolListJSON([]resource.NodePool{np}))
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmdWithCluster(t, srv, "c-001", "nodepool", "list", "--table=false")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var got map[string]any
+	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+		t.Fatalf("nodepool list without --table should output JSON, got:\n%s", stdout)
+	}
+}
+
+func TestNodePoolConditions_Table(t *testing.T) {
+	np := resource.NodePool{
+		ID:         "np-001",
+		Kind:       "NodePool",
+		Name:       "workers-1",
+		Generation: 3,
+		Status: resource.NodePoolStatus{Conditions: []resource.ResourceCondition{
+			{Type: "Available", Status: "False", Reason: "AdaptersNotReady", Message: "adapters not ready", LastTransitionTime: "2026-05-09T00:00:00Z"},
+			{Type: "Reconciled", Status: "True", Reason: "AllAdapters", Message: "all good", LastTransitionTime: "2026-05-09T00:01:00Z"},
+		}},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(np)
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmdWithClusterAndNodePool(t, srv, "c-001", "np-001", "--no-color", "nodepool", "conditions", "--table")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, want := range []string{"TYPE", "STATUS", "LAST TRANSITION", "REASON", "MESSAGE"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("expected column %q in conditions table, got:\n%s", want, stdout)
+		}
+	}
+	if !strings.Contains(stdout, "Available") || !strings.Contains(stdout, "Reconciled") {
+		t.Errorf("expected condition types in output, got:\n%s", stdout)
+	}
+}
+
+func TestNodePoolStatuses_Table(t *testing.T) {
+	adapters := []resource.AdapterStatus{
+		{
+			Adapter:            "np-deployment",
+			ObservedGeneration: 2,
+			Conditions: []resource.AdapterCondition{
+				{Type: "Available", Status: "True"},
+				{Type: "Finalized", Status: "True"},
+			},
+		},
+		{
+			Adapter:            "np-configmap",
+			ObservedGeneration: 2,
+			Conditions: []resource.AdapterCondition{
+				{Type: "Available", Status: "False"},
+				{Type: "Finalized", Status: "False"},
+			},
+		},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(adapterStatusListJSON(adapters))
+	}))
+	defer srv.Close()
+
+	stdout, _, err := runCmdWithClusterAndNodePool(t, srv, "c-001", "np-001", "--no-color", "nodepool", "statuses", "--table")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, want := range []string{"ADAPTER", "GEN", "AVAILABLE", "FINALIZED"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("expected column %q in statuses table, got:\n%s", want, stdout)
+		}
+	}
+	if !strings.Contains(stdout, "np-deployment") || !strings.Contains(stdout, "np-configmap") {
+		t.Errorf("expected adapter names in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "2") {
+		t.Errorf("expected generation '2' in output, got:\n%s", stdout)
+	}
+}
+
+// ── table subcommand ────────────────────────────────────────────────────────────
 
 func TestNodePoolTable_RendersWithDynamicColumns(t *testing.T) {
 	nps := []resource.NodePool{
