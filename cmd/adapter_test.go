@@ -77,8 +77,8 @@ func TestClusterAdapterPostStatus_PayloadShape(t *testing.T) {
 	if body.ObservedGeneration != 2 {
 		t.Errorf("observed_generation = %d, want 2", body.ObservedGeneration)
 	}
-	if len(body.Conditions) != 3 {
-		t.Fatalf("conditions len = %d, want 3", len(body.Conditions))
+	if len(body.Conditions) != 4 {
+		t.Fatalf("conditions len = %d, want 4", len(body.Conditions))
 	}
 	for _, c := range body.Conditions {
 		if c.Status != "False" {
@@ -117,7 +117,7 @@ func TestClusterAdapterPostStatus_DefaultGeneration(t *testing.T) {
 	}
 }
 
-func TestClusterAdapterPostStatus_AllThreeConditionTypes(t *testing.T) {
+func TestClusterAdapterPostStatus_AllFourConditionTypes(t *testing.T) {
 	var body resource.AdapterStatusCreateRequest
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +134,7 @@ func TestClusterAdapterPostStatus_AllThreeConditionTypes(t *testing.T) {
 	for _, c := range body.Conditions {
 		types[c.Type] = true
 	}
-	for _, want := range []string{"Available", "Applied", "Health"} {
+	for _, want := range []string{"Available", "Applied", "Health", "Finalized"} {
 		if !types[want] {
 			t.Errorf("condition type %q missing from payload", want)
 		}
@@ -207,8 +207,8 @@ func TestNodePoolAdapterPostStatus_PayloadShape(t *testing.T) {
 	if body.Adapter != "np-configmap" {
 		t.Errorf("adapter = %q, want np-configmap", body.Adapter)
 	}
-	if len(body.Conditions) != 3 {
-		t.Fatalf("conditions len = %d, want 3", len(body.Conditions))
+	if len(body.Conditions) != 4 {
+		t.Fatalf("conditions len = %d, want 4", len(body.Conditions))
 	}
 	for _, c := range body.Conditions {
 		if c.Status != "True" {

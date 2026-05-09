@@ -431,7 +431,7 @@ var clusterStatusesCmd = &cobra.Command{
 
 		fetch := func() error {
 			list, err := api.Get[resource.ListResponse[resource.AdapterStatus]](
-				c, context.Background(), "clusters/"+clusterID+"/adapter-statuses",
+				c, context.Background(), "clusters/"+clusterID+"/statuses",
 			)
 			if err != nil {
 				if apiErr, ok := api.IsAPIError(err); ok && apiErr.Status == 404 {

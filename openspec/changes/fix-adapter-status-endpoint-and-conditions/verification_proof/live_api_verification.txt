@@ -1,0 +1,332 @@
+=== hf cluster statuses (live) ===
+{
+  "items": [
+    {
+      "adapter": "cl-namespace",
+      "observed_generation": 1,
+      "conditions": [
+        {
+          "type": "Applied",
+          "status": "True",
+          "reason": "NamespaceCreated",
+          "message": "Namespace created successfully",
+          "last_transition_time": "2026-05-08T21:20:46Z"
+        },
+        {
+          "type": "Available",
+          "status": "True",
+          "reason": "NamespaceReady",
+          "message": "Namespace is active and ready",
+          "last_transition_time": "2026-05-08T21:20:46Z"
+        },
+        {
+          "type": "Health",
+          "status": "True",
+          "reason": "Healthy",
+          "message": "All adapter operations in progress or completed successfully",
+          "last_transition_time": "2026-05-08T21:20:46Z"
+        }
+      ],
+      "data": {
+        "namespace": {
+          "name": "019e0976-df2f-7b18-a24a-6e519318a863",
+          "status": "Active"
+        }
+      },
+      "created_time": "2026-05-08T21:20:46Z",
+      "last_report_time": "2026-05-09T06:22:51Z"
+    },
+    {
+      "adapter": "cl-job",
+      "observed_generation": 1,
+      "conditions": [
+        {
+          "type": "Applied",
+          "status": "True",
+          "reason": "JobApplied",
+          "message": "testJob manifest applied successfully",
+          "last_transition_time": "2026-05-08T21:21:11Z"
+        },
+        {
+          "type": "Available",
+          "status": "True",
+          "reason": "ValidationPassed",
+          "message": "Environment validated successfully (default simulation)",
+          "last_transition_time": "2026-05-08T21:21:11Z"
+        },
+        {
+          "type": "Health",
+          "status": "True",
+          "reason": "Healthy",
+          "message": "All adapter operations in progress or completed successfully",
+          "last_transition_time": "2026-05-08T21:20:46Z"
+        }
+      ],
+      "created_time": "2026-05-08T21:20:46Z",
+      "last_report_time": "2026-05-09T06:22:51Z"
+    },
+    {
+      "adapter": "cl-deployment",
+      "observed_generation": 1,
+      "conditions": [
+        {
+          "type": "Available",
+          "status": "True",
+          "reason": "ManualStatusPost",
+          "message": "Status posted via hf adapter post-status",
+          "last_transition_time": "2026-05-08T21:21:21Z"
+        },
+        {
+          "type": "Applied",
+          "status": "True",
+          "reason": "ManualStatusPost",
+          "message": "Status posted via hf adapter post-status",
+          "last_transition_time": "2026-05-08T21:21:21Z"
+        },
+        {
+          "type": "Health",
+          "status": "True",
+          "reason": "ManualStatusPost",
+          "message": "Status posted via hf adapter post-status",
+          "last_transition_time": "2026-05-08T21:20:46Z"
+        },
+        {
+          "type": "Finalized",
+          "status": "True",
+          "reason": "ManualStatusPost",
+          "message": "Status posted via hf adapter post-status",
+          "last_transition_time": "2026-05-09T06:24:56Z"
+        }
+      ],
+      "created_time": "2026-05-08T21:20:46Z",
+      "last_report_time": "2026-05-09T06:24:56Z"
+    },
+    {
+      "adapter": "cl-invalid-resource",
+      "observed_generation": 1,
+      "conditions": [
+        {
+          "type": "Applied",
+          "status": "False",
+          "reason": "ResourceFailed",
+          "message": "ConfigMap creation failed",
+          "last_transition_time": "2026-05-08T21:20:46Z"
+        },
+        {
+          "type": "Available",
+          "status": "False",
+          "reason": "ResourceFailed",
+          "message": "[resources] invalidConfigMap: failed to apply resource: failed to create resource ConfigMap/INVALID-NAME-019e0976-df2f-7b18-a24a-6e519318a863: K8s create operation failed: ConfigMap/INVALID-NAME-019e0976-df2f-7b18-a24a-6e519318a863 (namespace: 019e0976-df2f-7b18-a24a-6e519318a863): ConfigMap \"INVALID-NAME-019e0976-df2f-7b18-a24a-6e519318a863\" is invalid: metadata.name: Invalid value: \"INVALID-NAME-019e0976-df2f-7b18-a24a-6e519318a863\": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+          "last_transition_time": "2026-05-08T21:20:46Z"
+        },
+        {
+          "type": "Health",
+          "status": "False",
+          "reason": "ResourceFailed",
+          "message": "[resources] invalidConfigMap: failed to apply resource: failed to create resource ConfigMap/INVALID-NAME-019e0976-df2f-7b18-a24a-6e519318a863: K8s create operation failed: ConfigMap/INVALID-NAME-019e0976-df2f-7b18-a24a-6e519318a863 (namespace: 019e0976-df2f-7b18-a24a-6e519318a863): ConfigMap \"INVALID-NAME-019e0976-df2f-7b18-a24a-6e519318a863\" is invalid: metadata.name: Invalid value: \"INVALID-NAME-019e0976-df2f-7b18-a24a-6e519318a863\": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+          "last_transition_time": "2026-05-09T06:22:51Z"
+        }
+      ],
+      "data": {
+        "configmap": {
+          "name": ""
+        }
+      },
+      "created_time": "2026-05-08T21:20:46Z",
+      "last_report_time": "2026-05-09T06:22:51Z"
+    },
+    {
+      "adapter": "cl-precondition-error",
+      "observed_generation": 1,
+      "conditions": [
+        {
+          "type": "Applied",
+          "status": "False",
+          "reason": "NamespacePending",
+          "message": "Namespace creation in progress",
+          "last_transition_time": "2026-05-08T21:20:46Z"
+        },
+        {
+          "type": "Available",
+          "status": "False",
+          "reason": "NamespaceNotReady",
+          "message": "Namespace is not active and ready",
+          "last_transition_time": "2026-05-08T21:20:46Z"
+        },
+        {
+          "type": "Health",
+          "status": "False",
+          "reason": "ExecutionFailed",
+          "message": "[preconditions] clusterStatus: API call failed: API request failed: GET http://invalid-service:8080/api/nonexistent after 0 attempt(s): API request failed: GET http://invalid-service:8080/api/nonexistent after 1 attempt(s): HTTP request failed: Get \"http://invalid-service:8080/api/nonexistent\": dial tcp: lookup invalid-service on 10.112.0.10:53: no such host",
+          "last_transition_time": "2026-05-08T21:20:46Z"
+        }
+      ],
+      "created_time": "2026-05-08T21:20:46Z",
+      "last_report_time": "2026-05-09T06:22:51Z"
+    },
+    {
+      "adapter": "cl-maestro",
+      "observed_generation": 1,
+      "conditions": [
+        {
+          "type": "Applied",
+          "status": "True",
+          "reason": "AppliedManifestWorkComplete",
+          "message": "Apply manifest work complete",
+          "last_transition_time": "2026-05-09T06:22:51Z"
+        },
+        {
+          "type": "Available",
+          "status": "True",
+          "reason": "AllResourcesAvailable",
+          "message": "All manifests (namespace, configmap) are available on spoke cluster",
+          "last_transition_time": "2026-05-09T06:22:51Z"
+        },
+        {
+          "type": "Health",
+          "status": "True",
+          "reason": "Healthy",
+          "message": "Adapter execution completed successfully",
+          "last_transition_time": "2026-05-09T06:22:51Z"
+        }
+      ],
+      "data": {
+        "configmap": {
+          "clusterId": "019e0976-df2f-7b18-a24a-6e519318a863",
+          "name": "019e0976-df2f-7b18-a24a-6e519318a863-cl-maestro-configmap"
+        },
+        "manifestwork": {
+          "consumer": "cluster1",
+          "name": "019e0976-df2f-7b18-a24a-6e519318a863-cl-maestro"
+        },
+        "namespace": {
+          "name": "019e0976-df2f-7b18-a24a-6e519318a863-cl-maestro-namespace",
+          "phase": "Active"
+        }
+      },
+      "created_time": "2026-05-08T21:20:46Z",
+      "last_report_time": "2026-05-09T06:22:51Z"
+    }
+  ],
+  "kind": "AdapterStatusList",
+  "page": 1,
+  "size": 6,
+  "total": 6
+}
+
+=== hf cluster adapter post-status cl-deployment True 1 (live) ===
+[INFO] Posting adapter status: cl-deployment = True (gen: 1) for cluster: 019e0976-df2f-7b18-a24a-6e519318a863
+{
+  "adapter": "cl-deployment",
+  "observed_generation": 1,
+  "conditions": [
+    {
+      "type": "Available",
+      "status": "True",
+      "reason": "ManualStatusPost",
+      "message": "Status posted via hf adapter post-status",
+      "last_transition_time": "2026-05-08T21:21:21Z"
+    },
+    {
+      "type": "Applied",
+      "status": "True",
+      "reason": "ManualStatusPost",
+      "message": "Status posted via hf adapter post-status",
+      "last_transition_time": "2026-05-08T21:21:21Z"
+    },
+    {
+      "type": "Health",
+      "status": "True",
+      "reason": "ManualStatusPost",
+      "message": "Status posted via hf adapter post-status",
+      "last_transition_time": "2026-05-08T21:20:46Z"
+    },
+    {
+      "type": "Finalized",
+      "status": "True",
+      "reason": "ManualStatusPost",
+      "message": "Status posted via hf adapter post-status",
+      "last_transition_time": "2026-05-09T06:24:56Z"
+    }
+  ],
+  "created_time": "2026-05-08T21:20:46Z",
+  "last_report_time": "2026-05-09T06:25:19Z"
+}
+
+=== hf nodepool statuses (live) ===
+{
+  "items": [
+    {
+      "adapter": "np-configmap",
+      "observed_generation": 1,
+      "conditions": [
+        {
+          "type": "Applied",
+          "status": "True",
+          "reason": "ConfigMapApplied",
+          "message": "nodepoolConfigMap manifest applied successfully",
+          "last_transition_time": "2026-05-08T21:21:28Z"
+        },
+        {
+          "type": "Available",
+          "status": "True",
+          "reason": "ConfigMapReady",
+          "message": "ConfigMap is available and contains data",
+          "last_transition_time": "2026-05-08T21:21:28Z"
+        },
+        {
+          "type": "Health",
+          "status": "True",
+          "reason": "Healthy",
+          "message": "All adapter operations in progress or completed successfully",
+          "last_transition_time": "2026-05-08T21:21:28Z"
+        }
+      ],
+      "created_time": "2026-05-08T21:21:28Z",
+      "last_report_time": "2026-05-09T06:21:28Z"
+    }
+  ],
+  "kind": "AdapterStatusList",
+  "page": 1,
+  "size": 1,
+  "total": 1
+}
+
+=== hf nodepool adapter post-status np-configmap True 1 (live) ===
+[INFO] Posting adapter status: np-configmap = True (gen: 1) for nodepool: 019e0977-72b4-7d91-b747-fa192eea9fa5
+{
+  "adapter": "np-configmap",
+  "observed_generation": 1,
+  "conditions": [
+    {
+      "type": "Available",
+      "status": "True",
+      "reason": "ManualStatusPost",
+      "message": "Status posted via hf adapter post-status",
+      "last_transition_time": "2026-05-08T21:21:28Z"
+    },
+    {
+      "type": "Applied",
+      "status": "True",
+      "reason": "ManualStatusPost",
+      "message": "Status posted via hf adapter post-status",
+      "last_transition_time": "2026-05-08T21:21:28Z"
+    },
+    {
+      "type": "Health",
+      "status": "True",
+      "reason": "ManualStatusPost",
+      "message": "Status posted via hf adapter post-status",
+      "last_transition_time": "2026-05-08T21:21:28Z"
+    },
+    {
+      "type": "Finalized",
+      "status": "True",
+      "reason": "ManualStatusPost",
+      "message": "Status posted via hf adapter post-status",
+      "last_transition_time": "2026-05-09T06:25:19Z"
+    }
+  ],
+  "created_time": "2026-05-08T21:21:28Z",
+  "last_report_time": "2026-05-09T06:25:19Z"
+}

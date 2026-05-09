@@ -1,0 +1,188 @@
+=== RUN   TestClusterAdapterPostStatus_PostsCorrectURL
+--- PASS: TestClusterAdapterPostStatus_PostsCorrectURL (0.00s)
+=== RUN   TestClusterAdapterPostStatus_PayloadShape
+--- PASS: TestClusterAdapterPostStatus_PayloadShape (0.00s)
+=== RUN   TestClusterAdapterPostStatus_DefaultGeneration
+--- PASS: TestClusterAdapterPostStatus_DefaultGeneration (0.00s)
+=== RUN   TestClusterAdapterPostStatus_AllFourConditionTypes
+--- PASS: TestClusterAdapterPostStatus_AllFourConditionTypes (0.00s)
+=== RUN   TestNodePoolAdapterPostStatus_PostsCorrectURL
+--- PASS: TestNodePoolAdapterPostStatus_PostsCorrectURL (0.00s)
+=== RUN   TestNodePoolAdapterPostStatus_ExplicitNodePoolID
+--- PASS: TestNodePoolAdapterPostStatus_ExplicitNodePoolID (0.00s)
+=== RUN   TestNodePoolAdapterPostStatus_PayloadShape
+--- PASS: TestNodePoolAdapterPostStatus_PayloadShape (0.00s)
+=== RUN   TestAdapterPostStatus_InvalidStatus_ReturnsError
+--- PASS: TestAdapterPostStatus_InvalidStatus_ReturnsError (0.00s)
+=== RUN   TestAdapterPostStatus_InvalidGeneration_ReturnsError
+--- PASS: TestAdapterPostStatus_InvalidGeneration_ReturnsError (0.00s)
+=== RUN   TestAdapterPostStatus_NoClusterID_ReturnsError
+--- PASS: TestAdapterPostStatus_NoClusterID_ReturnsError (0.00s)
+=== RUN   TestNodePoolAdapterPostStatus_NoNodePoolID_ReturnsError
+--- PASS: TestNodePoolAdapterPostStatus_NoNodePoolID_ReturnsError (0.00s)
+=== RUN   TestClusterCreate_DefaultArgs
+--- PASS: TestClusterCreate_DefaultArgs (0.00s)
+=== RUN   TestClusterCreate_ExplicitArgs
+--- PASS: TestClusterCreate_ExplicitArgs (0.00s)
+=== RUN   TestClusterCreate_DuplicateGuard
+--- PASS: TestClusterCreate_DuplicateGuard (0.00s)
+=== RUN   TestClusterCreate_PersistsClusterID
+--- PASS: TestClusterCreate_PersistsClusterID (0.00s)
+=== RUN   TestClusterGet_OutputsJSON
+--- PASS: TestClusterGet_OutputsJSON (0.00s)
+=== RUN   TestClusterGet_NotFound_RFC7807
+--- PASS: TestClusterGet_NotFound_RFC7807 (0.00s)
+=== RUN   TestClusterSearch_SetsClusterID
+--- PASS: TestClusterSearch_SetsClusterID (0.00s)
+=== RUN   TestClusterSearch_NoMatch_WarnAndEmptyArray
+--- PASS: TestClusterSearch_NoMatch_WarnAndEmptyArray (0.00s)
+=== RUN   TestClusterPatch_NoArgs_ExitsNonZero
+--- PASS: TestClusterPatch_NoArgs_ExitsNonZero (0.00s)
+=== RUN   TestClusterPatch_SpecCounter_IncrementsAndPatches
+--- PASS: TestClusterPatch_SpecCounter_IncrementsAndPatches (0.00s)
+=== RUN   TestClusterPatch_LabelsCounter_IncrementsAndPatches
+--- PASS: TestClusterPatch_LabelsCounter_IncrementsAndPatches (0.00s)
+=== RUN   TestClusterConditions_OutputsGenerationAndConditions
+--- PASS: TestClusterConditions_OutputsGenerationAndConditions (0.00s)
+=== RUN   TestClusterConditionsTable_RendersRows
+--- PASS: TestClusterConditionsTable_RendersRows (0.00s)
+=== RUN   TestClusterStatuses_EmptyList
+--- PASS: TestClusterStatuses_EmptyList (0.00s)
+=== RUN   TestClusterStatuses_404_TreatedAsEmptyList
+--- PASS: TestClusterStatuses_404_TreatedAsEmptyList (0.00s)
+=== RUN   TestClusterDelete_OutputsDeletedCluster
+--- PASS: TestClusterDelete_OutputsDeletedCluster (0.00s)
+=== RUN   TestCompletion_Bash
+--- PASS: TestCompletion_Bash (0.00s)
+=== RUN   TestCompletion_Zsh
+--- PASS: TestCompletion_Zsh (0.00s)
+=== RUN   TestCompletion_Fish
+--- PASS: TestCompletion_Fish (0.00s)
+=== RUN   TestCompletion_Powershell
+--- PASS: TestCompletion_Powershell (0.00s)
+=== RUN   TestCompletion_UnknownShell
+--- PASS: TestCompletion_UnknownShell (0.00s)
+=== RUN   TestCompletion_NoArgs
+--- PASS: TestCompletion_NoArgs (0.00s)
+=== RUN   TestDbConfig_PrintsKeyValueTable
+--- PASS: TestDbConfig_PrintsKeyValueTable (0.00s)
+=== RUN   TestDbConfig_DefaultPortShown
+--- PASS: TestDbConfig_DefaultPortShown (0.00s)
+=== RUN   TestDbQuery_PrintsTableWithRows
+--- PASS: TestDbQuery_PrintsTableWithRows (0.00s)
+=== RUN   TestDbQuery_EmptyResult_PrintsInfo
+--- PASS: TestDbQuery_EmptyResult_PrintsInfo (0.00s)
+=== RUN   TestDbQuery_ConnectError_ReturnsError
+--- PASS: TestDbQuery_ConnectError_ReturnsError (0.00s)
+=== RUN   TestDbQuery_QueryError_ReturnsError
+--- PASS: TestDbQuery_QueryError_ReturnsError (0.00s)
+=== RUN   TestDbDelete_ConfirmYes_ExecutesDelete
+--- PASS: TestDbDelete_ConfirmYes_ExecutesDelete (0.00s)
+=== RUN   TestDbDelete_ConfirmNo_SkipsDelete
+--- PASS: TestDbDelete_ConfirmNo_SkipsDelete (0.00s)
+=== RUN   TestDbDelete_ConnectError_ReturnsError
+--- PASS: TestDbDelete_ConnectError_ReturnsError (0.00s)
+=== RUN   TestDbDeleteAll_ConfirmYes_ExecutesDelete
+--- PASS: TestDbDeleteAll_ConfirmYes_ExecutesDelete (0.00s)
+=== RUN   TestDbDeleteAll_ConfirmNo_SkipsDelete
+--- PASS: TestDbDeleteAll_ConfirmNo_SkipsDelete (0.00s)
+=== RUN   TestDbCmd_NoArgs_ShowsHelp
+--- PASS: TestDbCmd_NoArgs_ShowsHelp (0.00s)
+=== RUN   TestDbQuery_RequiresSQLArg_ReturnsError
+--- PASS: TestDbQuery_RequiresSQLArg_ReturnsError (0.00s)
+=== RUN   TestKubeContext_MissingKubeconfig
+--- PASS: TestKubeContext_MissingKubeconfig (0.00s)
+=== RUN   TestKubePortForwardStatus_Empty
+--- PASS: TestKubePortForwardStatus_Empty (0.00s)
+=== RUN   TestKubePFStartCmd_InvalidPorts
+--- PASS: TestKubePFStartCmd_InvalidPorts (0.00s)
+=== RUN   TestLogsCmd_MissingKubeconfig
+--- PASS: TestLogsCmd_MissingKubeconfig (0.00s)
+=== RUN   TestLogsAdapterCmd_MissingKubeconfig
+--- PASS: TestLogsAdapterCmd_MissingKubeconfig (0.00s)
+=== RUN   TestLogsCmd_NoArgs_UsesEmptyPattern
+--- PASS: TestLogsCmd_NoArgs_UsesEmptyPattern (0.00s)
+=== RUN   TestLogsAdapterCmd_PatternPrefixed
+--- PASS: TestLogsAdapterCmd_PatternPrefixed (0.00s)
+=== RUN   TestMaestroList_RendersTable
+--- PASS: TestMaestroList_RendersTable (0.00s)
+=== RUN   TestMaestroGet_PrintsJSON
+--- PASS: TestMaestroGet_PrintsJSON (0.00s)
+=== RUN   TestMaestroDelete_WithYesFlag_CallsDELETE
+--- PASS: TestMaestroDelete_WithYesFlag_CallsDELETE (0.00s)
+=== RUN   TestMaestroDelete_CancelledByUser_NoRequest
+--- PASS: TestMaestroDelete_CancelledByUser_NoRequest (0.00s)
+=== RUN   TestMaestroBundles_PrintsJSON
+--- PASS: TestMaestroBundles_PrintsJSON (0.00s)
+=== RUN   TestMaestroConsumers_RendersTable
+--- PASS: TestMaestroConsumers_RendersTable (0.00s)
+=== RUN   TestMaestroTUI_MissingBinary_ReturnsError
+--- PASS: TestMaestroTUI_MissingBinary_ReturnsError (0.00s)
+=== RUN   TestNodePoolCreate_DefaultArgs
+--- PASS: TestNodePoolCreate_DefaultArgs (0.00s)
+=== RUN   TestNodePoolCreate_MultipleNodePools
+--- PASS: TestNodePoolCreate_MultipleNodePools (0.00s)
+=== RUN   TestNodePoolList_OutputsJSON
+--- PASS: TestNodePoolList_OutputsJSON (0.00s)
+=== RUN   TestNodePoolSearch_SetsNodePoolID
+--- PASS: TestNodePoolSearch_SetsNodePoolID (0.00s)
+=== RUN   TestNodePoolSearch_NoMatch_WarnAndEmptyArray
+--- PASS: TestNodePoolSearch_NoMatch_WarnAndEmptyArray (0.00s)
+=== RUN   TestNodePoolGet_OutputsJSON
+--- PASS: TestNodePoolGet_OutputsJSON (0.00s)
+=== RUN   TestNodePoolPatch_NoArgs_ExitsNonZero
+--- PASS: TestNodePoolPatch_NoArgs_ExitsNonZero (0.00s)
+=== RUN   TestNodePoolPatch_SpecCounter_IncrementsAndPatches
+--- PASS: TestNodePoolPatch_SpecCounter_IncrementsAndPatches (0.00s)
+=== RUN   TestNodePoolPatch_LabelsCounter_IncrementsAndPatches
+--- PASS: TestNodePoolPatch_LabelsCounter_IncrementsAndPatches (0.00s)
+=== RUN   TestNodePoolDelete_OutputsDeletedNodePool
+--- PASS: TestNodePoolDelete_OutputsDeletedNodePool (0.00s)
+=== RUN   TestNodePoolConditions_OutputsGenerationAndConditions
+--- PASS: TestNodePoolConditions_OutputsGenerationAndConditions (0.00s)
+=== RUN   TestNodePoolConditionsTable_RendersRows
+--- PASS: TestNodePoolConditionsTable_RendersRows (0.00s)
+=== RUN   TestNodePoolStatuses_EmptyList
+--- PASS: TestNodePoolStatuses_EmptyList (0.00s)
+=== RUN   TestNodePoolStatuses_404_TreatedAsEmptyList
+--- PASS: TestNodePoolStatuses_404_TreatedAsEmptyList (0.00s)
+=== RUN   TestNodePoolTable_RendersWithDynamicColumns
+--- PASS: TestNodePoolTable_RendersWithDynamicColumns (0.00s)
+=== RUN   TestPluginDispatch_DelegatesWhenFound
+--- PASS: TestPluginDispatch_DelegatesWhenFound (0.00s)
+=== RUN   TestPluginDispatch_UnknownCommand_ReturnsError
+--- PASS: TestPluginDispatch_UnknownCommand_ReturnsError (0.00s)
+=== RUN   TestPluginDispatch_NoArgs_ShowsHelp
+--- PASS: TestPluginDispatch_NoArgs_ShowsHelp (0.00s)
+=== RUN   TestPubSubList_PrintsTopicsAndSubscriptions
+--- PASS: TestPubSubList_PrintsTopicsAndSubscriptions (0.00s)
+=== RUN   TestPubSubList_WithFilter_ShowsInfoAndFiltered
+--- PASS: TestPubSubList_WithFilter_ShowsInfoAndFiltered (0.00s)
+=== RUN   TestPubSubPublishCluster_PublishesCloudEvent
+--- PASS: TestPubSubPublishCluster_PublishesCloudEvent (0.00s)
+=== RUN   TestPubSubPublishNodepool_PublishesCloudEvent
+--- PASS: TestPubSubPublishNodepool_PublishesCloudEvent (0.00s)
+=== RUN   TestRabbitMQPublishCluster_PublishesCloudEvent
+--- PASS: TestRabbitMQPublishCluster_PublishesCloudEvent (0.00s)
+=== RUN   TestRabbitMQPublishCluster_WithRoutingKey
+--- PASS: TestRabbitMQPublishCluster_WithRoutingKey (0.00s)
+=== RUN   TestReposCmd_RendersTable
+--- PASS: TestReposCmd_RendersTable (0.00s)
+=== RUN   TestReposCmd_RegistryFlag
+--- PASS: TestReposCmd_RegistryFlag (0.00s)
+=== RUN   TestReposCmd_NoRegistryAndNoConfig
+--- PASS: TestReposCmd_NoRegistryAndNoConfig (0.00s)
+=== RUN   TestReposCmd_ZeroRepos
+--- PASS: TestReposCmd_ZeroRepos (0.00s)
+=== RUN   TestClusterTable_RendersWithDynamicColumns
+--- PASS: TestClusterTable_RendersWithDynamicColumns (0.00s)
+=== RUN   TestClusterTable_EmptyList
+--- PASS: TestClusterTable_EmptyList (0.00s)
+=== RUN   TestTable_RendersClusterAndNodePoolRows
+--- PASS: TestTable_RendersClusterAndNodePoolRows (0.00s)
+=== RUN   TestTable_EmptyCluster_NoNodePoolRows
+--- PASS: TestTable_EmptyCluster_NoNodePoolRows (0.00s)
+=== RUN   TestTable_AdapterConditionsAlphabetical
+--- PASS: TestTable_AdapterConditionsAlphabetical (0.00s)
+PASS
+ok  	github.com/rh-amarin/hyperfleet-cli/cmd	0.098s
